@@ -20,7 +20,7 @@ pub struct ParseFile {
 
 impl ParseFile {
     
-    pub fn parse_file(&self) -> Result<usize, Error> {
+    pub fn parse_file(&self) -> Result<ParsedContent, Error> {
         let mut num_lines: usize = 0;
         let mut headers: Vec<String> = Vec::new();
         let mut data_types: Vec<DataTypes> = Vec::new();
@@ -66,9 +66,7 @@ impl ParseFile {
                 columns.push(ColumnDef::new(headers[n].clone(), data_types[n].clone()));
             }
         }
-        let m = ParsedContent::new(columns);
-        println!("m: {:#?}", m);
-        Ok(num_lines)
+        Ok(ParsedContent::new(columns))
     }
 }
 

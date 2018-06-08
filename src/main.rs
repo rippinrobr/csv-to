@@ -13,13 +13,12 @@ fn main() {
         input_type: InputType::CSV,
         paths: vec!["../baseballdatabank/upstream/Teams.csv".to_owned()],
     };
-    println!("Hello, world! {:#?}", input);
+    println!("{:#?}", input);
 
     for path in input.paths {
-        println!("path: {}", path);
         let parser = ParseFile{path:path};
         match parser.parse_file() {
-            Ok(r) => println!("results: {}", r),
+            Ok(raw_content) => println!("results: {:#?}", raw_content),
             Err(e) => println!("error: {}", e)
         };
     }
