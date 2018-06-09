@@ -19,3 +19,7 @@ pub struct Input {
     pub input_type: InputType,
     pub paths: Vec<String>
 }
+
+impl Input {
+    
+}

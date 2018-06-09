@@ -13,7 +13,7 @@ pub enum DataTypes {
 }
 
 impl DataTypes {
-    pub fn string(&self, f: &mut fmt::Formatter) -> &str {
+    pub fn string(&self) -> &str {
         match *self {
             DataTypes::EMPTY => "",
             DataTypes::F64 => "f64",
@@ -36,8 +36,8 @@ impl fmt::Debug for DataTypes {
 }
 
 pub struct ColumnDef{
-    name: String, 
-    data_type: DataTypes,
+    pub name: String, 
+    pub data_type: DataTypes,
 }
 
 impl ColumnDef {
@@ -55,22 +55,3 @@ impl fmt::Debug for ColumnDef {
     }
 }
 
-
-#[derive(Debug)]
-pub struct ParsedContent {
-    columns: Vec<ColumnDef>,
-    content: Vec<StringRecord>,
-    file_name: &'static str,
-    records_parsed: usize,
-}
-
-impl ParsedContent {
-    pub fn new(cols: Vec<ColumnDef>) -> ParsedContent {
-        ParsedContent {
-            columns: cols,
-            content: Vec::new(),
-            file_name: "",
-            records_parsed: 0,
-        }
-    }
-}
