@@ -60,7 +60,7 @@ impl fmt::Debug for ColumnDef {
 pub struct ParsedContent {
     columns: Vec<ColumnDef>,
     content: Vec<StringRecord>,
-    file_name: String,
+    file_name: &'static str,
     records_parsed: usize,
 }
 
@@ -69,7 +69,7 @@ impl ParsedContent {
         ParsedContent {
             columns: cols,
             content: Vec::new(),
-            file_name: "".to_string(),
+            file_name: "",
             records_parsed: 0,
         }
     }

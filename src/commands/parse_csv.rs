@@ -1,17 +1,14 @@
 extern crate csv;
 
-use super::models::{DataTypes, ParsedContent};
-use super::models::ColumnDef;
+use models::{DataTypes, ColumnDef};
+use commands::{ParsedContent};
+use csv::StringRecord;
 
-use csv::{
-    StringRecord,
-    Reader
-};
 use std::{
-    fmt,
     fs::File,
     io,
-    io::Error
+    io::Error,
+    path::Path,
 };
 
 pub struct ParseFile {
@@ -20,11 +17,12 @@ pub struct ParseFile {
 
 impl ParseFile {
     
-    pub fn parse_file(&self) -> Result<ParsedContent, Error> {
+   pub fn execute(&self) -> Result<ParsedContent, Error> {
         let mut num_lines: usize = 0;
         let mut headers: Vec<String> = Vec::new();
         let mut data_types: Vec<DataTypes> = Vec::new();
         let mut columns: Vec<ColumnDef> = Vec::new();
+        let mut data: Vec<StringRecord> = Vec::new();
         let mut col_count: usize = 0;
         
         // Build the CSV reader and iterate over each record.
@@ -36,6 +34,7 @@ impl ParseFile {
             .has_headers(false)
             .from_reader(reader);
         
+
         for result in rdr.records() {
             let record = result?.clone();
             if num_lines == 0 {
@@ -58,6 +57,7 @@ impl ParseFile {
                     }
                     col_index += 1;
                 }
+                data.push(record);
             }
             num_lines += 1;
         }
@@ -66,7 +66,12 @@ impl ParseFile {
                 columns.push(ColumnDef::new(headers[n].clone(), data_types[n].clone()));
             }
         }
-        Ok(ParsedContent::new(columns))
+
+        let file_path_str = self.path.clone();
+        let raw_file_name = Path::new(&file_path_str).file_name().unwrap();
+        let file_name = raw_file_name.to_str().unwrap();
+        let content = ParsedContent::new(columns, data, String::from(file_name), num_lines);
+        Ok(content)
     }
 }
 

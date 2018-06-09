@@ -1,12 +1,13 @@
 pub mod code_gen;
-pub mod input;
 pub mod models;
-pub mod parse_csv;
+pub mod commands;
 
 extern crate actix;
 extern crate csv;
-use input::{Input, InputType};
-use parse_csv::{ParseFile};
+
+use commands::input::{Input, InputType};
+use commands::parse_csv::{ParseFile};
+
 
 fn main() {
     let input = Input{
@@ -17,7 +18,7 @@ fn main() {
 
     for path in input.paths {
         let parser = ParseFile{path:path};
-        match parser.parse_file() {
+        match parser.execute() {
             Ok(raw_content) => println!("results: {:#?}", raw_content),
             Err(e) => println!("error: {}", e)
         };
