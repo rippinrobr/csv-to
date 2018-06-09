@@ -15,6 +15,7 @@ fn main() {
         paths: vec!["../baseballdatabank/upstream/Teams.csv".to_owned()],
     };
 
+    // need to add a code gen task here
     for path in input.paths {
         let parser = ParseFile{path:path};
         match parser.execute() {

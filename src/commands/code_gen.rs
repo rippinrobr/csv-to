@@ -5,6 +5,7 @@ use models::{ColumnDef};
 pub struct CodeGen;
 
 impl CodeGen {
+
     pub fn generate_struct(name: &str, columns: Vec<ColumnDef>) -> String {
         let mut scope = Scope::new();
         let mut my_model = Struct::new(name);
@@ -20,6 +21,7 @@ impl CodeGen {
         }
         
         scope.push_struct(my_model);
+        
         scope.to_string()
     }
 }
