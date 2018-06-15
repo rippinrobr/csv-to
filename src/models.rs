@@ -18,7 +18,7 @@ impl DataTypes {
             DataTypes::EMPTY => "",
             DataTypes::F64 => "f64",
             DataTypes::I64 => "i64",
-            DataTypes::STRING => "string"
+            DataTypes::STRING => "String"
         }
     }
 }

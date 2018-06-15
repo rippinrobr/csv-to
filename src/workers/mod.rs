@@ -1,9 +1,15 @@
 pub mod code_gen;
 pub mod input;
+pub mod output;
 pub mod parse_csv;
 
 use csv::{StringRecord};
 use models::{ColumnDef};
+use std::error::Error;
+
+pub trait WorkOrder {
+    fn execute() -> Result<i32, String>;
+}
 
 #[derive(Debug)]
 pub struct ParsedContent {

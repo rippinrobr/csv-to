@@ -1,8 +1,9 @@
 extern crate csv;
 
 use models::{DataTypes, ColumnDef};
-use commands::{ParsedContent};
+use workers::{ParsedContent};
 use csv::StringRecord;
+// use actix::*;
 
 use std::{
     fs::File,
@@ -16,7 +17,6 @@ pub struct ParseFile {
 }
 
 impl ParseFile {
-    
    pub fn execute(&self) -> Result<ParsedContent, Error> {
         let mut num_lines: usize = 0;
         let mut headers: Vec<String> = Vec::new();
