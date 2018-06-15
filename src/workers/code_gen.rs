@@ -1,8 +1,5 @@
-use codegen::{Function, Impl, Module, Scope, Struct, Type};
+use codegen::{Scope, Struct};
 use models::{ColumnDef};
-use csv::StringRecord;
-use models::{DataTypes};
-use std::io::Error;
 
 pub struct CodeGen;
 
