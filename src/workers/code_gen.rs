@@ -19,7 +19,7 @@ impl CodeGen {
             .vis("pub");
 
         for c in columns.into_iter() {
-            my_model.field(&c.name, c.data_type.string());
+            my_model.field(&c.name.to_lowercase(), c.data_type.string());
         }
         
         scope.push_struct(my_model);
@@ -31,7 +31,7 @@ impl CodeGen {
         let mut scope = Scope::new();
 
         for file_name in model_file_names.iter() {
-           scope.raw(&format!("pub mod {};", file_name.to_lowercase()));
+            scope.raw(&format!("pub mod {};", file_name.to_lowercase()));
         }
 
         scope.to_string()

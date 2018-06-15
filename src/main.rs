@@ -5,18 +5,16 @@ extern crate actix;
 extern crate codegen;
 extern crate csv;
 extern crate futures;
-use futures::{future, Future};
-use actix::*;
+extern crate regex;
 
-//use actix::*;
+use regex::Regex;
 use workers::input::{Input, InputType};
 use workers::output::{Output};
 use workers::parse_csv::{ParseFile};
 use workers::code_gen::CodeGen;
-use std::fs::File;
-use std::io::prelude::*;
 
 fn main() {
+    let col_name_validation_re = Regex::new(r"^[a-zA-Z_][a-zA-Z0-9_]+$").unwrap();
     let mut input = Input{
         input_type: InputType::CSV,
         files: vec![],
@@ -31,7 +29,7 @@ fn main() {
     }
 
     for file_path in input.files {
-        let parser = ParseFile{path:file_path};
+        let parser = ParseFile::new(file_path, col_name_validation_re.clone());
         match parser.execute() {
             Ok(results) => {
                 let struct_name = results.file_name.trim_right_matches(".csv");

@@ -3,7 +3,7 @@ extern crate csv;
 use models::{DataTypes, ColumnDef};
 use workers::{ParsedContent};
 use csv::StringRecord;
-// use actix::*;
+use regex::Regex;
 
 use std::{
     fs::File,
@@ -13,10 +13,19 @@ use std::{
 };
 
 pub struct ParseFile {
-    pub path: String,
+    path: String,
+    col_name_re: Regex,
 }
 
 impl ParseFile {
+
+   pub fn new(path:String, col_name_re: Regex) -> ParseFile {
+       ParseFile {
+           path: path,
+           col_name_re:  col_name_re,
+       }
+   }
+
    pub fn execute(&self) -> Result<ParsedContent, Error> {
         let mut num_lines: usize = 0;
         let mut headers: Vec<String> = Vec::new();
@@ -44,7 +53,7 @@ impl ParseFile {
                 headers = Vec::with_capacity(col_count);
                 for n in 0..col_count {
                    data_types.push(DataTypes::EMPTY);
-                   headers.push(h[n].to_string());
+                   headers.push( self.check_col_name(&h[n]));
                 }
             } else {
                 let mut col_index = 0;
@@ -72,6 +81,40 @@ impl ParseFile {
         let file_name = raw_file_name.to_str().unwrap();
         let content = ParsedContent::new(columns, data, String::from(file_name), num_lines);
         Ok(content)
+    }
+
+    // TODO: Need to do something if the col name is a single char long and 
+    // is not a letter.
+    fn check_col_name(&self, name: &str) -> String {
+        if self.col_name_re.is_match(name) {
+            return name.to_string()
+        }
+
+        let name_str = name.to_string();
+        let mut name_chars = name_str.chars();
+        let first_char: char = name_chars.next().unwrap();
+        // if the 
+        
+        if name.len() == 1 {
+            if first_char.is_alphabetic() {
+                return name.to_string()
+            } 
+
+            return "INVALID_COLUMN_NAME".to_string();
+        }
+
+        println!("invalid struct field name: {}", name);
+        if first_char.is_numeric() {
+            return self.check_col_name(&format!("_{}", name));
+        }
+        
+        while let Some(name_char) = name_chars.next() {
+            if !name_char.is_alphanumeric() && name_char != '_' {
+                return name_str.replacen(name_char, "_", 1);
+            }
+        }
+
+        name_str.to_owned()
     }
 }
 
