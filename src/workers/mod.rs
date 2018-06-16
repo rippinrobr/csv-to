@@ -2,6 +2,7 @@ pub mod code_gen;
 pub mod input;
 pub mod output;
 pub mod parse_csv;
+pub mod sql_gen;
 
 use csv::{StringRecord};
 use models::{ColumnDef};

@@ -17,16 +17,16 @@ pub struct ParseFile {
     col_name_re: Regex,
 }
 
+//TODO: write errors out to stderr 
 impl ParseFile {
+    pub fn new(path:String, col_name_re: Regex) -> ParseFile {
+        ParseFile {
+            path: path,
+            col_name_re:  col_name_re,
+        }
+    }
 
-   pub fn new(path:String, col_name_re: Regex) -> ParseFile {
-       ParseFile {
-           path: path,
-           col_name_re:  col_name_re,
-       }
-   }
-
-   pub fn execute(&self) -> Result<ParsedContent, Error> {
+    pub fn execute(&self) -> Result<ParsedContent, Error> {
         let mut num_lines: usize = 0;
         let mut headers: Vec<String> = Vec::new();
         let mut data_types: Vec<DataTypes> = Vec::new();
@@ -52,16 +52,16 @@ impl ParseFile {
                 data_types = Vec::with_capacity(col_count);
                 headers = Vec::with_capacity(col_count);
                 for n in 0..col_count {
-                   data_types.push(DataTypes::EMPTY);
-                   headers.push( self.check_col_name(&h[n]));
+                    data_types.push(DataTypes::Empty);
+                    headers.push( self.check_col_name(&h[n]));
                 }
             } else {
                 let mut col_index = 0;
                 for col_data in record.iter() {
-                    if data_types[col_index] != DataTypes::STRING {
+                    if data_types[col_index] != DataTypes::String {
                         let potential_type = check_col_data_type(col_data);
                         if potential_type != data_types[col_index] {
-                           data_types[col_index] = potential_type;
+                            data_types[col_index] = potential_type;
                         }
                     }
                     col_index += 1;
@@ -123,7 +123,7 @@ fn check_col_data_type(val: &str) -> DataTypes {
         Ok(_) => DataTypes::I64,
         _ => match val.parse::<f64>() {
             Ok(_) => DataTypes::F64,
-            _ => DataTypes::STRING
+            _ => DataTypes::String
         }  
     }
 }

@@ -5,16 +5,18 @@ pub struct CodeGen;
 
 impl CodeGen {
     
-    pub fn generate_struct(name: &str, columns: Vec<ColumnDef>) -> String {
+    pub fn generate_struct(name: &str, columns: &Vec<ColumnDef>) -> String {
         let mut scope = Scope::new();
         let mut my_model = Struct::new(name);
         
-        my_model
-            .derive("Debug")
-            .derive("Deserialize")
-            .derive("Serialize")
-            .vis("pub");
+        if columns.len() > 0 {
+            my_model
+                .derive("Debug")
+                .derive("Deserialize")
+                .derive("Serialize");    
+        }
 
+        my_model.vis("pub");
         for c in columns.into_iter() {
             my_model.field(&c.name.to_lowercase(), c.data_type.string());
         }
@@ -32,5 +34,25 @@ impl CodeGen {
         }
 
         scope.to_string()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use workers::code_gen::CodeGen;
+    use models::{ColumnDef, DataTypes};
+
+    #[test] 
+    fn generate_struct() {
+        let struct_def = "#[derive(Debug, Deserialize, Serialize)]\npub struct people {\n    name: String,\n    age: i64,\n    weight: f64,\n}".to_string();
+        let cols: Vec<ColumnDef> = vec![ColumnDef::new("name".to_string(), DataTypes::String), ColumnDef::new("age".to_string(), DataTypes::I64), ColumnDef::new("weight".to_string(), DataTypes::F64)];
+        assert_eq!(struct_def, CodeGen::generate_struct("people", &cols));
+    }
+
+    #[test] 
+    fn generate_struct_with_no_columns() {
+        let struct_def = "pub struct people;".to_string();
+        let cols: Vec<ColumnDef> = vec![];
+        assert_eq!(struct_def, CodeGen::generate_struct("people", &cols));
     }
 }

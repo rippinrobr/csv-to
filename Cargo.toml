@@ -5,6 +5,7 @@ authors = ["Rob Rowe <rrowe@foodlogiq.com>"]
 
 [dependencies]
 actix = "0.5"
+barrel = "0.2.1"
 clap = "2.31.2"
 codegen = { git = "https://github.com/carllerche/codegen" } # Soon on crates.io
 csv = "1.0.0"

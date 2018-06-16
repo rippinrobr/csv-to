@@ -3,22 +3,32 @@ use std::{
 };
 
 use csv::StringRecord;
+use barrel::Type;
 
 #[derive(PartialEq,Clone, Copy)]
 pub enum DataTypes {
-    EMPTY,
+    Empty,
     F64,
     I64, 
-    STRING,
+    String,
 }
 
 impl DataTypes {
     pub fn string(&self) -> &str {
         match *self {
-            DataTypes::EMPTY => "",
+            DataTypes::Empty => "",
             DataTypes::F64 => "f64",
             DataTypes::I64 => "i64",
-            DataTypes::STRING => "String"
+            DataTypes::String => "String"
+        }
+    }
+
+    pub fn to_database_type(&self) -> Type {
+        match *self {
+            DataTypes::Empty => Type::Text,
+            DataTypes::F64 => Type::Double,
+            DataTypes::I64 => Type::Integer,
+            DataTypes::String => Type::Text
         }
     }
 }
@@ -26,15 +36,16 @@ impl DataTypes {
 impl fmt::Debug for DataTypes {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let printable = match *self {
-            DataTypes::EMPTY => "",
+            DataTypes::Empty => "",
             DataTypes::F64 => "f64",
             DataTypes::I64 => "i64",
-            DataTypes::STRING => "string"
+            DataTypes::String => "string"
         };
         write!(f, "{:#?}", printable)
     }
 }
 
+#[derive(Clone)]
 pub struct ColumnDef{
     pub name: String, 
     pub data_type: DataTypes,

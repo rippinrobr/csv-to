@@ -16,7 +16,8 @@ impl fmt::Debug for InputType {
     }
 }
 
-// TODO: 
+// TODO: Add support for a TOML file to take in input parameters 
+//       and any other params that will be or are required
 #[derive(Debug)]
 pub struct Input {
     pub input_type: InputType,
