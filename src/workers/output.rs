@@ -6,13 +6,15 @@ use std::io::prelude::*;
 pub struct Output {
     pub code_directory: String,
     sql_directory: String,
+    db_directory: String,
 }
 
 impl Output {
-    pub fn new(code_directory: String, sql_directory: String) -> Output {
+    pub fn new(code_directory: String, sql_directory: String, db_directory: String) -> Output {
         Output{
             code_directory: code_directory,
-            sql_directory: sql_directory
+            sql_directory: sql_directory,
+            db_directory: db_directory,
         }
     }
 
