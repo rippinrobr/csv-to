@@ -26,7 +26,7 @@ fn main() {
     let col_name_validation_re = Regex::new(r"^[a-zA-Z_][a-zA-Z0-9_]+$").unwrap();
     let mut input = Input{
         input_type: InputType::CSV,
-        files: vec![], //vec!["../baseballdatabank/core/AwardsSharePlayers.csv".to_string()],
+        files: vec![], //"../baseballdatabank/core/AwardsSharePlayers.csv".to_string()],
         directories: vec!["../baseballdatabank/core".to_owned()],
     };
     let output = Output::new("../tabletopbaseball_loader/src/models".to_string(), "../tabletopbaseball_loader/sql".to_string(), "../tabletopbaseball_loader/database".to_string());
