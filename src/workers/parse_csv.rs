@@ -58,7 +58,7 @@ impl ParseFile {
             } else {
                 let mut col_index = 0;
                 for col_data in record.iter() {
-                    if data_types[col_index] != DataTypes::String {
+                    if data_types[col_index] != DataTypes::String && data_types[col_index] != DataTypes::F64 {
                         let potential_type = check_col_data_type(col_data);
                         if potential_type != data_types[col_index] {
                             data_types[col_index] = potential_type;
@@ -103,7 +103,7 @@ impl ParseFile {
             return "INVALID_COLUMN_NAME".to_string();
         }
 
-        println!("invalid struct field name: {}", name);
+        eprintln!("invalid struct field name: {}, fixing", name);
         if first_char.is_numeric() {
             return self.check_col_name(&format!("_{}", name));
         }

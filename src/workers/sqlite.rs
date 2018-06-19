@@ -50,13 +50,22 @@ impl SqliteDB {
                 let value = match col_value.parse::<i64>() {
                     Ok(v) => v,
                     Err(e) => {
-                        eprintln!("WARNING: i64 parse error: '{}' is not an int: {}", col_value, e);
+                        eprintln!("WARNING: i64 parse error: {} => '{}' is not an int: {}", col.name,  col_value, e);
                         0
                     }
                 };
                 Value::Integer(value)
             },
-            DataTypes::F64 => Value::Float(col_value.parse::<f64>().unwrap()),
+            DataTypes::F64 => {
+                let value = match col_value.parse::<f64>() {
+                    Ok(v) => v,
+                    Err(e) => {
+                        eprintln!("WARNING: f64 parse error: {} => '{}' f64 parse error: : {}", col.name, col_value, e);
+                        0.0
+                    }
+                };
+                Value::Float(value)
+            },
             DataTypes::Empty => Value::Null
         }
     }
