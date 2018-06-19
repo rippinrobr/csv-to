@@ -1,11 +1,9 @@
 pub mod models;
 pub mod workers;
 
-extern crate actix;
 extern crate barrel;
 extern crate codegen;
 extern crate csv;
-extern crate futures;
 extern crate regex;
 extern crate sqlite;
 
