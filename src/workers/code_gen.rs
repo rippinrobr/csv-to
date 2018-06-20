@@ -1,4 +1,4 @@
-use codegen::{Scope, Struct};
+use codegen::{Impl, Scope, Struct};
 use models::{ColumnDef};
 
 pub struct CodeGen;
@@ -35,6 +35,22 @@ impl CodeGen {
 
         scope.to_string()
     }
+
+    pub fn generate_db_actor() -> String {
+        let mut scope = Scope::new();
+
+        scope.import("actix::prelude", "*");
+        scope.import("sqlite", "Connection");
+        scope.raw("pub struct DbExecutor(pub Connection);");
+        
+        let mut actor_trait = Impl::new("DbExecutor");
+        actor_trait.impl_trait("Actor");
+        actor_trait.associate_type("Context", "SyncContext<Self>");
+
+        scope.push_impl(actor_trait);
+    
+        scope.to_string()
+    }
 }
 
 #[cfg(test)]
@@ -54,5 +70,11 @@ mod tests {
         let struct_def = "pub struct people;".to_string();
         let cols: Vec<ColumnDef> = vec![];
         assert_eq!(struct_def, CodeGen::generate_struct("people", &cols));
+    }
+
+    #[test]
+    fn generate_db_actor() {
+        let db_actor = "".to_string();
+        assert_eq!(db_actor, CodeGen::generate_db_actor());
     }
 }

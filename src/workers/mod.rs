@@ -42,6 +42,10 @@ impl ParsedContent {
 
         Ok(content_strings)
     }
+
+    pub fn get_struct_name(&self) -> &str {
+        self.file_name.trim_right_matches(".csv")
+    }
 }
 
 #[cfg(test)]

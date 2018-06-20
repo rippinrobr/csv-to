@@ -13,8 +13,6 @@ working end to end.  Once that is done I will start working on refactoring.
 * ~~Generate Rust Structs that match the parsed CSV file(s)~~
 * ~~Generate SQLite create table sql for each file~~
 * ~~Load data into newly created tables returning number of records inserted~~
-* Add TOML so users can set the parameters for all the workers read from csv2api.toml by default
-* Add command line option to use a different TOML file
 * Generate code for Basic HTTP server that responds to a the route /
 * Generate base routes for all newly created structs only return a string
 * Generate Select * code for all tables
@@ -23,6 +21,8 @@ working end to end.  Once that is done I will start working on refactoring.
 Goals: Add more tests,  Clean up the main function so its not a mess, convert workers to actors, and create handlers for the base URLs using actix-web
 
 * clean up main, breaking out functions as needed
+* Add TOML so users can set the parameters for all the workers read from csv2api.toml by default
+* Add command line option to use a different TOML file
 * convert parse_csv.rs to an actor
 * convert code_gen.rs to an actor 
 * convert sql_gen.rs to an actor

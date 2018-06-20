@@ -27,9 +27,10 @@ fn main() {
         files: vec![], //"../baseballdatabank/core/AwardsSharePlayers.csv".to_string()],
         directories: vec!["../baseballdatabank/core".to_owned()],
     };
-    let output = Output::new("../tabletopbaseball_loader/src/models".to_string(), "../tabletopbaseball_loader/sql".to_string(), "../tabletopbaseball_loader/database".to_string());
-    let sqlite_db = SqliteDB::new("../tabletopbaseball_loader/baseballdatabank_2017.db").unwrap();
-
+    let output = Output::new("../tabletopbaseball_loader/src".to_string(),
+                            "../tabletopbaseball_loader/sql".to_string());
+    let sqlite_db = SqliteDB::new("../tabletopbaseball_loader/database/baseball_databank_2017.db").unwrap();
+    let models_dir: &str = &(output.src_directory.clone() + "/models");
     let mut created_file_names: Vec<String> = Vec::new();
     let mut create_table_statements: Vec<String> = Vec::new();
 
@@ -41,10 +42,10 @@ fn main() {
         let parser = ParseFile::new(file_path, col_name_validation_re.clone());
         match parser.execute() {
             Ok(parsed_content) => {
-                let struct_name = parsed_content.file_name.trim_right_matches(".csv");
+                let struct_name = parsed_content.get_struct_name();
                 let struct_string = CodeGen::generate_struct(&struct_name, &parsed_content.columns);
                 
-                match output.write_code_to_file(&struct_name, struct_string) {
+                match output.write_code_to_file(models_dir, &struct_name, struct_string) {
                     Err(e) => eprintln!("ERROR: {}", e),
                     Ok(file_name) => {
                         println!("Created file {}.rs", file_name);
@@ -76,8 +77,14 @@ fn main() {
 
     if created_file_names.len() > 0 {
         let mod_file_contents = CodeGen::generate_mod_file_contents(created_file_names);
-        match output.write_code_to_file("mod", mod_file_contents) {
+        match output.write_code_to_file(models_dir, "mod", mod_file_contents) {
             Ok(_) => println!("Created file mod.rs"),
+            Err(e) => eprintln!("ERROR: {}", e)
+        };
+
+        let db_actor_file_contents = CodeGen::generate_db_actor();
+        match output.write_code_to_file(&output.src_directory, "db_actor.rs", db_actor_file_contents) {
+            Ok(_) => println!("Created file db_actor.rs"),
             Err(e) => eprintln!("ERROR: {}", e)
         };
     }
