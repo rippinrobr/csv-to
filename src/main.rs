@@ -1,11 +1,9 @@
 pub mod models;
 pub mod workers;
 
-extern crate actix;
 extern crate barrel;
 extern crate codegen;
 extern crate csv;
-extern crate futures;
 extern crate regex;
 extern crate sqlite;
 
@@ -24,14 +22,21 @@ use workers::{
 // TODO: Refactor main to create smaller, single purpose functions
 fn main() {
     let col_name_validation_re = Regex::new(r"^[a-zA-Z_][a-zA-Z0-9_]+$").unwrap();
+    
     let mut input = Input{
         input_type: InputType::CSV,
         files: vec![], //"../baseballdatabank/core/AwardsSharePlayers.csv".to_string()],
         directories: vec!["../baseballdatabank/core".to_owned()],
     };
-    let output = Output::new("../tabletopbaseball_loader/src/models".to_string(), "../tabletopbaseball_loader/sql".to_string(), "../tabletopbaseball_loader/database".to_string());
-    let sqlite_db = SqliteDB::new("../tabletopbaseball_loader/baseballdatabank_2017.db").unwrap();
 
+    // this needs to go away until I have a better approach to loading the db as the output 
+    let output = Output::new("../tabletopbaseball_loader/src".to_string(),
+                            "../tabletopbaseball_loader/sql".to_string());
+    
+    let sql_generator = SQLGen::new("../tabletopbaseball_loader/sql".to_string());
+    let sqlite_db = SqliteDB::new("../tabletopbaseball_loader/database/baseball_databank_2017.db").unwrap();
+   
+    let models_dir: &str = &(output.src_directory.clone() + "/models");
     let mut created_file_names: Vec<String> = Vec::new();
     let mut create_table_statements: Vec<String> = Vec::new();
 
@@ -43,10 +48,10 @@ fn main() {
         let parser = ParseFile::new(file_path, col_name_validation_re.clone());
         match parser.execute() {
             Ok(parsed_content) => {
-                let struct_name = parsed_content.file_name.trim_right_matches(".csv");
+                let struct_name = parsed_content.get_struct_name();
                 let struct_string = CodeGen::generate_struct(&struct_name, &parsed_content.columns);
                 
-                match output.write_code_to_file(&struct_name, struct_string) {
+                match CodeGen::write_code_to_file(models_dir, &struct_name, struct_string) {
                     Err(e) => eprintln!("ERROR: {}", e),
                     Ok(file_name) => {
                         println!("Created file {}.rs", file_name);
@@ -78,14 +83,31 @@ fn main() {
 
     if created_file_names.len() > 0 {
         let mod_file_contents = CodeGen::generate_mod_file_contents(created_file_names);
-        match output.write_code_to_file("mod", mod_file_contents) {
+        match CodeGen::write_code_to_file(models_dir, "mod", mod_file_contents) {
             Ok(_) => println!("Created file mod.rs"),
             Err(e) => eprintln!("ERROR: {}", e)
         };
+
+        let db_actor_file_contents = CodeGen::generate_db_actor();
+        let actors_dir: &str = &format!("{}/actors", output.src_directory);
+        match CodeGen::write_code_to_file(actors_dir, "db_actor", db_actor_file_contents) {
+            Ok(_) => println!("Created file actors/db_actor.rs"),
+            Err(e) => eprintln!("ERROR: {}", e)
+        };
+        match CodeGen::write_code_to_file(actors_dir, "mod", "pub mod db_actor;".to_string()) {
+            Ok(_) => println!("Created file actors/mod.rs"),
+            Err(e) => eprintln!("ERROR: {}", e)
+        };
+        
+        let main_fn_src = CodeGen::generate_webservice_main("./database/baseball_databank_2017.db".to_string());
+        match CodeGen::write_code_to_file(&output.src_directory, "main", main_fn_src) {
+            Ok(_) => println!("Created file main.rs"),
+            Err(e) => eprintln!("ERROR: {}", e)
+        }
     }
 
     if create_table_statements.len() > 0 {
-        match output.write_sql_to_file("schema", create_table_statements.join("\n")) {
+        match sql_generator.write_sql_to_file("schema", create_table_statements.join("\n")) {
             Ok(_) => println!("Created file schema.sql"),
             Err(e) => eprintln!("Error writing schema.sql file {}", e)
         };

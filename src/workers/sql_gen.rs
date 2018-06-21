@@ -5,9 +5,17 @@ use barrel::*;
 use barrel::backend::Pg;
 use models::ColumnDef;
 
-pub struct SQLGen;
+pub struct SQLGen {
+    sql_directory: String,
+}
 
 impl SQLGen {
+    pub fn new(sql_dir: String) -> SQLGen {
+        SQLGen {
+            sql_directory: sql_dir
+        }
+    }
+
     pub fn generate_create_table(name: &str, columns: &Vec<ColumnDef>) -> Result<String, String> {
         if name == "" {
             return Err("[generate_create_table] name cannot be empty.".to_string());
@@ -44,6 +52,18 @@ impl SQLGen {
         let col_names: Vec<String> = columns.into_iter().map(move |c| c.name.clone()).collect();
         let sql_stmt = format!("INSERT INTO {} ({}) VALUES ({})", name, col_names.join(", "), placeholders.join(", "));
         Ok(sql_stmt)
+    }
+
+    pub fn write_sql_to_file(&self, file_name: &str, sql_str: String) -> Result<String, Error> {
+        match File::create(format!("{}/{}.sql", &self.sql_directory, &file_name).to_lowercase()) {
+            Ok(mut file) => {
+                match file.write_all(&sql_str.into_bytes()) {
+                    Ok(_) => Ok(file_name.to_string()),
+                    Err(e) => Err(e)
+                }
+            },
+            Err(e) => Err(e)
+        }
     }
 }
 

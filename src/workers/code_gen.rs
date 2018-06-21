@@ -1,5 +1,8 @@
-use codegen::{Scope, Struct};
+use codegen::{Block, Formatter, Function, Impl, Scope, Struct};
 use models::{ColumnDef};
+use std::fs::File;
+use std::io::Error;
+use std::io::prelude::*;
 
 pub struct CodeGen;
 
@@ -26,15 +29,112 @@ impl CodeGen {
         scope.to_string()
     }
 
-    pub fn generate_mod_file_contents(model_file_names: Vec<String>) -> String{
+    pub fn generate_mod_file_contents(mod_names: Vec<String>) -> String{
         let mut scope = Scope::new();
 
-        for file_name in model_file_names.iter() {
+        for file_name in mod_names.iter() {
             scope.raw(&format!("pub mod {};", file_name.to_lowercase()));
         }
 
         scope.to_string()
     }
+
+    pub fn generate_db_actor() -> String {
+        let mut scope = Scope::new();
+
+        scope.import("actix::prelude", "*");
+        scope.import("sqlite", "Connection");
+        scope.raw("pub struct DbExecutor(pub Connection);");
+        
+        let mut actor_trait = Impl::new("DbExecutor");
+        actor_trait.impl_trait("Actor");
+        actor_trait.associate_type("Context", "SyncContext<Self>");
+
+        scope.push_impl(actor_trait);
+    
+        scope.to_string()
+    }
+
+    pub fn generate_webservice_main(db_path: String) -> String {
+        let mut scope = Scope::new();
+        
+        for use_stmt in vec![("actix", "{Addr,Syn}"), ("actix::prelude", "*"), ("actors::db_actor", "*"), ("actix_web", "http, App, AsyncResponder, HttpRequest, HttpResponse"),
+                            ("actix_web::server", "HttpServer"), ("futures", "Future"), ("actix_web", "Error"), ("actix_web", "Json"), ("actix_web::middleware", "Logger")] {
+            scope.import(use_stmt.0, use_stmt.1);
+        }
+        
+        let mut state_struct = Struct::new("State");
+        state_struct
+            .doc("This is state where we will store *DbExecutor* address.")
+            .field("db", "Addr<Syn, DbExecutor>");
+        scope.push_struct(state_struct);
+
+        let mut handlers = Struct::new("RouteHandlers");
+        handlers.doc("Used to implement all of the route handlers");
+        scope.push_struct(handlers);
+
+        let mut index_fn = Function::new("index");
+        index_fn
+                .arg("_req", "HttpRequest<State>")
+                .ret("&'static str")
+                .line("\"Put the next steps instructions here\"");
+
+        let mut handler_impl = Impl::new("RouteHandlers");
+        handler_impl.push_fn(index_fn);
+        scope.push_impl(handler_impl);
+        scope.raw("");
+
+        create_extern_create_defs() + &scope.to_string() + &create_main_fn(db_path)
+    }
+
+    pub fn write_code_to_file(dir_path: &str, file_name: &str, code: String) -> Result<String, Error> {
+
+        match File::create(format!("{}/{}.rs", dir_path, &file_name).to_lowercase()) {
+            Ok(mut file) => {
+                match file.write_all(&code.into_bytes()) {
+                    Ok(_) => Ok(file_name.to_string()),
+                    Err(e) => Err(e)
+                }
+            },
+            Err(e) => Err(e)
+        }
+    }
+}
+
+fn create_extern_create_defs() -> String {
+    let mut extern_scope = Scope::new(); 
+        for extern_crate in vec!["pub mod actors;\npub mod models;\n\n\nextern crate clap;", "extern crate dotenv;", "extern crate env_logger;", "extern crate actix;", 
+                                "extern crate actix_web;", "extern crate sqlite;", "extern crate futures;", "#[macro_use]", "extern crate serde_derive;"] {
+            extern_scope.raw(extern_crate);
+        }
+        extern_scope.raw("\n");
+
+        extern_scope.to_string().replace("\n\n", "\n")
+}
+
+fn create_main_fn(db_path: String) -> String {
+    let mut main_fn_scope = Scope::new();
+        main_fn_scope.raw("fn main() {");
+        main_fn_scope.raw("\tstd::env::set_var(\"RUST_LOG\", \"actix_web=info\");");
+        main_fn_scope.raw("\tenv_logger::init();");
+        main_fn_scope.raw("\tlet sys = actix::System::new(\"csv2api\");");
+
+        main_fn_scope.raw("// Start 3 parallel db executors");
+        main_fn_scope.raw("\tlet addr = SyncArbiter::start(3, || {");
+        main_fn_scope.raw(&format!("\t    DbExecutor(sqlite::open(\"{}\").unwrap())", db_path));
+        main_fn_scope.raw("\t});");
+
+        main_fn_scope.raw("\tHttpServer::new(move || {");
+        main_fn_scope.raw("\t\tApp::with_state(State{db: addr.clone()})");
+        main_fn_scope.raw("\t\t\t.middleware(Logger::default())");
+        main_fn_scope.raw("\t\t\t.resource(\"/\", |r| r.method(http::Method::GET).f(RouteHandlers::index))})");
+        main_fn_scope.raw("\t\t.bind(\"127.0.0.1:8088\").unwrap()");
+        main_fn_scope.raw("\t\t.start();\n");
+        main_fn_scope.raw("\tprintln!(\"Started http server: 127.0.0.1:8088\");");
+        main_fn_scope.raw("\tlet _ = sys.run();");
+        main_fn_scope.raw("}");
+
+        main_fn_scope.to_string().replace("\n\n", "\n")
 }
 
 #[cfg(test)]
@@ -54,5 +154,17 @@ mod tests {
         let struct_def = "pub struct people;".to_string();
         let cols: Vec<ColumnDef> = vec![];
         assert_eq!(struct_def, CodeGen::generate_struct("people", &cols));
+    }
+
+    #[test]
+    fn generate_db_actor() {
+        let db_actor = "use actix::prelude::*;\nuse sqlite::Connection;\n\npub struct DbExecutor(pub Connection);\n\nimpl Actor for DbExecutor {\n    type Context = SyncContext<Self>;\n}".to_string();
+        assert_eq!(db_actor, CodeGen::generate_db_actor());
+    }
+
+    #[test]
+    fn generate_webservice_main() {
+        let main_src = "".to_string();
+        assert_eq!(main_src, CodeGen::generate_webservice_main());
     }
 }
