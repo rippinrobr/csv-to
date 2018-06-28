@@ -1,4 +1,4 @@
-use codegen::{Block, Formatter, Function, Impl, Scope, Struct};
+use codegen::{Function, Impl, Scope, Struct};
 use models::{ColumnDef};
 use std::fs::File;
 use std::io::Error;
@@ -199,8 +199,8 @@ mod tests {
 
     #[test]
     fn generate_webservice_main() {
-        let main_src = "pub mod actors;\npub mod models;\n\nextern crate clap;\nextern crate dotenv;\nextern crate env_logger;\nextern crate actix;\nextern crate actix_web;\nextern crate sqlite;\nextern crate futures;\n#[macro_use]\nextern crate serde_derive;\n\nuse actix::{Addr,Syn};\nuse actix::prelude::*;\nuse actors::db_actor::*;\nuse actix_web::{http, App, AsyncResponder, HttpRequest, HttpResponse, Error, Json};\nuse actix_web::server::HttpServer;\nuse futures::Future;\nuse actix_web::middleware::Logger;\n\n/// This is state where we will store *DbExecutor* address.\nstruct State {\n    db: Addr<Syn, DbExecutor>,\n}\n\n/// Used to implement all of the route handlers\nstruct RouteHandlers;\n\nimpl RouteHandlers {\n    fn index(_req: HttpRequest<State>) -> &\'static str {\n        \"Put the next steps instructions here\"\n    }\n}\n\nfn main() {\n\tstd::env::set_var(\"RUST_LOG\", \"actix_web=info\");\n\tenv_logger::init();\n\tlet sys = actix::System::new(\"csv2api\");\n// Start 3 parallel db executors\n\tlet addr = SyncArbiter::start(3, || {\n\t    DbExecutor(sqlite::open(\"test.db\").unwrap())\n\t});\n\tHttpServer::new(move || {\n\t\tApp::with_state(State{db: addr.clone()})\n\t\t\t.middleware(Logger::default())\n\t\t\t.resource(\"/\", |r| r.method(http::Method::GET).f(RouteHandlers::index))})\n\t\t.bind(\"127.0.0.1:8088\").unwrap()\n\t\t.start();\n\n\tprintln!(\"Started http server: 127.0.0.1:8088\");\n\tlet _ = sys.run();\n}".to_string();
-        let res = CodeGen::generate_webservice("test.db".to_string());
+        let main_src = "pub mod actors;\npub mod models;\n\nextern crate clap;\nextern crate dotenv;\nextern crate env_logger;\nextern crate actix;\nextern crate actix_web;\nextern crate sqlite;\nextern crate futures;\n#[macro_use]\nextern crate serde_derive;\n\nuse actix::{Addr,Syn};\nuse actix::prelude::*;\nuse actors::db_actor::*;\nuse actix_web::{http, App, AsyncResponder, HttpRequest, HttpResponse, Error, Json};\nuse actix_web::server::HttpServer;\nuse futures::Future;\nuse actix_web::middleware::Logger;\n\n/// This is state where we will store *DbExecutor* address.\nstruct State {\n    db: Addr<Syn, DbExecutor>,\n}\n\n/// Used to implement all of the route handlers\nstruct RouteHandlers;\n\nimpl RouteHandlers {\n    fn index(_req: HttpRequest<State>) -> &\'static str {\n        \"Put the next steps instructions here\"\n    }\n}\n\nfn main() {\n\tstd::env::set_var(\"RUST_LOG\", \"actix_web=info\");\n\tenv_logger::init();\n\tlet sys = actix::System::new(\"csv2api\");\n// Start 3 parallel db executors\n\tlet addr = SyncArbiter::start(3, || {\n\t    DbExecutor(sqlite::open(\"test.db\").unwrap())\n\t});\n\tHttpServer::new(move || {\n\t\tApp::with_state(State{db: addr.clone()})\n\t\t\t.middleware(Logger::default())\n\t\t\t.resource(\"/\", |r| r.method(http::Method::GET).f(RouteHandlers::index))\n\t})\n\t.bind(\"127.0.0.1:8088\").unwrap()\n\t.start();\n\n\tprintln!(\"Started http server: 127.0.0.1:8088\");\n\tlet _ = sys.run();\n}".to_string();
+        let res = CodeGen::generate_webservice("test.db".to_string(),&vec![]);
         assert_eq!(main_src, res);
     }
 
@@ -212,7 +212,7 @@ mod tests {
         expected_fn
             .arg("_req", "HttpRequest<State>")
             .ret("&'static str")
-            .line(format!("Pretend this is a list of MyEntity"));
+            .line(format!("\"Pretend this is a list of MyEntity\""));
         expected_impl.push_fn(expected_fn);
         expected_scope.push_impl(expected_impl);
         let expected = expected_scope.to_string();

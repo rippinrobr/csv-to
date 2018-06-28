@@ -5,7 +5,6 @@ use std::path::Path;
 use std::vec::Vec;
 
 pub struct SqliteDB {
-    path: String,
     db_conn: Connection,
 } 
 
@@ -15,7 +14,6 @@ impl SqliteDB {
         let db_conn = sqlite::open(path_obj)?;
 
         Ok(SqliteDB {
-            path: path.to_owned(),
             db_conn: db_conn,
         })
     }
@@ -69,6 +67,7 @@ impl SqliteDB {
             DataTypes::Empty => Value::Null
         }
     }
+
 }
 
 #[cfg(test)]
@@ -81,7 +80,7 @@ mod tests {
 
         match SqliteDB::new(my_path) {
             Ok(db) => {
-                assert_eq!(db.path, my_path);
+                assert!(true);
             },
             Err(e) => {
                 eprintln!("Error: {}", e);
