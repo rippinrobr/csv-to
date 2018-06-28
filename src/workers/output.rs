@@ -2,10 +2,8 @@
 // data is stored, typically it will be a database.  Maybe this should have
 // a vec of output types as a field so I can havae SQLite, Postgress, MySQL, 
 // etc...
-// use std::fs::File;
-// use std::io::Error;
-// use std::io::prelude::*;
-
+// TODO: Add projected directory which will be the base of the src and sql 
+// dir if neither path is given
 #[derive(Debug)]
 pub struct Output {
     pub src_directory: String,
