@@ -25,7 +25,7 @@ fn main() {
     
     let mut input = Input{
         input_type: InputType::CSV,
-        files: vec![], //"../baseballdatabank/core/AwardsSharePlayers.csv".to_string()],
+        files: vec![], 
         directories: vec!["../baseballdatabank/core".to_owned()],
     };
 
@@ -35,7 +35,7 @@ fn main() {
     
     let sql_generator = SQLGen::new("../tabletopbaseball_loader/sql".to_string());
     let sqlite_db = SqliteDB::new("../tabletopbaseball_loader/database/baseball_databank_2017.db").unwrap();
-   
+
     let models_dir: &str = &(output.src_directory.clone() + "/models");
     let mut created_file_names: Vec<String> = Vec::new();
     let mut create_table_statements: Vec<String> = Vec::new();
@@ -51,7 +51,7 @@ fn main() {
                 let struct_name = parsed_content.get_struct_name();
                 let struct_string = CodeGen::generate_struct(&struct_name, &parsed_content.columns);
                 
-                match CodeGen::write_code_to_file(models_dir, &struct_name, struct_string) {
+                match CodeGen::write_code_to_file(models_dir, &format!("{}.rs",struct_name), struct_string) {
                     Err(e) => eprintln!("ERROR: {}", e),
                     Ok(file_name) => {
                         println!("Created file {}.rs", file_name);
@@ -82,26 +82,31 @@ fn main() {
     }
 
     if created_file_names.len() > 0 {
-        let mod_file_contents = CodeGen::generate_mod_file_contents(created_file_names);
-        match CodeGen::write_code_to_file(models_dir, "mod", mod_file_contents) {
+        let mod_file_contents = CodeGen::generate_mod_file_contents(&created_file_names);
+        match CodeGen::write_code_to_file(models_dir, "mod.rs", mod_file_contents) {
             Ok(_) => println!("Created file mod.rs"),
             Err(e) => eprintln!("ERROR: {}", e)
         };
 
         let db_actor_file_contents = CodeGen::generate_db_actor();
         let actors_dir: &str = &format!("{}/actors", output.src_directory);
-        match CodeGen::write_code_to_file(actors_dir, "db_actor", db_actor_file_contents) {
+        match CodeGen::write_code_to_file(actors_dir, "db_actor.rs", db_actor_file_contents) {
             Ok(_) => println!("Created file actors/db_actor.rs"),
             Err(e) => eprintln!("ERROR: {}", e)
         };
-        match CodeGen::write_code_to_file(actors_dir, "mod", "pub mod db_actor;".to_string()) {
+        match CodeGen::write_code_to_file(actors_dir, "mod.rs", "pub mod db_actor;".to_string()) {
             Ok(_) => println!("Created file actors/mod.rs"),
             Err(e) => eprintln!("ERROR: {}", e)
         };
         
-        let main_fn_src = CodeGen::generate_webservice_main("./database/baseball_databank_2017.db".to_string());
-        match CodeGen::write_code_to_file(&output.src_directory, "main", main_fn_src) {
+        let main_fn_src = CodeGen::generate_webservice("./database/baseball_databank_2017.db".to_string(), &created_file_names);
+        match CodeGen::write_code_to_file(&output.src_directory, "main.rs", main_fn_src) {
             Ok(_) => println!("Created file main.rs"),
+            Err(e) => eprintln!("ERROR: {}", e)
+        }
+
+        match CodeGen::create_curl_script("../tabletopbaseball_loader", &created_file_names) {
+            Ok(_) => println!("Created file curl_test.sh"),
             Err(e) => eprintln!("ERROR: {}", e)
         }
     }

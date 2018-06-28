@@ -8,6 +8,16 @@ pub struct CodeGen;
 
 impl CodeGen {
     
+    pub fn generate_handler(name: &str) -> Function {
+        let mut myfn = Function::new(name);
+        myfn
+            .arg("_req", "HttpRequest<State>")
+            .ret("&'static str")
+            .line(format!("\"Pretend this is a list of {}\"", name));
+
+        myfn
+    }
+
     pub fn generate_struct(name: &str, columns: &Vec<ColumnDef>) -> String {
         let mut scope = Scope::new();
         let mut my_model = Struct::new(name);
@@ -29,11 +39,11 @@ impl CodeGen {
         scope.to_string()
     }
 
-    pub fn generate_mod_file_contents(mod_names: Vec<String>) -> String{
+    pub fn generate_mod_file_contents(mod_names: &Vec<String>) -> String{
         let mut scope = Scope::new();
 
         for file_name in mod_names.iter() {
-            scope.raw(&format!("pub mod {};", file_name.to_lowercase()));
+            scope.raw(&format!("pub mod {};", file_name.to_lowercase().replace(".rs", "")));
         }
 
         scope.to_string()
@@ -55,7 +65,7 @@ impl CodeGen {
         scope.to_string()
     }
 
-    pub fn generate_webservice_main(db_path: String) -> String {
+    pub fn generate_webservice(db_path: String, entities: &Vec<String>) -> String {
         let mut scope = Scope::new();
         
         for use_stmt in vec![("actix", "{Addr,Syn}"), ("actix::prelude", "*"), ("actors::db_actor", "*"), ("actix_web", "http, App, AsyncResponder, HttpRequest, HttpResponse"),
@@ -81,15 +91,20 @@ impl CodeGen {
 
         let mut handler_impl = Impl::new("RouteHandlers");
         handler_impl.push_fn(index_fn);
+
+        for ent in entities {
+            // add the handler funciton creation call here
+            handler_impl.push_fn(CodeGen::generate_handler(&ent.to_lowercase()));
+        }
         scope.push_impl(handler_impl);
         scope.raw("");
 
-        create_extern_create_defs() + &scope.to_string() + &create_main_fn(db_path)
+        create_extern_create_defs() + &scope.to_string() + &create_main_fn(db_path, &entities)
     }
 
     pub fn write_code_to_file(dir_path: &str, file_name: &str, code: String) -> Result<String, Error> {
 
-        match File::create(format!("{}/{}.rs", dir_path, &file_name).to_lowercase()) {
+        match File::create(format!("{}/{}", dir_path, &file_name).to_lowercase()) {
             Ok(mut file) => {
                 match file.write_all(&code.into_bytes()) {
                     Ok(_) => Ok(file_name.to_string()),
@@ -98,6 +113,17 @@ impl CodeGen {
             },
             Err(e) => Err(e)
         }
+    }
+
+    pub fn create_curl_script(output_dir: &str, entities: &Vec<String>) -> Result<String, Error> {
+        let mut scope = Scope::new();
+        scope.raw("#!/bin/bash\n");
+        for ent in entities {
+                let lower_ent = ent.to_lowercase().replace(".rs", "");
+                scope.raw(&format!("curl http://localhost:8088/{}", lower_ent));
+        }
+
+        return CodeGen::write_code_to_file(output_dir, "curl_test.sh", scope.to_string().replace("\n\n", "\n"))    
     }
 }
 
@@ -112,7 +138,7 @@ fn create_extern_create_defs() -> String {
         extern_scope.to_string().replace("\n\n", "\n")
 }
 
-fn create_main_fn(db_path: String) -> String {
+fn create_main_fn(db_path: String, entities: &Vec<String>) -> String {
     let mut main_fn_scope = Scope::new();
         main_fn_scope.raw("fn main() {");
         main_fn_scope.raw("\tstd::env::set_var(\"RUST_LOG\", \"actix_web=info\");");
@@ -127,9 +153,16 @@ fn create_main_fn(db_path: String) -> String {
         main_fn_scope.raw("\tHttpServer::new(move || {");
         main_fn_scope.raw("\t\tApp::with_state(State{db: addr.clone()})");
         main_fn_scope.raw("\t\t\t.middleware(Logger::default())");
-        main_fn_scope.raw("\t\t\t.resource(\"/\", |r| r.method(http::Method::GET).f(RouteHandlers::index))})");
-        main_fn_scope.raw("\t\t.bind(\"127.0.0.1:8088\").unwrap()");
-        main_fn_scope.raw("\t\t.start();\n");
+        main_fn_scope.raw("\t\t\t.resource(\"/\", |r| r.method(http::Method::GET).f(RouteHandlers::index))");
+
+        for ent in entities {
+            let lower_ent = ent.to_lowercase();
+            main_fn_scope.raw(&format!("\t\t\t.resource(\"/{}\", |r| r.method(http::Method::GET).f(RouteHandlers::{}))", lower_ent, lower_ent));
+        }
+
+        main_fn_scope.raw("\t})");
+        main_fn_scope.raw("\t.bind(\"127.0.0.1:8088\").unwrap()");
+        main_fn_scope.raw("\t.start();\n");
         main_fn_scope.raw("\tprintln!(\"Started http server: 127.0.0.1:8088\");");
         main_fn_scope.raw("\tlet _ = sys.run();");
         main_fn_scope.raw("}");
@@ -137,10 +170,12 @@ fn create_main_fn(db_path: String) -> String {
         main_fn_scope.to_string().replace("\n\n", "\n")
 }
 
+
 #[cfg(test)]
 mod tests {
     use workers::code_gen::CodeGen;
     use models::{ColumnDef, DataTypes};
+    use codegen::{Block, Formatter, Function, Impl, Scope, Struct};
 
     #[test] 
     fn generate_struct() {
@@ -164,7 +199,32 @@ mod tests {
 
     #[test]
     fn generate_webservice_main() {
-        let main_src = "".to_string();
-        assert_eq!(main_src, CodeGen::generate_webservice_main());
+        let main_src = "pub mod actors;\npub mod models;\n\nextern crate clap;\nextern crate dotenv;\nextern crate env_logger;\nextern crate actix;\nextern crate actix_web;\nextern crate sqlite;\nextern crate futures;\n#[macro_use]\nextern crate serde_derive;\n\nuse actix::{Addr,Syn};\nuse actix::prelude::*;\nuse actors::db_actor::*;\nuse actix_web::{http, App, AsyncResponder, HttpRequest, HttpResponse, Error, Json};\nuse actix_web::server::HttpServer;\nuse futures::Future;\nuse actix_web::middleware::Logger;\n\n/// This is state where we will store *DbExecutor* address.\nstruct State {\n    db: Addr<Syn, DbExecutor>,\n}\n\n/// Used to implement all of the route handlers\nstruct RouteHandlers;\n\nimpl RouteHandlers {\n    fn index(_req: HttpRequest<State>) -> &\'static str {\n        \"Put the next steps instructions here\"\n    }\n}\n\nfn main() {\n\tstd::env::set_var(\"RUST_LOG\", \"actix_web=info\");\n\tenv_logger::init();\n\tlet sys = actix::System::new(\"csv2api\");\n// Start 3 parallel db executors\n\tlet addr = SyncArbiter::start(3, || {\n\t    DbExecutor(sqlite::open(\"test.db\").unwrap())\n\t});\n\tHttpServer::new(move || {\n\t\tApp::with_state(State{db: addr.clone()})\n\t\t\t.middleware(Logger::default())\n\t\t\t.resource(\"/\", |r| r.method(http::Method::GET).f(RouteHandlers::index))})\n\t\t.bind(\"127.0.0.1:8088\").unwrap()\n\t\t.start();\n\n\tprintln!(\"Started http server: 127.0.0.1:8088\");\n\tlet _ = sys.run();\n}".to_string();
+        let res = CodeGen::generate_webservice("test.db".to_string());
+        assert_eq!(main_src, res);
+    }
+
+    #[test]
+    fn generate_handler() {
+        let mut expected_scope = Scope::new();
+        let mut expected_impl = Impl::new("test");
+        let mut expected_fn = Function::new("MyEntity");
+        expected_fn
+            .arg("_req", "HttpRequest<State>")
+            .ret("&'static str")
+            .line(format!("Pretend this is a list of MyEntity"));
+        expected_impl.push_fn(expected_fn);
+        expected_scope.push_impl(expected_impl);
+        let expected = expected_scope.to_string();
+
+
+        let mut actual_scope = Scope::new();
+        let mut actual_impl = Impl::new("test");
+        let actual_fn = CodeGen::generate_handler("MyEntity");
+        actual_impl.push_fn(actual_fn);
+        actual_scope.push_impl(actual_impl);
+        let actual = actual_scope.to_string();
+
+        assert_eq!(actual, expected);
     }
 }
