@@ -36,7 +36,7 @@ impl SqliteCodeGen {
         scope.to_string()
     }
 
-    fn generate_impl(name: &str, table_names: &Vec<String>)  -> String {
+    fn generate_impl(name: &str, struct_meta: Vec<(String, Vec<ColumnDef>)>)  -> String {
         let mut scope = Scope::new();
         let mut db_impl = Impl::new(name);
         let mut conn_fn = Function::new("new");
@@ -49,17 +49,24 @@ impl SqliteCodeGen {
         conn_fn.push_block(new_struct_block);
         db_impl.push_fn(conn_fn);
 
-        for tname in table_names {
+        for (tname, columns) in struct_meta {
             let mut get_fn = Function::new(&format!("get_{}", tname.to_lowercase()));
             get_fn.arg_ref_self();
+            get_fn.ret(&format!("Result<Vec<models::{}>, Error>", tname));
+
             // TODO: Convert this to a match when I'm done with the POC
             get_fn.line(&format!("let mut stmt = self.conn.prepare(\"SELECT * FROM {} LIMIT 25\").unwrap();", tname));
             get_fn.line("let result_iter = stmt.query_map(&[], |row| {");
 
             get_fn.line(&format!("\t{} {{", tname));
-            get_fn.line("\t\t// put the struct field assignments here");
+            let mut idx = 0;
+            for col in columns {
+                get_fn.line(&format!("\t\t{}: row.get({}),", col.name.to_lowercase(), idx));
+                idx += 1;
+            }
             get_fn.line("\t}");
-            get_fn.line("}");
+            get_fn.line("}).unwrap();\n");
+            get_fn.line("Ok(result_iter.collect())");
             
             db_impl.push_fn(get_fn);
         }
@@ -69,11 +76,11 @@ impl SqliteCodeGen {
         scope.to_string()
     }
 
-    pub fn generate_db_layer(table_names: &Vec<String>) -> String {
+    pub fn generate_db_layer(table_names: &Vec<String>, struct_meta: Vec<(String, Vec<ColumnDef>)>) -> String {
         let struct_name = "DB";
         let extern_and_use_stmts = SqliteCodeGen::generate_use_and_extern_statements();
         let struct_str = SqliteCodeGen::generate_struct(struct_name);
-        let impl_str = SqliteCodeGen::generate_impl(struct_name, table_names);
+        let impl_str = SqliteCodeGen::generate_impl(struct_name, struct_meta);
         format!("{}\n\n{}\n\n{}", extern_and_use_stmts, struct_str, impl_str)
     }
 }

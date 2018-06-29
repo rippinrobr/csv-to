@@ -1,8 +1,4 @@
-use std::{
-    fmt,
-};
-
-use csv::StringRecord;
+use std::fmt;
 use barrel::Type;
 
 #[derive(PartialEq,Clone, Copy)]
@@ -44,6 +40,7 @@ impl fmt::Debug for DataTypes {
         write!(f, "{:#?}", printable)
     }
 }
+
 
 #[derive(Clone)]
 pub struct ColumnDef{
