@@ -19,7 +19,7 @@ use workers::{
 };
 
 // TODO: Add support for command line args and .env files
-// TODO: Rename Output to be RustSrcDir
+// TODO: Rename Output to be OuputProjectDir
 // TODO: Refactor main to create smaller, single purpose functions
 fn main() {
     let col_name_validation_re = Regex::new(r"^[a-zA-Z_][a-zA-Z0-9_]+$").unwrap();
@@ -110,7 +110,7 @@ fn main() {
             Err(e) => eprintln!("ERROR: {}", e)
         }
 
-        let db_layer_src = SqliteCodeGen::generate_db_layer(&created_file_names, struct_meta);
+        let db_layer_src = SqliteCodeGen::generate_db_layer(struct_meta);
         match CodeGen::write_code_to_file(&format!("{}/db", output.src_directory), "mod.rs", db_layer_src) {
             Ok(_) => println!("Created file db/mod.rs"),
             Err(e) => eprintln!("ERROR: {}", e)

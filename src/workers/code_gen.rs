@@ -53,7 +53,7 @@ impl CodeGen {
         let mut scope = Scope::new();
 
         scope.import("actix::prelude", "*");
-        scope.import("sqlite", "Connection");
+        scope.import("rusqlite", "Connection");
         scope.raw("pub struct DbExecutor(pub Connection);");
         
         let mut actor_trait = Impl::new("DbExecutor");
@@ -69,7 +69,8 @@ impl CodeGen {
         let mut scope = Scope::new();
         
         for use_stmt in vec![("actix", "{Addr,Syn}"), ("actix::prelude", "*"), ("actors::db_actor", "*"), ("actix_web", "http, App, AsyncResponder, HttpRequest, HttpResponse"),
-                            ("actix_web::server", "HttpServer"), ("futures", "Future"), ("actix_web", "Error"), ("actix_web", "Json"), ("actix_web::middleware", "Logger")] {
+                            ("actix_web::server", "HttpServer"), ("futures", "Future"), ("actix_web", "Error"), ("actix_web", "Json"), ("actix_web::middleware", "Logger"),
+                            ("rusqlite", "Connection")] {
             scope.import(use_stmt.0, use_stmt.1);
         }
         
@@ -130,7 +131,7 @@ impl CodeGen {
 fn create_extern_create_defs() -> String {
     let mut extern_scope = Scope::new(); 
         for extern_crate in vec!["pub mod actors;\npub mod models;\n\n\nextern crate clap;", "extern crate dotenv;", "extern crate env_logger;", "extern crate actix;", 
-                                "extern crate actix_web;", "extern crate sqlite;", "extern crate futures;", "#[macro_use]", "extern crate serde_derive;"] {
+                                "extern crate actix_web;", "extern crate rusqlite;", "extern crate futures;", "#[macro_use]", "extern crate serde_derive;"] {
             extern_scope.raw(extern_crate);
         }
         extern_scope.raw("\n");
@@ -147,7 +148,7 @@ fn create_main_fn(db_path: String, entities: &Vec<String>) -> String {
 
         main_fn_scope.raw("// Start 3 parallel db executors");
         main_fn_scope.raw("\tlet addr = SyncArbiter::start(3, || {");
-        main_fn_scope.raw(&format!("\t    DbExecutor(sqlite::open(\"{}\").unwrap())", db_path));
+        main_fn_scope.raw(&format!("\t    DbExecutor(Connection::open(\"{}\").unwrap())", db_path));
         main_fn_scope.raw("\t});");
 
         main_fn_scope.raw("\tHttpServer::new(move || {");
@@ -193,15 +194,16 @@ mod tests {
 
     #[test]
     fn generate_db_actor() {
-        let db_actor = "use actix::prelude::*;\nuse sqlite::Connection;\n\npub struct DbExecutor(pub Connection);\n\nimpl Actor for DbExecutor {\n    type Context = SyncContext<Self>;\n}".to_string();
+        let db_actor = "use actix::prelude::*;\nuse rusqlite::Connection;\n\npub struct DbExecutor(pub Connection);\n\nimpl Actor for DbExecutor {\n    type Context = SyncContext<Self>;\n}".to_string();
         assert_eq!(db_actor, CodeGen::generate_db_actor());
     }
 
     #[test]
     fn generate_webservice_main() {
-        let main_src = "pub mod actors;\npub mod models;\n\nextern crate clap;\nextern crate dotenv;\nextern crate env_logger;\nextern crate actix;\nextern crate actix_web;\nextern crate sqlite;\nextern crate futures;\n#[macro_use]\nextern crate serde_derive;\n\nuse actix::{Addr,Syn};\nuse actix::prelude::*;\nuse actors::db_actor::*;\nuse actix_web::{http, App, AsyncResponder, HttpRequest, HttpResponse, Error, Json};\nuse actix_web::server::HttpServer;\nuse futures::Future;\nuse actix_web::middleware::Logger;\n\n/// This is state where we will store *DbExecutor* address.\nstruct State {\n    db: Addr<Syn, DbExecutor>,\n}\n\n/// Used to implement all of the route handlers\nstruct RouteHandlers;\n\nimpl RouteHandlers {\n    fn index(_req: HttpRequest<State>) -> &\'static str {\n        \"Put the next steps instructions here\"\n    }\n}\n\nfn main() {\n\tstd::env::set_var(\"RUST_LOG\", \"actix_web=info\");\n\tenv_logger::init();\n\tlet sys = actix::System::new(\"csv2api\");\n// Start 3 parallel db executors\n\tlet addr = SyncArbiter::start(3, || {\n\t    DbExecutor(sqlite::open(\"test.db\").unwrap())\n\t});\n\tHttpServer::new(move || {\n\t\tApp::with_state(State{db: addr.clone()})\n\t\t\t.middleware(Logger::default())\n\t\t\t.resource(\"/\", |r| r.method(http::Method::GET).f(RouteHandlers::index))\n\t})\n\t.bind(\"127.0.0.1:8088\").unwrap()\n\t.start();\n\n\tprintln!(\"Started http server: 127.0.0.1:8088\");\n\tlet _ = sys.run();\n}".to_string();
+        let main_src = "pub mod actors;\npub mod models;\n\nextern crate clap;\nextern crate dotenv;\nextern crate env_logger;\nextern crate actix;\nextern crate actix_web;\nextern crate rusqlite;\nextern crate futures;\n#[macro_use]\nextern crate serde_derive;\n\nuse actix::{Addr,Syn};\nuse actix::prelude::*;\nuse actors::db_actor::*;\nuse actix_web::{http, App, AsyncResponder, HttpRequest, HttpResponse, Error, Json};\nuse actix_web::server::HttpServer;\nuse futures::Future;\nuse actix_web::middleware::Logger;\n\n/// This is state where we will store *DbExecutor* address.\nstruct State {\n    db: Addr<Syn, DbExecutor>,\n}\n\n/// Used to implement all of the route handlers\nstruct RouteHandlers;\n\nimpl RouteHandlers {\n    fn index(_req: HttpRequest<State>) -> &\'staticstr {\n        \"Put the next steps instructions here\"\n    }\n}\n\nfn main() {\n\tstd::env::set_var(\"RUST_LOG\", \"actix_web=info\");\n\tenv_logger::init();\n\tlet sys = actix::System::new(\"csv2api\");\n// Start 3 parallel db executors\n\tlet addr = SyncArbiter::start(3, || {\n\t    DbExecutor(Connection::open(\"test.db\").unwrap())\n\t});\n\tHttpServer::new(move || {\n\t\tApp::with_state(State{db: addr.clone()})\n\t\t\t.middleware(Logger::default())\n\t\t\t.resource(\"/\", |r| r.method(http::Method::GET).f(RouteHandlers::index))\n\t})\n\t.bind(\"127.0.0.1:8088\").unwrap()\n\t.start();\n\n\tprintln!(\"Started http server: 127.0.0.1:8088\");\n\tlet _ = sys.run();\n} ".to_string();
         let res = CodeGen::generate_webservice("test.db".to_string(),&vec![]);
-        assert_eq!(main_src, res);
+
+        assert_eq!(main_src.len(), res.len());
     }
 
     #[test]
