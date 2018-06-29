@@ -14,6 +14,7 @@ use workers::{
     parse_csv::{ParseFile},
     code_gen::CodeGen,
     sqlite::SqliteDB,
+    sqlite_code_gen::SqliteCodeGen,
     sql_gen::SQLGen
 };
 
@@ -56,7 +57,7 @@ fn main() {
                     Ok(file_name) => {
                         println!("Created file {}.rs", file_name);
                         
-                        created_file_names.push(file_name);
+                        created_file_names.push(file_name.replace(".rs", ""));
                         match SQLGen::generate_create_table(struct_name, &parsed_content.columns) {
                             Ok(stmt) => {
                                 create_table_statements.push(stmt.to_owned());
@@ -94,6 +95,7 @@ fn main() {
             Ok(_) => println!("Created file actors/db_actor.rs"),
             Err(e) => eprintln!("ERROR: {}", e)
         };
+        
         match CodeGen::write_code_to_file(actors_dir, "mod.rs", "pub mod db_actor;".to_string()) {
             Ok(_) => println!("Created file actors/mod.rs"),
             Err(e) => eprintln!("ERROR: {}", e)
@@ -102,6 +104,12 @@ fn main() {
         let main_fn_src = CodeGen::generate_webservice("./database/baseball_databank_2017.db".to_string(), &created_file_names);
         match CodeGen::write_code_to_file(&output.src_directory, "main.rs", main_fn_src) {
             Ok(_) => println!("Created file main.rs"),
+            Err(e) => eprintln!("ERROR: {}", e)
+        }
+
+        let db_layer_src = SqliteCodeGen::generate_db_layer(&created_file_names);
+        match CodeGen::write_code_to_file(&format!("{}/db", output.src_directory), "mod.rs", db_layer_src) {
+            Ok(_) => println!("Created file db/mod.rs"),
             Err(e) => eprintln!("ERROR: {}", e)
         }
 
