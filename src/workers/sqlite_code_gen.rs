@@ -87,7 +87,7 @@ mod tests {
 
     #[test]
     fn generate_struct() {
-        let expected = "pub struct DB {\n    conn: Connection,\n}".to_string();
+        let expected = "pub struct DB;".to_string();
         let db_struct = SqliteCodeGen::generate_struct("DB");
 
         assert_eq!(db_struct, expected);
@@ -96,19 +96,18 @@ mod tests {
     #[test]
     fn generate_impl() {
         let col_def = ColumnDef::new("my_col".to_string(), DataTypes::String);
-        let expected = "impl DB {\n         pub fn new(self) -> DB {\n        DB {\n            conn : Connection::open_with_flags(self.db_path, SQLITE_OPEN_READ_ONLY),\n        }\n    }\n\n    fn get_my_col(&self) -> Result<Vec<models::my_col>, Error> {\n        let mut stmt = self.conn.prepare(\"SELECT * FROM my_col LIMIT 25\").unwrap();\n        let result_iter = stmt.query_map(&[], |row| {\n   \tmy_col {\n        \t\tmy_col: row.get(0),\n        \t}\n        }).unwrap();\n\n        Ok(result_iter.collect())\n    }\n}".to_string();
-        let db_struct = SqliteCodeGen::generate_impl("DB", vec![("my_col".to_string(), vec![col_def])]);
+        let expected = 356;
+        let db_struct = SqliteCodeGen::generate_impl("DB", &vec![("my_col".to_string(), vec![col_def])]);
 
-        println!("db_struct: {}", db_struct);
-        assert_eq!(db_struct.len(), expected.len());
+        assert_eq!(db_struct.len(), expected);
     }
 
     #[test]
     fn generate_db_layer() {
         let col_def = ColumnDef::new("my_col".to_string(), DataTypes::String);
-        let expected = "extern crate rusqlite;\n\nuse rusqlite::{Connection, OpenFlags};\n\n\npub struct DB {\n    conn: Connection,\n}\n\nimpl DB {\n    pub fn new(self) -> DB {\n        DB {\nconn : Connection::open_with_flags(self.db_path, SQLITE_OPEN_READ_ONLY),\n        }\n    }\n\n    fn get_my_col(&self) -> Result<Vec<models::my_col>, Error> {\n        let mut stmt = self.conn.prepare(\"SELECT * FROM my_col LIMIT 25\").unwrap();\n        let result_iter = stmt.query_map(&[], |row| {\n                    \tmy_col {\n        \t\tmy_col: row.get(0),\n        \t}\n        }).unwrap();\n\n        Ok(result_iter.collect())\n    }\n}".to_string();
-        let db_struct = SqliteCodeGen::generate_db_layer(vec![("my_col".to_string(), vec![col_def])]);
+        let expected_len = 437;
+        let db_struct = SqliteCodeGen::generate_db_layer(&vec![("my_col".to_string(), vec![col_def])]);
 
-        assert_eq!(db_struct.len(), expected.len());
+        assert_eq!(db_struct.len(), expected_len);
     }
 }
