@@ -39,7 +39,7 @@ impl CodeGen {
         scope.to_string()
     }
 
-    pub fn create_handler_actor(struct_meta: (String, ColumnDef)) -> String {
+    pub fn create_handler_actor(struct_meta: &(String, Vec<ColumnDef>)) -> String {
         let mut scope = Scope::new();
         let struct_name = &struct_meta.0;
         
@@ -51,7 +51,7 @@ impl CodeGen {
         let msg_struct_name = &format!("{}Msg", struct_name);
         let mut msg_struct = Struct::new(msg_struct_name);
         msg_struct.doc(&format!("// Message for returning a paged list of {} records", struct_name));
-        msg_struct.field("page_num", "i32");
+        msg_struct.field("page_num", "u32");
         scope.push_struct(msg_struct);
 
         // impl for Message on the struct 
@@ -59,15 +59,23 @@ impl CodeGen {
         msg_impl.impl_trait("Message");
         msg_impl.associate_type("Result", &format!("Result<{}, String>", struct_name));
         scope.push_impl(msg_impl);
-
+        
         // This is for the Handler for the DbExecutor
-        // let mut impl_func = Function::new("handle");
-        // impl_func.arg_mut_self();
-        // impl_func.arg("msg", msg_struct_name);
-        // impl_func.arg("_", "&self Selc::Context");
-        // impl_func.ret("Self::Result");
-        // impl_func.line(&format!("\DB.ttype Result = Result<Vec<{}>, String>;", struct_name));
+        // impl Handler<Conspiracies> for DbExecutor {
+        let mut handler_impl = Impl::new("DbExecutor");
+        handler_impl.impl_trait(&format!("Handler<{}>", struct_name));
+        handler_impl.associate_type("Result", &format!("Result<Vec<{}>, String>;", struct_name));
 
+        let mut impl_func = Function::new("handle");
+        impl_func.arg_mut_self();
+        impl_func.arg("msg", msg_struct_name);
+        impl_func.arg("_", "&mut Self::Context");
+        impl_func.ret("Self::Result");
+        impl_func.line(&format!("\tDB::get_{}(&self.0, msg.page_num)", struct_name.to_lowercase()));
+        
+        handler_impl.push_fn(impl_func);
+        scope.push_impl(handler_impl);
+        
         scope.to_string()
     }
 

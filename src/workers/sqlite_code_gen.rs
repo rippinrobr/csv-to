@@ -31,12 +31,13 @@ impl SqliteCodeGen {
         scope.to_string()
     }
 
-    fn generate_impl(name: &str, struct_meta: Vec<(String, Vec<ColumnDef>)>)  -> String {
+    fn generate_impl(name: &str, struct_meta: &Vec<(String, Vec<ColumnDef>)>)  -> String {
         let mut scope = Scope::new();
         let mut db_impl = Impl::new(name);
         for (tname, columns) in struct_meta {
             let mut get_fn = Function::new(&format!("get_{}", tname.to_lowercase()));
             get_fn.arg("conn", "Connection");
+            get_fn.arg("page_num", "u32");
             get_fn.ret(&format!("Result<Vec<models::{}>, Error>", tname));
 
             // TODO: Convert this to a match when I'm done with the POC
@@ -61,7 +62,7 @@ impl SqliteCodeGen {
         scope.to_string()
     }
 
-    pub fn generate_db_layer(struct_meta: Vec<(String, Vec<ColumnDef>)>) -> String {
+    pub fn generate_db_layer(struct_meta: &Vec<(String, Vec<ColumnDef>)>) -> String {
         let struct_name = "DB";
         let extern_and_use_stmts = SqliteCodeGen::generate_use_and_extern_statements();
         let struct_str = SqliteCodeGen::generate_struct(struct_name);

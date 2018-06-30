@@ -110,10 +110,22 @@ fn main() {
             Err(e) => eprintln!("ERROR: {}", e)
         }
 
-        let db_layer_src = SqliteCodeGen::generate_db_layer(struct_meta);
+        let db_layer_src = SqliteCodeGen::generate_db_layer(&struct_meta);
         match CodeGen::write_code_to_file(&format!("{}/db", output.src_directory), "mod.rs", db_layer_src) {
             Ok(_) => println!("Created file db/mod.rs"),
             Err(e) => eprintln!("ERROR: {}", e)
+        }
+
+        for meta in &struct_meta {
+            let actor_src = CodeGen::create_handler_actor(meta);
+            let file_name = &format!("{}.rs", &meta.0.to_lowercase());
+            match CodeGen::write_code_to_file(&format!("{}/actors", output.src_directory), file_name, actor_src) {
+                Ok(_) => {
+                    println!("Created file actors/{}", file_name);
+                },
+                Err(e) => eprintln!("ERROR: {}", e)
+            }
+
         }
 
         match CodeGen::create_curl_script("../tabletopbaseball_loader", &created_file_names) {
