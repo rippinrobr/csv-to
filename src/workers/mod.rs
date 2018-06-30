@@ -3,6 +3,7 @@ pub mod input;
 pub mod output;
 pub mod parse_csv;
 pub mod sqlite;
+pub mod sqlite_code_gen;
 pub mod sql_gen;
 
 use csv::{StringRecord};
@@ -43,8 +44,8 @@ impl ParsedContent {
         Ok(content_strings)
     }
 
-    pub fn get_struct_name(&self) -> &str {
-        self.file_name.trim_right_matches(".csv")
+    pub fn get_struct_name(&self) -> String {
+        self.file_name.trim_right_matches(".csv").to_string()
     }
 }
 
