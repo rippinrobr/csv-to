@@ -39,6 +39,38 @@ impl CodeGen {
         scope.to_string()
     }
 
+    pub fn create_handler_actor(struct_meta: (String, ColumnDef)) -> String {
+        let mut scope = Scope::new();
+        let struct_name = &struct_meta.0;
+        
+        for (u0, u1) in vec![("actix", "prelude::*"), ("db", "DB"), ("models", struct_name), ("super","db_actor::DbExecutor")] {
+            scope.import(u0, u1);
+        }
+
+        // Creating the message struct
+        let msg_struct_name = &format!("{}Msg", struct_name);
+        let mut msg_struct = Struct::new(msg_struct_name);
+        msg_struct.doc(&format!("// Message for returning a paged list of {} records", struct_name));
+        msg_struct.field("page_num", "i32");
+        scope.push_struct(msg_struct);
+
+        // impl for Message on the struct 
+        let mut msg_impl = Impl::new(&format!("{}Msg", struct_name));
+        msg_impl.impl_trait("Message");
+        msg_impl.associate_type("Result", &format!("Result<{}, String>", struct_name));
+        scope.push_impl(msg_impl);
+
+        // This is for the Handler for the DbExecutor
+        // let mut impl_func = Function::new("handle");
+        // impl_func.arg_mut_self();
+        // impl_func.arg("msg", msg_struct_name);
+        // impl_func.arg("_", "&self Selc::Context");
+        // impl_func.ret("Self::Result");
+        // impl_func.line(&format!("\DB.ttype Result = Result<Vec<{}>, String>;", struct_name));
+
+        scope.to_string()
+    }
+
     pub fn generate_mod_file_contents(mod_names: &Vec<String>) -> String{
         let mut scope = Scope::new();
 
@@ -126,6 +158,7 @@ impl CodeGen {
 
         return CodeGen::write_code_to_file(output_dir, "curl_test.sh", scope.to_string().replace("\n\n", "\n"))    
     }
+
 }
 
 fn create_extern_create_defs() -> String {
@@ -178,6 +211,14 @@ mod tests {
     use models::{ColumnDef, DataTypes};
     use codegen::{Block, Formatter, Function, Impl, Scope, Struct};
 
+    #[test]
+    fn create_handler_actor() {
+        let expected = "use actix::prelude;\nuse db::DB;\nuse models::my_actor;\nuse super::db_actor;\n\n/// // Message for returning a paged list of my_actor records\nstruct my_actorMsg {\n    page_num: i32,\n}\n\nimpl Message for my_actorMsg {\n    type Result = Result<my_actor, String>;\n}".to_string();
+        let actual = CodeGen::create_handler_actor(("my_actor".to_string(), ColumnDef::new("my_col".to_string(), DataTypes::String)));
+
+        assert_eq!(actual, expected);
+    }
+
     #[test] 
     fn generate_struct() {
         let struct_def = "#[derive(Debug, Deserialize, Serialize)]\npub struct people {\n    name: String,\n    age: i64,\n    weight: f64,\n}".to_string();
@@ -200,10 +241,10 @@ mod tests {
 
     #[test]
     fn generate_webservice_main() {
-        let main_src = "pub mod actors;\npub mod models;\n\nextern crate clap;\nextern crate dotenv;\nextern crate env_logger;\nextern crate actix;\nextern crate actix_web;\nextern crate rusqlite;\nextern crate futures;\n#[macro_use]\nextern crate serde_derive;\n\nuse actix::{Addr,Syn};\nuse actix::prelude::*;\nuse actors::db_actor::*;\nuse actix_web::{http, App, AsyncResponder, HttpRequest, HttpResponse, Error, Json};\nuse actix_web::server::HttpServer;\nuse futures::Future;\nuse actix_web::middleware::Logger;\n\n/// This is state where we will store *DbExecutor* address.\nstruct State {\n    db: Addr<Syn, DbExecutor>,\n}\n\n/// Used to implement all of the route handlers\nstruct RouteHandlers;\n\nimpl RouteHandlers {\n    fn index(_req: HttpRequest<State>) -> &\'staticstr {\n        \"Put the next steps instructions here\"\n    }\n}\n\nfn main() {\n\tstd::env::set_var(\"RUST_LOG\", \"actix_web=info\");\n\tenv_logger::init();\n\tlet sys = actix::System::new(\"csv2api\");\n// Start 3 parallel db executors\n\tlet addr = SyncArbiter::start(3, || {\n\t    DbExecutor(Connection::open(\"test.db\").unwrap())\n\t});\n\tHttpServer::new(move || {\n\t\tApp::with_state(State{db: addr.clone()})\n\t\t\t.middleware(Logger::default())\n\t\t\t.resource(\"/\", |r| r.method(http::Method::GET).f(RouteHandlers::index))\n\t})\n\t.bind(\"127.0.0.1:8088\").unwrap()\n\t.start();\n\n\tprintln!(\"Started http server: 127.0.0.1:8088\");\n\tlet _ = sys.run();\n} ".to_string();
-        let res = CodeGen::generate_webservice("test.db".to_string(),&vec![]);
+        let expected = "pub mod actors;\npub mod models;\n\nextern crate clap;\nextern crate dotenv;\nextern crate env_logger;\nextern crate actix;\nextern crate actix_web;\nextern crate rusqlite;\nextern crate futures;\n#[macro_use]\nextern crate serde_derive;\n\nuse actix::{Addr,Syn};\nuse actix::prelude::*;\nuse actors::db_actor::*;\nuse actix_web::{http, App, AsyncResponder, HttpRequest, HttpResponse, Error, Json};\nuse actix_web::server::HttpServer;\nuse futures::Future;\nuse actix_web::middleware::Logger;\nuse rusqlite::Connection;\n\n/// This is state where we will store *DbExecutor* address.\nstruct State {\n    db: Addr<Syn, DbExecutor>,\n}\n\n/// Used to implement all of the route handlers\nstruct RouteHandlers;\n\nimpl RouteHandlers {\n    fn index(_req: HttpRequest<State>) -> &\'static str {\n        \"Put the next steps instructions here\"\n    }\n}\n\nfn main() {\n\tstd::env::set_var(\"RUST_LOG\", \"actix_web=info\");\n\tenv_logger::init();\n\tlet sys = actix::System::new(\"csv2api\");\n// Start 3 parallel db executors\n\tlet addr = SyncArbiter::start(3, || {\n\t    DbExecutor(Connection::open(\"test.db\").unwrap())\n\t});\n\tHttpServer::new(move || {\n\t\tApp::with_state(State{db: addr.clone()})\n\t\t\t.middleware(Logger::default())\n\t\t\t.resource(\"/\", |r| r.method(http::Method::GET).f(RouteHandlers::index))\n\t})\n\t.bind(\"127.0.0.1:8088\").unwrap()\n\t.start();\n\n\tprintln!(\"Started http server: 127.0.0.1:8088\");\n\tlet _ = sys.run();\n}".to_string();
+        let actual = CodeGen::generate_webservice("test.db".to_string(),&vec![]);
 
-        assert_eq!(main_src.len(), res.len());
+        assert_eq!(actual, expected);
     }
 
     #[test]

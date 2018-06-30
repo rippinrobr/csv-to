@@ -27,32 +27,20 @@ impl SqliteCodeGen {
         let mut scope = Scope::new();
         let mut db_struct = Struct::new(name);
         db_struct.vis("pub");
-        db_struct.field("conn", "Connection");
         scope.push_struct(db_struct);
-
         scope.to_string()
     }
 
     fn generate_impl(name: &str, struct_meta: Vec<(String, Vec<ColumnDef>)>)  -> String {
         let mut scope = Scope::new();
         let mut db_impl = Impl::new(name);
-        let mut conn_fn = Function::new("new");
-        let mut new_struct_block = Block::new("DB");
-        conn_fn.vis("pub");
-        conn_fn.ret(name);
-        conn_fn.arg_self();
-        
-        new_struct_block.line("conn : Connection::open_with_flags(self.db_path, SQLITE_OPEN_READ_ONLY),");
-        conn_fn.push_block(new_struct_block);
-        db_impl.push_fn(conn_fn);
-
         for (tname, columns) in struct_meta {
             let mut get_fn = Function::new(&format!("get_{}", tname.to_lowercase()));
-            get_fn.arg_ref_self();
+            get_fn.arg("conn", "Connection");
             get_fn.ret(&format!("Result<Vec<models::{}>, Error>", tname));
 
             // TODO: Convert this to a match when I'm done with the POC
-            get_fn.line(&format!("let mut stmt = self.conn.prepare(\"SELECT * FROM {} LIMIT 25\").unwrap();", tname));
+            get_fn.line(&format!("let mut stmt = conn.prepare(\"SELECT * FROM {} LIMIT 25\").unwrap();", tname));
             get_fn.line("let result_iter = stmt.query_map(&[], |row| {");
 
             get_fn.line(&format!("\t{} {{", tname));
