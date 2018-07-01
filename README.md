@@ -1,5 +1,4 @@
-_Currently under development, not fit to be used by anyone else, and it's barely fit to be used by me_
-Really, I mean it. I'm in the 'follow the white rabbit phase'.
+_Still not ready for others to use yet. I have finished my POC that parsed two different sets of CSV and that worked now I'm working on converting the POC code into a more stable, well designed codebase_
 
 # csv2api
 The goal of this project is to parse CSV file(s), create databases based on the data in the files and create a RESTFul API to serve the 
