@@ -107,10 +107,26 @@ impl ParseFile {
         if first_char.is_numeric() {
             return self.check_col_name(&format!("_{}", name));
         }
-        
+
+        if first_char == '+' {
+            return name_str.replacen(first_char, "plus", 1);
+        }
+
+        if first_char == '-' {
+            return name_str.replacen(first_char, "minus", 1);
+        }
+
         while let Some(name_char) = name_chars.next() {
             if !name_char.is_alphanumeric() && name_char != '_' {
                 return name_str.replacen(name_char, "_", 1);
+            }
+
+            if name_char == '+' {
+                return name_str.replacen(name_char, "plus", 1);
+            }
+
+            if name_char == '-' {
+                return name_str.replacen(name_char, "minus", 1);
             }
         }
 

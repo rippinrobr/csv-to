@@ -27,15 +27,21 @@ fn main() {
     let mut input = Input{
         input_type: InputType::CSV,
         files: vec![], 
-        directories: vec!["../baseballdatabank/core".to_owned()],
+        //directories: vec!["../baseballdatabank/core".to_owned()],
+        directories: vec!["../hockey-databank".to_owned()],
     };
 
     // this needs to go away until I have a better approach to loading the db as the output 
-    let output = Output::new("../tabletopbaseball_loader/src".to_string(),
-                            "../tabletopbaseball_loader/sql".to_string());
-    
-    let sql_generator = SQLGen::new("../tabletopbaseball_loader/sql".to_string());
-    let sqlite_db = SqliteDB::new("../tabletopbaseball_loader/database/baseball_databank_2017.db").unwrap();
+    // let output = Output::new("../tabletopbaseball_loader/src".to_string(),
+    //                         "../tabletopbaseball_loader/sql".to_string());
+    // let sql_generator = SQLGen::new("../tabletopbaseball_loader/sql".to_string());
+    // let sqlite_db = SqliteDB::new("../tabletopbaseball_loader/database/baseball_databank_2017.db").unwrap();
+
+    let output = Output::new("../hockey-db/src".to_string(),
+                            "../hockey-db/sql".to_string());    
+    let sql_generator = SQLGen::new("../hockey-db/sql".to_string());
+    let sqlite_db = SqliteDB::new("../hockey-db/database/hockey_databank_2017.db").unwrap();
+
 
     let models_dir: &str = &(output.src_directory.clone() + "/models");
     let mut created_file_names: Vec<String> = Vec::new();
