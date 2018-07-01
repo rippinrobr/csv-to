@@ -9,7 +9,7 @@ pub mod sql_gen;
 use csv::{StringRecord};
 use csv::Error;
 use models::{ColumnDef};
-//use std::error::Error;
+use std::collections::HashSet;
 
 pub trait WorkOrder {
     fn execute() -> Result<i32, String>;
@@ -21,9 +21,11 @@ pub struct ParsedContent {
     pub content: Vec<StringRecord>,
     pub file_name: String,
     pub records_parsed: usize,
+    
 }
 
 impl ParsedContent {
+
     pub fn new(cols: Vec<ColumnDef>, content: Vec<StringRecord>, file_name: String, num_lines: usize) -> ParsedContent {
         ParsedContent {
             columns: cols,

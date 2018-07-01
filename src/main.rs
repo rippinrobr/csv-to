@@ -26,7 +26,7 @@ fn main() {
     
     let mut input = Input{
         input_type: InputType::CSV,
-        files: vec![], 
+        files: vec![], //vec!["../hockey-databank/Scoring.csv".to_owned()], 
         //directories: vec!["../baseballdatabank/core".to_owned()],
         directories: vec!["../hockey-databank".to_owned()],
     };
@@ -105,10 +105,11 @@ fn main() {
             Err(e) => eprintln!("ERROR: {}", e)
         };
 
+        println!("INFO: actors_dir: {}", actors_dir);
         let actor_mod_file_str = CodeGen::generate_mod_file(actors_dir);
         match CodeGen::write_code_to_file(actors_dir, "mod.rs", actor_mod_file_str) {
             Ok(_) => println!("Created file mod.rs"),
-            Err(e) => eprintln!("ERROR: {}", e)
+            Err(e) => eprintln!("ERROR: creating actors/mod.rs {}", e)
         };
          
         let main_fn_src = CodeGen::generate_webservice("./database/baseball_databank_2017.db".to_string(), &created_file_names);

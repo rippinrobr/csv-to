@@ -111,15 +111,18 @@ impl CodeGen {
         
         let dir_path = Path::new(dir);
         if dir_path.is_dir() {
+            //println!("dir, {}, is a directory!", dir);
             let paths = fs::read_dir(dir_path).unwrap();
             for dir_entry in paths {
                 let path = dir_entry.unwrap().path();
+                //println!("path: {}", path.to_str().unwrap());
                 if path.is_file() { 
                     let file_name = path.file_name().unwrap().to_str().unwrap();
+
                     if !file_name.ends_with("rs") || file_name == "mod.rs" {
                         continue;
                     }
-
+                    //println!("going to add {}", &format!("pub mod {};", file_name.replace(".rs", "")));
                     scope.raw(&format!("pub mod {};", file_name.replace(".rs", "")));
                 }
             }
