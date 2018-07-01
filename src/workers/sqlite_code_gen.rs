@@ -54,7 +54,7 @@ impl SqliteCodeGen {
             get_fn.line("\t}");
             get_fn.line("}).unwrap();\n");
             get_fn.line(&format!("let mut results: Vec<{}::{}> = vec![];", tname.to_lowercase(), tname));
-            get_fn.line("for r in result_iter.next() {");
+            get_fn.line("for r in result_iter {");
             get_fn.line("\tresults.push(r.unwrap());");
             get_fn.line("}");
             get_fn.line("Ok(results)");
