@@ -4,6 +4,7 @@ use models::{DataTypes, ColumnDef};
 use workers::{ParsedContent};
 use csv::StringRecord;
 use regex::Regex;
+use std::collections::HashSet;
 
 use std::{
     fs::File,
@@ -15,14 +16,31 @@ use std::{
 pub struct ParseFile {
     path: String,
     col_name_re: Regex,
+    rust_keywords: HashSet<String>,
 }
 
 //TODO: write errors out to stderr 
 impl ParseFile {
     pub fn new(path:String, col_name_re: Regex) -> ParseFile {
+        let mut rust_keywords: HashSet<String> = HashSet::new();
+
+        for kw in vec!["as".to_string(), "break".to_string(), "const".to_string(), "continue".to_string(), "crate".to_string(), 
+            "else".to_string(), "enum".to_string(),"extern".to_string(), "false".to_string(), "fn".to_string(), "for".to_string(),
+            "for".to_string(), "if".to_string(), " impl".to_string(), "in".to_string(), "let".to_string(), "loop".to_string(),
+            "match".to_string(), "mod".to_string(), "move".to_string(), "mut".to_string(), "pub".to_string(), "ref".to_string(),
+            "return".to_string(), "Self".to_string(), "self".to_string(), "static".to_string(), "struct".to_string(), 
+            "super".to_string(), "trait".to_string(), "true".to_string(), "type".to_string(), "unsafe".to_string(), "use".to_string(),
+            "where".to_string(), "while".to_string(), "abstract".to_string(), "alignof".to_string(), "become".to_string(), 
+            "box".to_string(), "do".to_string(), "final".to_string(), "macro".to_string(), "offsetof".to_string(), "override".to_string(),
+            "priv".to_string(), "proc".to_string(), "sizeof".to_string(), "typeof".to_string(), "unsized".to_string(), 
+            "virtual".to_string(), "yield".to_string()] {
+                rust_keywords.insert(kw);
+            }
+        
         ParseFile {
             path: path,
             col_name_re:  col_name_re,
+            rust_keywords: rust_keywords,
         }
     }
 
@@ -85,7 +103,12 @@ impl ParseFile {
 
     // TODO: Need to do something if the col name is a single char long and 
     // is not a letter.
+    // TODO: CLean this mess up
     fn check_col_name(&self, name: &str) -> String {
+        if self.rust_keywords.contains(&name.to_lowercase()) {
+            return format!("_{}", name);
+        }
+
         if self.col_name_re.is_match(name) {
             return name.to_string()
         }
@@ -93,25 +116,52 @@ impl ParseFile {
         let name_str = name.to_string();
         let mut name_chars = name_str.chars();
         let first_char: char = name_chars.next().unwrap();
-        // if the 
         
         if name.len() == 1 {
             if first_char.is_alphabetic() {
                 return name.to_string()
             } 
 
+            if first_char == '+' {
+                return self.check_col_name(&name_str.replace(first_char, "plus"));
+            }
+
+            if first_char == '-' {
+                return self.check_col_name(&name_str.replace(first_char, "minus"));
+            }
+
             return "INVALID_COLUMN_NAME".to_string();
         }
 
         eprintln!("invalid struct field name: {}, fixing", name);
+        if first_char == '+' {
+            return self.check_col_name(&name_str.replace(first_char, "plus"));
+        }
+
+        if first_char == '-' {
+            return self.check_col_name(&name_str.replace(first_char, "minus"));
+        }
+
         if first_char.is_numeric() {
             return self.check_col_name(&format!("_{}", name));
         }
-        
+
         while let Some(name_char) = name_chars.next() {
             if !name_char.is_alphanumeric() && name_char != '_' {
-                return name_str.replacen(name_char, "_", 1);
-            }
+                if name_char == '+' {
+                    return self.check_col_name(&name_str.replace(name_char, "plus"));
+                }
+
+                if name_char == '-' {
+                    return self.check_col_name(&name_str.replace(name_char, "minus"));
+                }
+
+                if name_char == '/' {
+                    return self.check_col_name(&name_str.replace(name_char, ""));
+                }
+                
+                return self.check_col_name(&name_str.replace(name_char, "_"));
+            }            
         }
 
         name_str.to_owned()

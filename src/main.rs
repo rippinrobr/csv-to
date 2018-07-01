@@ -23,19 +23,27 @@ use workers::{
 // TODO: Refactor main to create smaller, single purpose functions
 fn main() {
     let col_name_validation_re = Regex::new(r"^[a-zA-Z_][a-zA-Z0-9_]+$").unwrap();
+    //let sqlite_db_path = "../hockey-db/database/baseball_databank_2017.db";
+    let sqlite_db_path = "../hockey-db/database/hockey_databank_2017.db";
     
     let mut input = Input{
         input_type: InputType::CSV,
-        files: vec![], 
-        directories: vec!["../baseballdatabank/core".to_owned()],
+        files: vec![], //vec!["../hockey-databank/Scoring.csv".to_owned()], 
+        //directories: vec!["../baseballdatabank/core".to_owned()],
+        directories: vec!["../hockey-databank".to_owned()],
     };
 
     // this needs to go away until I have a better approach to loading the db as the output 
-    let output = Output::new("../tabletopbaseball_loader/src".to_string(),
-                            "../tabletopbaseball_loader/sql".to_string());
-    
-    let sql_generator = SQLGen::new("../tabletopbaseball_loader/sql".to_string());
-    let sqlite_db = SqliteDB::new("../tabletopbaseball_loader/database/baseball_databank_2017.db").unwrap();
+    // let output = Output::new("../tabletopbaseball_loader/src".to_string(),
+    //                         "../tabletopbaseball_loader/sql".to_string());
+    // let sql_generator = SQLGen::new("../tabletopbaseball_loader/sql".to_string());
+    // let sqlite_db = SqliteDB::new("../tabletopbaseball_loader/database/baseball_databank_2017.db").unwrap();
+
+    let output = Output::new("../hockey-db/src".to_string(),
+                            "../hockey-db/sql".to_string());    
+    let sql_generator = SQLGen::new("../hockey-db/sql".to_string());
+    let sqlite_db = SqliteDB::new(sqlite_db_path).unwrap();
+
 
     let models_dir: &str = &(output.src_directory.clone() + "/models");
     let mut created_file_names: Vec<String> = Vec::new();
@@ -99,13 +107,14 @@ fn main() {
             Err(e) => eprintln!("ERROR: {}", e)
         };
 
+        println!("INFO: actors_dir: {}", actors_dir);
         let actor_mod_file_str = CodeGen::generate_mod_file(actors_dir);
         match CodeGen::write_code_to_file(actors_dir, "mod.rs", actor_mod_file_str) {
             Ok(_) => println!("Created file mod.rs"),
-            Err(e) => eprintln!("ERROR: {}", e)
+            Err(e) => eprintln!("ERROR: creating actors/mod.rs {}", e)
         };
-         
-        let main_fn_src = CodeGen::generate_webservice("./database/baseball_databank_2017.db".to_string(), &created_file_names);
+
+        let main_fn_src = CodeGen::generate_webservice(sqlite_db_path.to_string(), &created_file_names);
         match CodeGen::write_code_to_file(&output.src_directory, "main.rs", main_fn_src) {
             Ok(_) => println!("Created file main.rs"),
             Err(e) => eprintln!("ERROR: {}", e)
