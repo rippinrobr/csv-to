@@ -47,7 +47,8 @@ impl ParsedContent {
     }
 
     pub fn get_struct_name(&self) -> String {
-        self.file_name.trim_right_matches(".csv").to_string()
+        let first_letter = self.file_name.trim_right_matches(".csv").chars().next().unwrap();
+        self.file_name.trim_right_matches(".csv").to_string().replace(first_letter, &first_letter.to_string().to_uppercase())
     }
 }
 

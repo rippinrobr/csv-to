@@ -105,7 +105,6 @@ impl ParseFile {
     // is not a letter.
     // TODO: CLean this mess up
     fn check_col_name(&self, name: &str) -> String {
-        println!("{} => is keyword? {}", name, self.rust_keywords.contains(name));
         if self.rust_keywords.contains(&name.to_lowercase()) {
             return format!("_{}", name);
         }
@@ -117,7 +116,6 @@ impl ParseFile {
         let name_str = name.to_string();
         let mut name_chars = name_str.chars();
         let first_char: char = name_chars.next().unwrap();
-        // if the 
         
         if name.len() == 1 {
             if first_char.is_alphabetic() {

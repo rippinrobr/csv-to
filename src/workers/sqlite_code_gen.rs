@@ -43,7 +43,7 @@ impl SqliteCodeGen {
 
             // TODO: Convert this to a match when I'm done with the POC
             get_fn.line(&format!("let mut stmt = conn.prepare(\"SELECT * FROM {} LIMIT 25\").unwrap();", tname));
-            get_fn.line("let mut result_iter = stmt.query_map(&[], |row| {");
+            get_fn.line("let result_iter = stmt.query_map(&[], |row| {");
 
             get_fn.line(&format!("\t{}::{} {{", tname.to_lowercase(), tname));
             let mut idx = 0;
