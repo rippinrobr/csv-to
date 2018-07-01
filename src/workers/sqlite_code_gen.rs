@@ -16,7 +16,7 @@ impl SqliteCodeGen {
         scope.raw("extern crate rusqlite;\n");
 
         let mut import_scope = Scope::new(); // this is because codegen adds use statements at the top of the scope
-        for use_stmt in vec![("rusqlite", "Connection"), ("rusqlite", "OpenFlags")] {
+        for use_stmt in vec![("rusqlite", "Connection"), ("rusqlite", "OpenFlags"), ("super::models","*")] {
             import_scope.import(use_stmt.0, use_stmt.1);
         }
 
@@ -36,15 +36,16 @@ impl SqliteCodeGen {
         let mut db_impl = Impl::new(name);
         for (tname, columns) in struct_meta {
             let mut get_fn = Function::new(&format!("get_{}", tname.to_lowercase()));
-            get_fn.arg("conn", "Connection");
+            get_fn.arg("conn", "&Connection");
             get_fn.arg("page_num", "u32");
-            get_fn.ret(&format!("Result<Vec<models::{}>, Error>", tname));
+            get_fn.ret(&format!("Result<Vec<{}::{}>, String>", tname.to_lowercase(), tname));
+            get_fn.vis("pub");
 
             // TODO: Convert this to a match when I'm done with the POC
             get_fn.line(&format!("let mut stmt = conn.prepare(\"SELECT * FROM {} LIMIT 25\").unwrap();", tname));
-            get_fn.line("let result_iter = stmt.query_map(&[], |row| {");
+            get_fn.line("let mut result_iter = stmt.query_map(&[], |row| {");
 
-            get_fn.line(&format!("\t{} {{", tname));
+            get_fn.line(&format!("\t{}::{} {{", tname.to_lowercase(), tname));
             let mut idx = 0;
             for col in columns {
                 get_fn.line(&format!("\t\t{}: row.get({}),", col.name.to_lowercase(), idx));
@@ -52,7 +53,11 @@ impl SqliteCodeGen {
             }
             get_fn.line("\t}");
             get_fn.line("}).unwrap();\n");
-            get_fn.line("Ok(result_iter.collect())");
+            get_fn.line(&format!("let mut results: Vec<{}::{}> = vec![];", tname.to_lowercase(), tname));
+            get_fn.line("for r in result_iter.next() {");
+            get_fn.line("\tresults.push(r.unwrap());");
+            get_fn.line("}");
+            get_fn.line("Ok(results)");
             
             db_impl.push_fn(get_fn);
         }

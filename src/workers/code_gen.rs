@@ -15,7 +15,7 @@ impl CodeGen {
         myfn
             .arg("req", "HttpRequest<State>")
             .ret("impl Future<Item=HttpResponse, Error=Error>")
-            .line(&format!("use actors::{}::{};\n", name.to_lowercase(), name))
+            .line(&format!("use actors::{}::*;\n", name.to_lowercase()))
             .line(format!("\treq.state().db.send({}Msg{{page_num: 1}})", name))
             .line("\t\t.from_err()");
         let mut and_then_block = Block::new(".and_then(|res| ");
@@ -24,9 +24,11 @@ impl CodeGen {
         
         let mut error_block = Block::new("Err(e) => ");
         error_block.line(&format!("eprintln!(\"get_{} error: {{}}]\",e);", name.to_lowercase()));
-        error_block.line("Err(HttpResponse::InternalServerError().into())");
+        error_block.line("Ok(HttpResponse::InternalServerError().into())");
         match_block.push_block(error_block);
         and_then_block.push_block(match_block);
+        and_then_block.after(").responder()");
+
         myfn.push_block(and_then_block);
 
         myfn
@@ -45,7 +47,7 @@ impl CodeGen {
 
         my_model.vis("pub");
         for c in columns.into_iter() {
-            my_model.field(&c.name.to_lowercase(), c.data_type.string());
+            my_model.field(&format!("pub {}", &c.name.to_lowercase()), c.data_type.string());
         }
         
         scope.push_struct(my_model);
@@ -57,28 +59,29 @@ impl CodeGen {
         let mut scope = Scope::new();
         let struct_name = &struct_meta.0;
         
-        for (u0, u1) in vec![("actix", "prelude::*"), ("db", "DB"), ("models", struct_name), ("super","db_actor::DbExecutor")] {
+        for (u0, u1) in vec![("actix::prelude", "*"), ("db", "DB"), (&format!("models::{}", struct_name.to_lowercase()), "*"), ("super::db_actor", "DbExecutor")] {
             scope.import(u0, u1);
         }
 
         // Creating the message struct
         let msg_struct_name = &format!("{}Msg", struct_name);
         let mut msg_struct = Struct::new(msg_struct_name);
-        msg_struct.doc(&format!("// Message for returning a paged list of {} records", struct_name));
-        msg_struct.field("page_num", "u32");
+        msg_struct.doc(&format!("Message for returning a paged list of {} records", struct_name));
+        msg_struct.field("pub page_num", "u32");
+        msg_struct.vis("pub");
         scope.push_struct(msg_struct);
 
         // impl for Message on the struct 
         let mut msg_impl = Impl::new(&format!("{}Msg", struct_name));
         msg_impl.impl_trait("Message");
-        msg_impl.associate_type("Result", &format!("Result<{}, String>", struct_name));
+        msg_impl.associate_type("Result", &format!("Result<Vec<{}>, String>", struct_name));
         scope.push_impl(msg_impl);
         
         // This is for the Handler for the DbExecutor
         // impl Handler<Conspiracies> for DbExecutor {
         let mut handler_impl = Impl::new("DbExecutor");
-        handler_impl.impl_trait(&format!("Handler<{}>", struct_name));
-        handler_impl.associate_type("Result", &format!("Result<Vec<{}>, String>;", struct_name));
+        handler_impl.impl_trait(&format!("Handler<{}Msg>", struct_name));
+        handler_impl.associate_type("Result", &format!("Result<Vec<{}>, String>", struct_name));
 
         let mut impl_func = Function::new("handle");
         impl_func.arg_mut_self();
@@ -104,7 +107,7 @@ impl CodeGen {
     }
 
     pub fn generate_mod_file(dir: &str) -> String {
-        let scope = Scope::new();
+        let mut scope = Scope::new();
         
         let dir_path = Path::new(dir);
         if dir_path.is_dir() {
@@ -112,18 +115,17 @@ impl CodeGen {
             for dir_entry in paths {
                 let path = dir_entry.unwrap().path();
                 if path.is_file() { 
-                    let path_str: String = path.display().to_string();
-                    if !path_str.ends_with("rs") {
+                    let file_name = path.file_name().unwrap().to_str().unwrap();
+                    if !file_name.ends_with("rs") || file_name == "mod.rs" {
                         continue;
                     }
-                    //scope.raw(&format!("pub mod {};", path.file_name()));
-                    // &self.files.push(path_str);
-                    // num_files += 1;
+
+                    scope.raw(&format!("pub mod {};", file_name.replace(".rs", "")));
                 }
             }
         }
 
-        scope.to_string()
+        scope.to_string().replace("\n\n", "\n") + "\n"
     }
 
     
@@ -210,7 +212,7 @@ impl CodeGen {
 
 fn create_extern_create_defs() -> String {
     let mut extern_scope = Scope::new(); 
-        for extern_crate in vec!["pub mod actors;\npub mod models;\n\n\nextern crate clap;", "extern crate dotenv;", "extern crate env_logger;", "extern crate actix;", 
+        for extern_crate in vec!["pub mod actors;\npub mod db;\npub mod models;\n\n\nextern crate clap;", "extern crate dotenv;", "extern crate env_logger;", "extern crate actix;", 
                                 "extern crate actix_web;", "extern crate rusqlite;", "extern crate futures;", "#[macro_use]", "extern crate serde_derive;"] {
             extern_scope.raw(extern_crate);
         }
@@ -238,7 +240,7 @@ fn create_main_fn(db_path: String, entities: &Vec<String>) -> String {
 
         for ent in entities {
             let lower_ent = ent.to_lowercase();
-            main_fn_scope.raw(&format!("\t\t\t.resource(\"/{}\", |r| r.method(http::Method::GET).f(RouteHandlers::{}))", lower_ent, lower_ent));
+            main_fn_scope.raw(&format!("\t\t\t.resource(\"/{}\", |r| r.method(http::Method::GET).a(RouteHandlers::{}))", lower_ent, lower_ent));
         }
 
         main_fn_scope.raw("\t})");
@@ -262,7 +264,7 @@ mod tests {
     fn generate_mod_file() {
         let expected = "".to_string();
         let actual = CodeGen::generate_mod_file("./src/workers");
-
+        println!("actual: {}", actual);
         assert_eq!(actual, expected);
     }
 

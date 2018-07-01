@@ -98,12 +98,13 @@ fn main() {
             Ok(_) => println!("Created file actors/db_actor.rs"),
             Err(e) => eprintln!("ERROR: {}", e)
         };
-        
-        match CodeGen::write_code_to_file(actors_dir, "mod.rs", "pub mod db_actor;".to_string()) {
-            Ok(_) => println!("Created file actors/mod.rs"),
+
+        let actor_mod_file_str = CodeGen::generate_mod_file(actors_dir);
+        match CodeGen::write_code_to_file(actors_dir, "mod.rs", actor_mod_file_str) {
+            Ok(_) => println!("Created file mod.rs"),
             Err(e) => eprintln!("ERROR: {}", e)
         };
-        
+         
         let main_fn_src = CodeGen::generate_webservice("./database/baseball_databank_2017.db".to_string(), &created_file_names);
         match CodeGen::write_code_to_file(&output.src_directory, "main.rs", main_fn_src) {
             Ok(_) => println!("Created file main.rs"),
