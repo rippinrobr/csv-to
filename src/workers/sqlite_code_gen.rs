@@ -16,7 +16,7 @@ impl SqliteCodeGen {
         scope.raw("extern crate rusqlite;\n");
 
         let mut import_scope = Scope::new(); // this is because codegen adds use statements at the top of the scope
-        for use_stmt in vec![("rusqlite", "Connection"), ("rusqlite", "OpenFlags")] {
+        for use_stmt in vec![("rusqlite", "Connection"), ("rusqlite", "OpenFlags"), ("super::models","*")] {
             import_scope.import(use_stmt.0, use_stmt.1);
         }
 
@@ -27,35 +27,25 @@ impl SqliteCodeGen {
         let mut scope = Scope::new();
         let mut db_struct = Struct::new(name);
         db_struct.vis("pub");
-        db_struct.field("conn", "Connection");
         scope.push_struct(db_struct);
-
         scope.to_string()
     }
 
-    fn generate_impl(name: &str, struct_meta: Vec<(String, Vec<ColumnDef>)>)  -> String {
+    fn generate_impl(name: &str, struct_meta: &Vec<(String, Vec<ColumnDef>)>)  -> String {
         let mut scope = Scope::new();
         let mut db_impl = Impl::new(name);
-        let mut conn_fn = Function::new("new");
-        let mut new_struct_block = Block::new("DB");
-        conn_fn.vis("pub");
-        conn_fn.ret(name);
-        conn_fn.arg_self();
-        
-        new_struct_block.line("conn : Connection::open_with_flags(self.db_path, SQLITE_OPEN_READ_ONLY),");
-        conn_fn.push_block(new_struct_block);
-        db_impl.push_fn(conn_fn);
-
         for (tname, columns) in struct_meta {
             let mut get_fn = Function::new(&format!("get_{}", tname.to_lowercase()));
-            get_fn.arg_ref_self();
-            get_fn.ret(&format!("Result<Vec<models::{}>, Error>", tname));
+            get_fn.arg("conn", "&Connection");
+            get_fn.arg("page_num", "u32");
+            get_fn.ret(&format!("Result<Vec<{}::{}>, String>", tname.to_lowercase(), tname));
+            get_fn.vis("pub");
 
             // TODO: Convert this to a match when I'm done with the POC
-            get_fn.line(&format!("let mut stmt = self.conn.prepare(\"SELECT * FROM {} LIMIT 25\").unwrap();", tname));
-            get_fn.line("let result_iter = stmt.query_map(&[], |row| {");
+            get_fn.line(&format!("let mut stmt = conn.prepare(\"SELECT * FROM {} LIMIT 25\").unwrap();", tname));
+            get_fn.line("let mut result_iter = stmt.query_map(&[], |row| {");
 
-            get_fn.line(&format!("\t{} {{", tname));
+            get_fn.line(&format!("\t{}::{} {{", tname.to_lowercase(), tname));
             let mut idx = 0;
             for col in columns {
                 get_fn.line(&format!("\t\t{}: row.get({}),", col.name.to_lowercase(), idx));
@@ -63,7 +53,11 @@ impl SqliteCodeGen {
             }
             get_fn.line("\t}");
             get_fn.line("}).unwrap();\n");
-            get_fn.line("Ok(result_iter.collect())");
+            get_fn.line(&format!("let mut results: Vec<{}::{}> = vec![];", tname.to_lowercase(), tname));
+            get_fn.line("for r in result_iter {");
+            get_fn.line("\tresults.push(r.unwrap());");
+            get_fn.line("}");
+            get_fn.line("Ok(results)");
             
             db_impl.push_fn(get_fn);
         }
@@ -73,7 +67,7 @@ impl SqliteCodeGen {
         scope.to_string()
     }
 
-    pub fn generate_db_layer(struct_meta: Vec<(String, Vec<ColumnDef>)>) -> String {
+    pub fn generate_db_layer(struct_meta: &Vec<(String, Vec<ColumnDef>)>) -> String {
         let struct_name = "DB";
         let extern_and_use_stmts = SqliteCodeGen::generate_use_and_extern_statements();
         let struct_str = SqliteCodeGen::generate_struct(struct_name);
@@ -90,7 +84,7 @@ mod tests {
 
     #[test] 
     fn generate_use_and_extern_statements() {
-        let expected = "extern crate rusqlite;\n\nuse rusqlite::{Connection, OpenFlags};\n".to_string();
+        let expected = "extern crate rusqlite;\n\nuse rusqlite::{Connection, OpenFlags};\nuse super::models::*;\n".to_string();
         let actual = SqliteCodeGen::generate_use_and_extern_statements();
 
         assert_eq!(actual, expected);
@@ -98,7 +92,7 @@ mod tests {
 
     #[test]
     fn generate_struct() {
-        let expected = "pub struct DB {\n    conn: Connection,\n}".to_string();
+        let expected = "pub struct DB;".to_string();
         let db_struct = SqliteCodeGen::generate_struct("DB");
 
         assert_eq!(db_struct, expected);
@@ -107,19 +101,18 @@ mod tests {
     #[test]
     fn generate_impl() {
         let col_def = ColumnDef::new("my_col".to_string(), DataTypes::String);
-        let expected = "impl DB {\n         pub fn new(self) -> DB {\n        DB {\n            conn : Connection::open_with_flags(self.db_path, SQLITE_OPEN_READ_ONLY),\n        }\n    }\n\n    fn get_my_col(&self) -> Result<Vec<models::my_col>, Error> {\n        let mut stmt = self.conn.prepare(\"SELECT * FROM my_col LIMIT 25\").unwrap();\n        let result_iter = stmt.query_map(&[], |row| {\n   \tmy_col {\n        \t\tmy_col: row.get(0),\n        \t}\n        }).unwrap();\n\n        Ok(result_iter.collect())\n    }\n}".to_string();
-        let db_struct = SqliteCodeGen::generate_impl("DB", vec![("my_col".to_string(), vec![col_def])]);
+        let expected = 498;
+        let db_struct = SqliteCodeGen::generate_impl("DB", &vec![("my_col".to_string(), vec![col_def])]);
 
-        println!("db_struct: {}", db_struct);
-        assert_eq!(db_struct.len(), expected.len());
+        assert_eq!(db_struct.len(), expected);
     }
 
     #[test]
     fn generate_db_layer() {
         let col_def = ColumnDef::new("my_col".to_string(), DataTypes::String);
-        let expected = "extern crate rusqlite;\n\nuse rusqlite::{Connection, OpenFlags};\n\n\npub struct DB {\n    conn: Connection,\n}\n\nimpl DB {\n    pub fn new(self) -> DB {\n        DB {\nconn : Connection::open_with_flags(self.db_path, SQLITE_OPEN_READ_ONLY),\n        }\n    }\n\n    fn get_my_col(&self) -> Result<Vec<models::my_col>, Error> {\n        let mut stmt = self.conn.prepare(\"SELECT * FROM my_col LIMIT 25\").unwrap();\n        let result_iter = stmt.query_map(&[], |row| {\n                    \tmy_col {\n        \t\tmy_col: row.get(0),\n        \t}\n        }).unwrap();\n\n        Ok(result_iter.collect())\n    }\n}".to_string();
-        let db_struct = SqliteCodeGen::generate_db_layer(vec![("my_col".to_string(), vec![col_def])]);
+        let expected_len = 601;
+        let db_struct = SqliteCodeGen::generate_db_layer(&vec![("my_col".to_string(), vec![col_def])]);
 
-        assert_eq!(db_struct.len(), expected.len());
+        assert_eq!(db_struct.len(), expected_len);
     }
 }

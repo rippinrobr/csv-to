@@ -1,19 +1,35 @@
-use codegen::{Function, Impl, Scope, Struct};
+use codegen::{Block, Function, Impl, Scope, Struct};
 use models::{ColumnDef};
+use std::fs;
 use std::fs::File;
 use std::io::Error;
 use std::io::prelude::*;
+use std::path::Path;
 
 pub struct CodeGen;
 
 impl CodeGen {
     
     pub fn generate_handler(name: &str) -> Function {
-        let mut myfn = Function::new(name);
+        let mut myfn = Function::new(&name.to_lowercase());
         myfn
-            .arg("_req", "HttpRequest<State>")
-            .ret("&'static str")
-            .line(format!("\"Pretend this is a list of {}\"", name));
+            .arg("req", "HttpRequest<State>")
+            .ret("impl Future<Item=HttpResponse, Error=Error>")
+            .line(&format!("use actors::{}::*;\n", name.to_lowercase()))
+            .line(format!("\treq.state().db.send({}Msg{{page_num: 1}})", name))
+            .line("\t\t.from_err()");
+        let mut and_then_block = Block::new(".and_then(|res| ");
+        let mut match_block = Block::new("\tmatch res ");
+        match_block.line("Ok(i) => Ok(HttpResponse::Ok().json(i)),");
+        
+        let mut error_block = Block::new("Err(e) => ");
+        error_block.line(&format!("eprintln!(\"get_{} error: {{}}]\",e);", name.to_lowercase()));
+        error_block.line("Ok(HttpResponse::InternalServerError().into())");
+        match_block.push_block(error_block);
+        and_then_block.push_block(match_block);
+        and_then_block.after(").responder()");
+
+        myfn.push_block(and_then_block);
 
         myfn
     }
@@ -31,10 +47,51 @@ impl CodeGen {
 
         my_model.vis("pub");
         for c in columns.into_iter() {
-            my_model.field(&c.name.to_lowercase(), c.data_type.string());
+            my_model.field(&format!("pub {}", &c.name.to_lowercase()), c.data_type.string());
         }
         
         scope.push_struct(my_model);
+        
+        scope.to_string()
+    }
+
+    pub fn create_handler_actor(struct_meta: &(String, Vec<ColumnDef>)) -> String {
+        let mut scope = Scope::new();
+        let struct_name = &struct_meta.0;
+        
+        for (u0, u1) in vec![("actix::prelude", "*"), ("db", "DB"), (&format!("models::{}", struct_name.to_lowercase()), "*"), ("super::db_actor", "DbExecutor")] {
+            scope.import(u0, u1);
+        }
+
+        // Creating the message struct
+        let msg_struct_name = &format!("{}Msg", struct_name);
+        let mut msg_struct = Struct::new(msg_struct_name);
+        msg_struct.doc(&format!("Message for returning a paged list of {} records", struct_name));
+        msg_struct.field("pub page_num", "u32");
+        msg_struct.vis("pub");
+        scope.push_struct(msg_struct);
+
+        // impl for Message on the struct 
+        let mut msg_impl = Impl::new(&format!("{}Msg", struct_name));
+        msg_impl.impl_trait("Message");
+        msg_impl.associate_type("Result", &format!("Result<Vec<{}>, String>", struct_name));
+        scope.push_impl(msg_impl);
+        
+        // This is for the Handler for the DbExecutor
+        // impl Handler<Conspiracies> for DbExecutor {
+        let mut handler_impl = Impl::new("DbExecutor");
+        handler_impl.impl_trait(&format!("Handler<{}Msg>", struct_name));
+        handler_impl.associate_type("Result", &format!("Result<Vec<{}>, String>", struct_name));
+
+        let mut impl_func = Function::new("handle");
+        impl_func.arg_mut_self();
+        impl_func.arg("msg", msg_struct_name);
+        impl_func.arg("_", "&mut Self::Context");
+        impl_func.ret("Self::Result");
+        impl_func.line(&format!("\tDB::get_{}(&self.0, msg.page_num)", struct_name.to_lowercase()));
+        
+        handler_impl.push_fn(impl_func);
+        scope.push_impl(handler_impl);
         
         scope.to_string()
     }
@@ -48,6 +105,30 @@ impl CodeGen {
 
         scope.to_string()
     }
+
+    pub fn generate_mod_file(dir: &str) -> String {
+        let mut scope = Scope::new();
+        
+        let dir_path = Path::new(dir);
+        if dir_path.is_dir() {
+            let paths = fs::read_dir(dir_path).unwrap();
+            for dir_entry in paths {
+                let path = dir_entry.unwrap().path();
+                if path.is_file() { 
+                    let file_name = path.file_name().unwrap().to_str().unwrap();
+                    if !file_name.ends_with("rs") || file_name == "mod.rs" {
+                        continue;
+                    }
+
+                    scope.raw(&format!("pub mod {};", file_name.replace(".rs", "")));
+                }
+            }
+        }
+
+        scope.to_string().replace("\n\n", "\n") + "\n"
+    }
+
+    
 
     pub fn generate_db_actor() -> String {
         let mut scope = Scope::new();
@@ -70,7 +151,7 @@ impl CodeGen {
         
         for use_stmt in vec![("actix", "{Addr,Syn}"), ("actix::prelude", "*"), ("actors::db_actor", "*"), ("actix_web", "http, App, AsyncResponder, HttpRequest, HttpResponse"),
                             ("actix_web::server", "HttpServer"), ("futures", "Future"), ("actix_web", "Error"), ("actix_web", "Json"), ("actix_web::middleware", "Logger"),
-                            ("rusqlite", "Connection")] {
+                            ("rusqlite", "Connection"), ("models", "*")] {
             scope.import(use_stmt.0, use_stmt.1);
         }
         
@@ -95,7 +176,7 @@ impl CodeGen {
 
         for ent in entities {
             // add the handler funciton creation call here
-            handler_impl.push_fn(CodeGen::generate_handler(&ent.to_lowercase()));
+            handler_impl.push_fn(CodeGen::generate_handler(&ent));
         }
         scope.push_impl(handler_impl);
         scope.raw("");
@@ -126,11 +207,12 @@ impl CodeGen {
 
         return CodeGen::write_code_to_file(output_dir, "curl_test.sh", scope.to_string().replace("\n\n", "\n"))    
     }
+
 }
 
 fn create_extern_create_defs() -> String {
     let mut extern_scope = Scope::new(); 
-        for extern_crate in vec!["pub mod actors;\npub mod models;\n\n\nextern crate clap;", "extern crate dotenv;", "extern crate env_logger;", "extern crate actix;", 
+        for extern_crate in vec!["pub mod actors;\npub mod db;\npub mod models;\n\n\nextern crate clap;", "extern crate dotenv;", "extern crate env_logger;", "extern crate actix;", 
                                 "extern crate actix_web;", "extern crate rusqlite;", "extern crate futures;", "#[macro_use]", "extern crate serde_derive;"] {
             extern_scope.raw(extern_crate);
         }
@@ -158,7 +240,7 @@ fn create_main_fn(db_path: String, entities: &Vec<String>) -> String {
 
         for ent in entities {
             let lower_ent = ent.to_lowercase();
-            main_fn_scope.raw(&format!("\t\t\t.resource(\"/{}\", |r| r.method(http::Method::GET).f(RouteHandlers::{}))", lower_ent, lower_ent));
+            main_fn_scope.raw(&format!("\t\t\t.resource(\"/{}\", |r| r.method(http::Method::GET).a(RouteHandlers::{}))", lower_ent, lower_ent));
         }
 
         main_fn_scope.raw("\t})");
@@ -178,9 +260,25 @@ mod tests {
     use models::{ColumnDef, DataTypes};
     use codegen::{Block, Formatter, Function, Impl, Scope, Struct};
 
+    #[test]
+    fn generate_mod_file() {
+        let expected = "pub mod sqlite;\npub mod code_gen;\npub mod sql_gen;\npub mod sqlite_code_gen;\npub mod output;\npub mod input;\npub mod parse_csv;\n".to_string();
+        let actual = CodeGen::generate_mod_file("./src/workers");
+        println!("actual: {}", actual);
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn create_handler_actor() {
+        let expected_len = 520;
+        let actual = CodeGen::create_handler_actor(&("my_actor".to_string(), vec![ColumnDef::new("my_col".to_string(), DataTypes::String)]));
+
+        assert_eq!(actual.len(), expected_len);
+    }
+
     #[test] 
     fn generate_struct() {
-        let struct_def = "#[derive(Debug, Deserialize, Serialize)]\npub struct people {\n    name: String,\n    age: i64,\n    weight: f64,\n}".to_string();
+        let struct_def = "#[derive(Debug, Deserialize, Serialize)]\npub struct people {\n    pub name: String,\n    pub age: i64,\n    pub weight: f64,\n}".to_string();
         let cols: Vec<ColumnDef> = vec![ColumnDef::new("name".to_string(), DataTypes::String), ColumnDef::new("age".to_string(), DataTypes::I64), ColumnDef::new("weight".to_string(), DataTypes::F64)];
         assert_eq!(struct_def, CodeGen::generate_struct("people", &cols));
     }
@@ -200,25 +298,15 @@ mod tests {
 
     #[test]
     fn generate_webservice_main() {
-        let main_src = "pub mod actors;\npub mod models;\n\nextern crate clap;\nextern crate dotenv;\nextern crate env_logger;\nextern crate actix;\nextern crate actix_web;\nextern crate rusqlite;\nextern crate futures;\n#[macro_use]\nextern crate serde_derive;\n\nuse actix::{Addr,Syn};\nuse actix::prelude::*;\nuse actors::db_actor::*;\nuse actix_web::{http, App, AsyncResponder, HttpRequest, HttpResponse, Error, Json};\nuse actix_web::server::HttpServer;\nuse futures::Future;\nuse actix_web::middleware::Logger;\n\n/// This is state where we will store *DbExecutor* address.\nstruct State {\n    db: Addr<Syn, DbExecutor>,\n}\n\n/// Used to implement all of the route handlers\nstruct RouteHandlers;\n\nimpl RouteHandlers {\n    fn index(_req: HttpRequest<State>) -> &\'staticstr {\n        \"Put the next steps instructions here\"\n    }\n}\n\nfn main() {\n\tstd::env::set_var(\"RUST_LOG\", \"actix_web=info\");\n\tenv_logger::init();\n\tlet sys = actix::System::new(\"csv2api\");\n// Start 3 parallel db executors\n\tlet addr = SyncArbiter::start(3, || {\n\t    DbExecutor(Connection::open(\"test.db\").unwrap())\n\t});\n\tHttpServer::new(move || {\n\t\tApp::with_state(State{db: addr.clone()})\n\t\t\t.middleware(Logger::default())\n\t\t\t.resource(\"/\", |r| r.method(http::Method::GET).f(RouteHandlers::index))\n\t})\n\t.bind(\"127.0.0.1:8088\").unwrap()\n\t.start();\n\n\tprintln!(\"Started http server: 127.0.0.1:8088\");\n\tlet _ = sys.run();\n} ".to_string();
-        let res = CodeGen::generate_webservice("test.db".to_string(),&vec![]);
+        let expected_len = 1398;
+        let actual = CodeGen::generate_webservice("test.db".to_string(),&vec![]);
 
-        assert_eq!(main_src.len(), res.len());
+        assert_eq!(actual.len(), expected_len);
     }
 
     #[test]
     fn generate_handler() {
-        let mut expected_scope = Scope::new();
-        let mut expected_impl = Impl::new("test");
-        let mut expected_fn = Function::new("MyEntity");
-        expected_fn
-            .arg("_req", "HttpRequest<State>")
-            .ret("&'static str")
-            .line(format!("\"Pretend this is a list of MyEntity\""));
-        expected_impl.push_fn(expected_fn);
-        expected_scope.push_impl(expected_impl);
-        let expected = expected_scope.to_string();
-
+        let expected_len = 541;
 
         let mut actual_scope = Scope::new();
         let mut actual_impl = Impl::new("test");
@@ -227,6 +315,6 @@ mod tests {
         actual_scope.push_impl(actual_impl);
         let actual = actual_scope.to_string();
 
-        assert_eq!(actual, expected);
+        assert_eq!(actual.len(), expected_len);
     }
 }
