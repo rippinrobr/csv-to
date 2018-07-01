@@ -101,7 +101,7 @@ mod tests {
     #[test]
     fn generate_impl() {
         let col_def = ColumnDef::new("my_col".to_string(), DataTypes::String);
-        let expected = 498;
+        let expected = 487;
         let db_struct = SqliteCodeGen::generate_impl("DB", &vec![("my_col".to_string(), vec![col_def])]);
 
         assert_eq!(db_struct.len(), expected);
@@ -110,7 +110,7 @@ mod tests {
     #[test]
     fn generate_db_layer() {
         let col_def = ColumnDef::new("my_col".to_string(), DataTypes::String);
-        let expected_len = 601;
+        let expected_len = 590;
         let db_struct = SqliteCodeGen::generate_db_layer(&vec![("my_col".to_string(), vec![col_def])]);
 
         assert_eq!(db_struct.len(), expected_len);
