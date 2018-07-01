@@ -262,7 +262,7 @@ mod tests {
 
     #[test]
     fn generate_mod_file() {
-        let expected = "".to_string();
+        let expected = "pub mod sqlite;\npub mod code_gen;\npub mod sql_gen;\npub mod sqlite_code_gen;\npub mod output;\npub mod input;\npub mod parse_csv;\n".to_string();
         let actual = CodeGen::generate_mod_file("./src/workers");
         println!("actual: {}", actual);
         assert_eq!(actual, expected);
@@ -270,7 +270,7 @@ mod tests {
 
     #[test]
     fn create_handler_actor() {
-        let expected_len = 490;
+        let expected_len = 520;
         let actual = CodeGen::create_handler_actor(&("my_actor".to_string(), vec![ColumnDef::new("my_col".to_string(), DataTypes::String)]));
 
         assert_eq!(actual.len(), expected_len);
@@ -278,7 +278,7 @@ mod tests {
 
     #[test] 
     fn generate_struct() {
-        let struct_def = "#[derive(Debug, Deserialize, Serialize)]\npub struct people {\n    name: String,\n    age: i64,\n    weight: f64,\n}".to_string();
+        let struct_def = "#[derive(Debug, Deserialize, Serialize)]\npub struct people {\n    pub name: String,\n    pub age: i64,\n    pub weight: f64,\n}".to_string();
         let cols: Vec<ColumnDef> = vec![ColumnDef::new("name".to_string(), DataTypes::String), ColumnDef::new("age".to_string(), DataTypes::I64), ColumnDef::new("weight".to_string(), DataTypes::F64)];
         assert_eq!(struct_def, CodeGen::generate_struct("people", &cols));
     }
@@ -298,15 +298,15 @@ mod tests {
 
     #[test]
     fn generate_webservice_main() {
-        let expected = "pub mod actors;\npub mod models;\n\n extern crate clap;\nextern crate dotenv;\nextern crate env_logger;\nextern crate actix;\nextern crate actix_web;\nextern crate rusqlite;\nextern crate futures;\n#[macro_use]\nextern crate serde_derive;\n\nuse actix::{Addr,Syn};\nuse actix::prelude::*;\nuse actors::db_actor::*;\nuse actix_web::{http, App, AsyncResponder, HttpRequest, HttpResponse, Error, Json};\nuse actix_web::server::HttpServer;\nuse futures::Future;\nuse actix_web::middleware::Logger;\nuse rusqlite::Connection;\nuse models::*;\n\n/// This is state where we will store *DbExecutor* address.\nstruct State {\n       db: Addr<Syn, DbExecutor>,\n}\n\n/// Used to implementall of the route handlers\nstruct RouteHandlers;\n\nimpl RouteHandlers {\n    fn index(_req: HttpRequest<State>) -> &\'static str {\n    \"Put the next steps instructions here\"\n    }\n}\n\nfn main() {\n\tstd::env::set_var(\"RUST_LOG\", \"actix_web=info\");\n\tenv_logger::init();\n\tlet sys = actix::System::new(\"csv2api\");\n// Start 3 parallel db executors\n\tlet addr = SyncArbiter::start(3, || {\n\t     DbExecutor(Connection::open(\"test.db\").unwrap())\n\t});\n\tHttpServer::new(move || {\n\t\tApp::with_state(State{db: addr.clone()})\n\t\t\t.middleware(Logger::default())\n\t\t\t.resource(\"/\", |r| r.method(http::Method::GET).f(RouteHandlers::index))\n\t})\n\t.bind(\"127.0.0.1:8088\").unwrap()\n\t.start();\n\n\tprintln!(\"Started http server: 127.0.0.1:8088\");\n\tlet _ = sys.run();\n}".to_string();
+        let expected_len = 1398;
         let actual = CodeGen::generate_webservice("test.db".to_string(),&vec![]);
 
-        assert_eq!(actual.len(), expected.len());
+        assert_eq!(actual.len(), expected_len);
     }
 
     #[test]
     fn generate_handler() {
-        let expected_len = 536;
+        let expected_len = 541;
 
         let mut actual_scope = Scope::new();
         let mut actual_impl = Impl::new("test");
