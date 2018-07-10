@@ -265,10 +265,9 @@ mod tests {
 
     #[test]
     fn generate_mod_file() {
-        let expected = "pub mod sqlite;\npub mod code_gen;\npub mod sql_gen;\npub mod sqlite_code_gen;\npub mod output;\npub mod input;\npub mod parse_csv;\n".to_string();
+        let expected = "pub mod sqlite;\npub mod code_gen;\npub mod sql_gen;\npub mod sqlite_code_gen;\npub mod config;\npub mod output;\npub mod input;\npub mod parse_csv;\n".to_string();
         let actual = CodeGen::generate_mod_file("./src/workers");
-        println!("actual: {}", actual);
-        assert_eq!(actual, expected);
+        assert_eq!(expected, actual);
     }
 
     #[test]

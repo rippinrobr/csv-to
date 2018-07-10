@@ -21,7 +21,7 @@ pub struct ParseFile {
 
 //TODO: write errors out to stderr 
 impl ParseFile {
-    pub fn new(path:String, col_name_re: Regex) -> ParseFile {
+    pub fn new(path:String) -> ParseFile {
         let mut rust_keywords: HashSet<String> = HashSet::new();
 
         for kw in vec!["as".to_string(), "break".to_string(), "const".to_string(), "continue".to_string(), "crate".to_string(), 
@@ -39,7 +39,7 @@ impl ParseFile {
         
         ParseFile {
             path: path,
-            col_name_re:  col_name_re,
+            col_name_re:  Regex::new(r"^[a-zA-Z_][a-zA-Z0-9_]+$").unwrap(),
             rust_keywords: rust_keywords,
         }
     }

@@ -1,4 +1,5 @@
 pub mod code_gen;
+pub mod config;
 pub mod input;
 pub mod output;
 pub mod parse_csv;
@@ -10,6 +11,7 @@ use csv::{StringRecord};
 use csv::Error;
 use models::{ColumnDef};
 use std::collections::HashSet;
+
 
 pub trait WorkOrder {
     fn execute() -> Result<i32, String>;

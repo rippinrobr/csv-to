@@ -6,9 +6,15 @@ extern crate codegen;
 extern crate csv;
 extern crate regex;
 extern crate sqlite;
+#[macro_use]
+extern crate serde_derive;
+extern crate toml;
 
+use std::fs::File;
+use std::io::prelude::*;
 use regex::Regex;
 use workers::{
+    config::Config,
     input::{Input, InputType},
     output::{Output},
     parse_csv::{ParseFile},
@@ -22,16 +28,28 @@ use workers::{
 // TODO: Rename Output to be OuputProjectDir
 // TODO: Refactor main to create smaller, single purpose functions
 fn main() {
-    let col_name_validation_re = Regex::new(r"^[a-zA-Z_][a-zA-Z0-9_]+$").unwrap();
+    
+    // processing the toml file to get the configuration values
+    let mut toml_file_handle = File::open("csv2api.toml").expect("csv2api.toml not found");
+    let mut config_content = String::new();
+    toml_file_handle.read_to_string(&mut config_content)
+        .expect("something went wrong reading the config file");
+
+    let config = Config::load(&config_content);
+    println!("{:#?}", config);
+
+    // return;
+
+    // THE OLD WAY IS BELOW
     //let sqlite_db_path = "../hockey-db/database/baseball_databank_2017.db";
     let sqlite_db_path = "../hockey-db/database/hockey_databank_2017.db";
     
-    let mut input = Input{
-        input_type: InputType::CSV,
-        files: vec![], //vec!["../hockey-databank/Scoring.csv".to_owned()], 
-        //directories: vec!["../baseballdatabank/core".to_owned()],
-        directories: vec!["../hockey-databank".to_owned()],
-    };
+    // let mut input = Input{
+    //     input_type: InputType::CSV,
+    //     files: vec![], //vec!["../hockey-databank/Scoring.csv".to_owned()], 
+    //     //directories: vec!["../baseballdatabank/core".to_owned()],
+    //     directories: vec!["../hockey-databank".to_owned()],
+    // };
 
     // this needs to go away until I have a better approach to loading the db as the output 
     // let output = Output::new("../tabletopbaseball_loader/src".to_string(),
@@ -50,12 +68,12 @@ fn main() {
     let mut create_table_statements: Vec<String> = Vec::new();
     let mut struct_meta: Vec<(String, Vec<models::ColumnDef>)> = Vec::new();
 
-    if input.directories.len() > 0 {
-        input.add_files_in_directories();
-    }
+    // if input.directories.len() > 0 {
+    //     input.add_files_in_directories();
+    // }
 
-    for file_path in input.files {
-        let parser = ParseFile::new(file_path, col_name_validation_re.clone());
+    for file_path in config.files {
+        let parser = ParseFile::new(file_path);
         match parser.execute() {
             Ok(parsed_content) => {
                 let tmp_struct_name = parsed_content.get_struct_name().clone();
