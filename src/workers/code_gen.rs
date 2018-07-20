@@ -21,13 +21,21 @@ pub enum CodeGenTarget {
 }
 
 pub struct CodeGen;
-
 pub struct CodeGenStruct {
     pub output_cfg: OutputCfg,
     pub parsed_content: ParsedContent,
 }
 
+pub struct CodeGenHandler {
+    pub output_cfg: OutputCfg,
+    pub parsed_content: ParsedContent,
+}
+
 impl<'a> Message for CodeGenStruct {
+    type Result = String;
+}
+
+impl<'a> Message for CodeGenHandler {
     type Result = String;
 }
 
@@ -43,11 +51,31 @@ impl Handler<CodeGenStruct> for CodeGen {
         let dir_path = msg.output_cfg.code_gen.unwrap().models_dir();
         let file_name = format!("{}.rs", struct_name.to_lowercase());
         let struct_src = CodeGen::generate_struct(&struct_name, &msg.parsed_content.columns);
+        
         match CodeGen::write_code_to_file(&dir_path, &file_name, struct_src.clone()) {
             Err(e) => eprintln!("ERROR: {} trying to write {}/{}", e, dir_path, file_name),
-            Ok(res) => println!("{}", res)
+            Ok(_) => print!("Created {}/{}", dir_path, file_name)
         };
-        struct_src
+        
+        "".to_string()
+    }
+}
+
+impl Handler<CodeGenHandler> for CodeGen {
+    type Result = String;
+
+    fn handle(&mut self, msg: CodeGenHandler, _: &mut Context<Self>) -> Self::Result {
+        let entity_name = msg.parsed_content.get_struct_name();
+        let dir_path = msg.output_cfg.code_gen.unwrap().actors_dir();
+        let file_name = format!("{}.rs", entity_name.to_lowercase());
+        let code = CodeGen::create_handler_actor(&entity_name);
+
+        match CodeGen::write_code_to_file(&dir_path, &file_name, code){
+            Err(e) => eprintln!("ERROR: {} trying to write {}/{}", e, dir_path, file_name),
+            Ok(_) => print!("Created {}/{}", dir_path, file_name)
+        };
+        
+        "".to_string()
     }
 }
 
@@ -98,9 +126,9 @@ impl CodeGen {
         scope.to_string()
     }
 
-    pub fn create_handler_actor(struct_meta: &(String, Vec<ColumnDef>)) -> String {
+    pub fn create_handler_actor(struct_name: &str) -> String { //struct_meta: &(String, Vec<ColumnDef>)) -> String {
         let mut scope = Scope::new();
-        let struct_name = &struct_meta.0;
+        //let struct_name = &struct_meta.0;
         
         for (u0, u1) in vec![("actix::prelude", "*"), ("db", "DB"), (&format!("models::{}", struct_name.to_lowercase()), "*"), ("super::db_actor", "DbExecutor")] {
             scope.import(u0, u1);

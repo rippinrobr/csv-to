@@ -41,9 +41,13 @@ impl CodeGenCfg{
 
         create_dir_all(src_path)
     }
-       
+
     pub fn models_dir(self) -> String {
         format!("{}/{}/src/models", self.project_dir, self.project_name)
+    }
+       
+    pub fn actors_dir(self) -> String {
+        format!("{}/{}/src/actors", self.project_dir, self.project_name)
     }
 }
 

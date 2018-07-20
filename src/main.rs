@@ -22,10 +22,11 @@ use std::fs::File;
 use std::io::prelude::*;
 use workers::{
     ParsedContent,
-    config::{Config, OutputCfg},
+    config::Config,
+    config::OutputCfg,
     output::{Output},
     parse_csv::{ParseFile},
-    code_gen::{CodeGen, CodeGenStruct},
+    code_gen::{CodeGen, CodeGenStruct, CodeGenHandler},
     sqlite::SqliteDB,
     sqlite_code_gen::SqliteCodeGen,
     sql_gen::SQLGen
@@ -61,13 +62,12 @@ fn main() {
         .expect("something went wrong reading the config file");
     
     let config =Config::load(&config_content);
-    //println!("{:#?}", config);
-
+    
     // get the files
     let csv_files = create_files_list(&config.directories, &config.files);
 
-
     let system = System::new("csv2api");
+    let mut struct_meta: Vec<ParsedContent> = vec![];
 
     // process the files
     for file in csv_files.iter() {
@@ -76,29 +76,18 @@ fn main() {
         match parser.execute() {
             Ok(parsed_content) => {
                 if let Some(_gen_models) = config.gen_models {
-                    let addr = CodeGen.start();
-                    let res = addr.send(CodeGenStruct{output_cfg: config.output.clone(), parsed_content: parsed_content});
-
-                    Arbiter::spawn(res.then(|res| {
-                        match res {
-                            Ok(struct_src) => println!("{}", struct_src),
-                            _ => println!("Something wrong"),
-                        }
-                        
-                        System::current().stop();
-                        future::result(Ok(()))
-                    }));
-                    println!("I should generate models {:?}", config.output);
+                    call_code_gen_struct_actor(config.output.clone(), parsed_content.clone());
                 }
 
                 if let Some(_gen_webserver) = config.gen_webserver {
-                    println!("I should generate the web server");
-                    dummy(&config.output);
+                    call_code_gen_handler_actor(config.output.clone(), parsed_content.clone());
                 }
 
                 if let Some(_gen_sql) = config.gen_sql {
-                    println!("I should generate the sql");
+                    //println!("I should generate the sql");
                 }
+
+                struct_meta.push(parsed_content);
             },
             Err(e) => {
                 println!("ERROR: Parsing {} threw {}", file, e);
@@ -111,9 +100,38 @@ fn main() {
     println!("after run");
     
 }
-fn dummy(o: &OutputCfg) {
-    println!("dummy: {:#?}", o);
+
+fn call_code_gen_struct_actor(output_cfg: OutputCfg, parsed_content: ParsedContent) {
+    let addr = CodeGen.start();
+    let res = addr.send(CodeGenStruct{output_cfg: output_cfg, parsed_content: parsed_content});
+
+    Arbiter::spawn(res.then(|res| {
+        match res {
+            Ok(struct_src) => println!("{}", struct_src),
+            _ => println!("Something wrong"),
+        }
+        
+        System::current().stop();
+        future::result(Ok(()))
+    }));
 }
+
+fn call_code_gen_handler_actor(output_cfg: OutputCfg, parsed_content: ParsedContent) {
+    let addr = CodeGen.start();
+    let res = addr.send(CodeGenHandler{output_cfg: output_cfg, parsed_content: parsed_content});
+
+    Arbiter::spawn(res.then(|res| {
+        match res {
+            Ok(struct_src) => println!("{}", struct_src),
+            _ => println!("Something wrong"),
+        }
+        
+        System::current().stop();
+        future::result(Ok(()))
+    }));
+}
+
+
 fn create_files_list(dirs: &Vec<String>, cfg_files: &Vec<String>) -> Vec<String> {
     let mut files: Vec<String> = Vec::new();
 
