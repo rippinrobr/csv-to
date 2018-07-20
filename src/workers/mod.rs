@@ -25,6 +25,16 @@ pub struct ParsedContent {
     pub records_parsed: usize,
     
 }
+impl Clone for ParsedContent {
+    fn clone(&self) -> ParsedContent { 
+        ParsedContent {
+            columns: (*self).columns.clone(),
+            content: (*self).content.clone(),
+            file_name: (*self).file_name.clone(),
+            records_parsed: (*self).records_parsed,
+        }
+    }
+}
 
 impl ParsedContent {
 

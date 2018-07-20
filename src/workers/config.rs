@@ -1,51 +1,105 @@
 extern crate toml;
 
 use workers::input::*;
-use std::fs::{self, DirEntry};
+use std::error::Error;
+use std::fs::{create_dir_all};
+use std::io;
 use std::path::Path;
 
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Deserialize)]
+pub struct SqliteCfg {
+    db_path: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Deserialize)]
+pub struct DbCfg {
+    sqlite: Option<SqliteCfg>,
+}
+
+impl DbCfg {
+    pub fn has_sqlite(self) -> bool {
+        if let Some(_) = self.sqlite {
+            return true;
+        }
+
+        false
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Deserialize)]
+pub struct CodeGenCfg {
+    pub project_dir: String,
+    pub project_name: String,
+}
+
+impl CodeGenCfg{
+    pub fn create_project_dir(self) -> io::Result<()> {
+        let src_path = &format!("{}/{}/src/models", self.project_dir, self.project_name);
+        if Path::new(src_path).exists() {
+            return Ok(());
+        }
+
+        create_dir_all(src_path)
+    }
+       
+    pub fn models_dir(self) -> String {
+        format!("{}/{}/src/models", self.project_dir, self.project_name)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Deserialize)]
+pub struct OutputCfg {
+    pub db: Option<DbCfg>,
+    pub code_gen: Option<CodeGenCfg>
+}
+
+impl OutputCfg {
+    pub fn create_project(self) -> Result<(), String>  {
+        if let Some(code_gen_cfg) = self.code_gen {
+            let src_path = &format!("{}/{}/src/models", code_gen_cfg.project_dir, code_gen_cfg.project_name);
+            if Path::new(src_path).exists() {
+                return Ok(());
+            } 
+            
+
+            let res = match create_dir_all(src_path) {
+                Err(e) => Err(format!("Error: {}", e)),
+                _ => Ok(())
+            };
+
+            return res;
+        }
+
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Deserialize)]
 pub struct Config {
+    pub gen_models: Option<bool>,
+    pub gen_sql: Option<bool>,
+    pub gen_webserver: Option<bool>, 
     pub input_type: InputType,
     pub files: Vec<String>,
-    pub directories: Vec<String>
+    pub directories: Vec<String>,
+    pub output: OutputCfg
 }
 
 impl Config {
+
     pub fn load(config_str: &str) -> Config {
         match toml::from_str(config_str) {
             Ok(config) => {
-                let mut cfg: Config = config;
-                cfg.add_files_in_directories();
-                cfg
+                config
+                // let mut cfg: Config = config;
+                // cfg.add_files_in_directories();
+                // (cfg, cfg.add_files_in_directories())
             },
-            Err(e) => panic!(format!("Config ERROR: {}", e))
+            Err(e) => panic!("############################################\n{}", format!("Config ERROR: {}", e))
         }
     }
 
-    pub fn add_files_in_directories(&mut self) -> usize {
-        let mut num_files: usize = 0;
-        
-        for dir in &self.directories {
-            let dir_path = Path::new(dir);
-            if dir_path.is_dir() {
-                let paths = fs::read_dir(dir_path).unwrap();
-                for dir_entry in paths {
-                    let path = dir_entry.unwrap().path();
-                    if path.is_file() { 
-                        let path_str: String = path.display().to_string();
-                        if !path_str.ends_with("csv") && !path_str.ends_with("CSV") {
-                            continue;
-                        }
-        
-                        &self.files.push(path_str);
-                        num_files += 1;
-                    }
-                }
-            }
-        }
-        num_files
-    }
+
 }
 
 #[cfg(test)]

@@ -4,10 +4,12 @@ version = "0.1.0"
 authors = ["Rob Rowe <robrowe04@gmail.com>"]
 
 [dependencies]
+actix = "0.7.0"
 barrel = "0.2.3"
 clap = "2.31.2"
 codegen = { git = "https://github.com/carllerche/codegen" } # Soon on crates.io
 csv = "1.0.0"
+futures = "0.1.23"
 regex = "1.0.0"
 sqlite = "0.23.9"
 serde = "1.0.70"

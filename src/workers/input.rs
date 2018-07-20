@@ -4,7 +4,7 @@ use std::fs::{self, DirEntry};
 use std::path::Path;
 use std::string::ToString;
 
-#[derive(PartialEq, Deserialize)]
+#[derive(Clone, PartialEq, Deserialize)]
 pub enum InputType {
     CSV,
     NotSupported

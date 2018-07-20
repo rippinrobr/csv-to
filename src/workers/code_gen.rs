@@ -1,12 +1,55 @@
+use actix::prelude::*;
 use codegen::{Block, Function, Impl, Scope, Struct};
+use futures::Future;
 use models::{ColumnDef};
 use std::fs;
 use std::fs::File;
 use std::io::Error;
 use std::io::prelude::*;
 use std::path::Path;
+use super::config::{OutputCfg};
+use super::ParsedContent;
+use super::parse_csv::ParseFile;
+
+pub enum CodeGenTarget {
+    CurlScript,
+    DbActor,
+    Handler,
+    ModFile,
+    Struct,
+    WebService,
+}
 
 pub struct CodeGen;
+
+pub struct CodeGenStruct {
+    pub output_cfg: OutputCfg,
+    pub parsed_content: ParsedContent,
+}
+
+impl<'a> Message for CodeGenStruct {
+    type Result = String;
+}
+
+impl Actor for CodeGen {
+    type Context = Context<Self>;
+}
+
+impl Handler<CodeGenStruct> for CodeGen {
+    type Result = String;
+
+    fn handle(&mut self, msg: CodeGenStruct, _: &mut Context<Self>) -> Self::Result {
+        let struct_name = msg.parsed_content.get_struct_name();
+        let dir_path = msg.output_cfg.code_gen.unwrap().models_dir();
+        let file_name = format!("{}.rs", struct_name.to_lowercase());
+        let struct_src = CodeGen::generate_struct(&struct_name, &msg.parsed_content.columns);
+        match CodeGen::write_code_to_file(&dir_path, &file_name, struct_src.clone()) {
+            Err(e) => eprintln!("ERROR: {} trying to write {}/{}", e, dir_path, file_name),
+            Ok(res) => println!("{}", res)
+        };
+        struct_src
+    }
+}
 
 impl CodeGen {
     

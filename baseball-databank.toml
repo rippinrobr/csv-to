@@ -1,0 +1,10 @@
+input_type = "CSV"
+files = ["../baseballdatabank/core/Pitchin.csv" ]
+directories = [ "../baseballdatabank/core" ]
+
+[output]
+  gen_models = true
+  
+  [output.db]
+    [output.db.sqlite]
+    db_path = "../tabletopbaseball_loader/database/baseball_databank_2017.db"
