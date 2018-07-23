@@ -9,7 +9,6 @@ use std::io::prelude::*;
 use std::path::Path;
 use super::config::{OutputCfg};
 use super::ParsedContent;
-use super::parse_csv::ParseFile;
 
 pub enum CodeGenTarget {
     CurlScript,
@@ -21,63 +20,7 @@ pub enum CodeGenTarget {
 }
 
 pub struct CodeGen;
-pub struct CodeGenStruct {
-    pub output_cfg: OutputCfg,
-    pub parsed_content: ParsedContent,
-}
 
-pub struct CodeGenHandler {
-    pub output_cfg: OutputCfg,
-    pub parsed_content: ParsedContent,
-}
-
-impl<'a> Message for CodeGenStruct {
-    type Result = String;
-}
-
-impl<'a> Message for CodeGenHandler {
-    type Result = String;
-}
-
-impl Actor for CodeGen {
-    type Context = Context<Self>;
-}
-
-impl Handler<CodeGenStruct> for CodeGen {
-    type Result = String;
-
-    fn handle(&mut self, msg: CodeGenStruct, _: &mut Context<Self>) -> Self::Result {
-        let struct_name = msg.parsed_content.get_struct_name();
-        let dir_path = msg.output_cfg.code_gen.unwrap().models_dir();
-        let file_name = format!("{}.rs", struct_name.to_lowercase());
-        let struct_src = CodeGen::generate_struct(&struct_name, &msg.parsed_content.columns);
-        
-        match CodeGen::write_code_to_file(&dir_path, &file_name, struct_src.clone()) {
-            Err(e) => eprintln!("ERROR: {} trying to write {}/{}", e, dir_path, file_name),
-            Ok(_) => print!("Created {}/{}", dir_path, file_name)
-        };
-        
-        "".to_string()
-    }
-}
-
-impl Handler<CodeGenHandler> for CodeGen {
-    type Result = String;
-
-    fn handle(&mut self, msg: CodeGenHandler, _: &mut Context<Self>) -> Self::Result {
-        let entity_name = msg.parsed_content.get_struct_name();
-        let dir_path = msg.output_cfg.code_gen.unwrap().actors_dir();
-        let file_name = format!("{}.rs", entity_name.to_lowercase());
-        let code = CodeGen::create_handler_actor(&entity_name);
-
-        match CodeGen::write_code_to_file(&dir_path, &file_name, code){
-            Err(e) => eprintln!("ERROR: {} trying to write {}/{}", e, dir_path, file_name),
-            Ok(_) => print!("Created {}/{}", dir_path, file_name)
-        };
-        
-        "".to_string()
-    }
-}
 
 impl CodeGen {
     
@@ -101,7 +44,6 @@ impl CodeGen {
         and_then_block.after(").responder()");
 
         myfn.push_block(and_then_block);
-
         myfn
     }
 
@@ -130,7 +72,7 @@ impl CodeGen {
         let mut scope = Scope::new();
         //let struct_name = &struct_meta.0;
         
-        for (u0, u1) in vec![("actix::prelude", "*"), ("db", "DB"), (&format!("models::{}", struct_name.to_lowercase()), "*"), ("super::db_actor", "DbExecutor")] {
+        for (u0, u1) in vec![("actix::prelude", "*"), ("db", "DB"), (&format!("models::{}", struct_name.to_lowercase()), "*"), ("super::db", "DbExecutor")] {
             scope.import(u0, u1);
         }
 
@@ -177,32 +119,15 @@ impl CodeGen {
         scope.to_string()
     }
 
-    pub fn generate_mod_file(dir: &str) -> String {
+    pub fn generate_mod_file(entities: &Vec<String>) -> String {
         let mut scope = Scope::new();
         
-        let dir_path = Path::new(dir);
-        if dir_path.is_dir() {
-            //println!("dir, {}, is a directory!", dir);
-            let paths = fs::read_dir(dir_path).unwrap();
-            for dir_entry in paths {
-                let path = dir_entry.unwrap().path();
-                //println!("path: {}", path.to_str().unwrap());
-                if path.is_file() { 
-                    let file_name = path.file_name().unwrap().to_str().unwrap();
-
-                    if !file_name.ends_with("rs") || file_name == "mod.rs" {
-                        continue;
-                    }
-                    //println!("going to add {}", &format!("pub mod {};", file_name.replace(".rs", "")));
-                    scope.raw(&format!("pub mod {};", file_name.replace(".rs", "")));
-                }
-            }
+        for entity in entities {
+            scope.raw(&format!("pub mod {};", entity.to_lowercase()));
         }
-
+        
         scope.to_string().replace("\n\n", "\n") + "\n"
     }
-
-    
 
     pub fn generate_db_actor() -> String {
         let mut scope = Scope::new();
@@ -223,7 +148,7 @@ impl CodeGen {
     pub fn generate_webservice(db_path: String, entities: &Vec<String>) -> String {
         let mut scope = Scope::new();
         
-        for use_stmt in vec![("actix", "{Addr,Syn}"), ("actix::prelude", "*"), ("actors::db_actor", "*"), ("actix_web", "http, App, AsyncResponder, HttpRequest, HttpResponse"),
+        for use_stmt in vec![("actix", "{Addr,Syn}"), ("actix::prelude", "*"), ("actors::db", "*"), ("actix_web", "http, App, AsyncResponder, HttpRequest, HttpResponse"),
                             ("actix_web::server", "HttpServer"), ("futures", "Future"), ("actix_web", "Error"), ("actix_web", "Json"), ("actix_web::middleware", "Logger"),
                             ("rusqlite", "Connection"), ("models", "*")] {
             scope.import(use_stmt.0, use_stmt.1);
@@ -325,6 +250,88 @@ fn create_main_fn(db_path: String, entities: &Vec<String>) -> String {
         main_fn_scope.raw("}");
 
         main_fn_scope.to_string().replace("\n\n", "\n")
+}
+
+
+// Messages and Actors from here down
+pub struct CodeGenStruct {
+    pub struct_name: String,
+    pub models_dir: String, 
+    pub parsed_content: ParsedContent,
+}
+
+impl Message for CodeGenStruct {
+    type Result = String;
+}
+
+impl Handler<CodeGenStruct> for CodeGen {
+    type Result = String;
+
+    fn handle(&mut self, msg: CodeGenStruct, _: &mut Context<Self>) -> Self::Result {
+        let file_name = format!("{}.rs", &msg.struct_name.to_lowercase());
+        let struct_src = CodeGen::generate_struct(&msg.struct_name, &msg.parsed_content.columns);
+        
+        match CodeGen::write_code_to_file(&msg.models_dir, &file_name, struct_src.clone()) {
+            Err(e) => eprintln!("ERROR: {} trying to write {}/{}", e, &msg.models_dir, file_name),
+            Ok(_) => print!("Created {}/{}", &msg.models_dir, file_name)
+        };
+        
+        "".to_string()
+    }
+}
+
+pub struct CodeGenHandler {
+    pub struct_name: String,
+    pub actors_dir: String, 
+    pub parsed_content: ParsedContent,
+}
+
+impl<'a> Message for CodeGenHandler {
+    type Result = String;
+}
+
+impl Handler<CodeGenHandler> for CodeGen {
+    type Result = String;
+
+    fn handle(&mut self, msg: CodeGenHandler, _: &mut Context<Self>) -> Self::Result {
+        let file_name = format!("{}.rs", &msg.struct_name.to_lowercase());
+        let actor_code = CodeGen::create_handler_actor(&msg.struct_name);
+
+        match CodeGen::write_code_to_file(&msg.actors_dir, &file_name, actor_code){
+            Err(e) => eprintln!("ERROR: {} trying to write {}/{}", e, &msg.actors_dir, file_name),
+            Ok(_) => print!("Created {}/{}", &msg.actors_dir, file_name)
+        };
+
+        "".to_string()
+    }
+}
+
+pub struct CodeGenDbActor{
+    pub db_src_dir: String,
+    pub file_name: String,
+}
+
+impl Message for CodeGenDbActor {
+    type Result = String;
+}
+
+impl Handler<CodeGenDbActor> for CodeGen {
+    type Result = String;
+    
+    fn handle(&mut self, msg: CodeGenDbActor, _: &mut Context<Self>) -> Self::Result {
+        let actor_code = CodeGen::generate_db_actor();
+
+        match CodeGen::write_code_to_file(&msg.db_src_dir, &msg.file_name, actor_code){
+            Err(e) => eprintln!("ERROR: {} trying to write {}/{}", e, &msg.db_src_dir, &msg.file_name),
+            Ok(_) => print!("Created {}/{}", &msg.db_src_dir, &msg.file_name)
+        };
+
+        "".to_string()
+    }
+}
+
+impl Actor for CodeGen {
+    type Context = Context<Self>;
 }
 
 

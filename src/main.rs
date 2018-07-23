@@ -26,7 +26,7 @@ use workers::{
     config::OutputCfg,
     output::{Output},
     parse_csv::{ParseFile},
-    code_gen::{CodeGen, CodeGenStruct, CodeGenHandler},
+    code_gen::{CodeGen, CodeGenStruct, CodeGenHandler, CodeGenDbActor},
     sqlite::SqliteDB,
     sqlite_code_gen::SqliteCodeGen,
     sql_gen::SQLGen
@@ -61,13 +61,20 @@ fn main() {
     toml_file_handle.read_to_string(&mut config_content)
         .expect("something went wrong reading the config file");
     
-    let config =Config::load(&config_content);
+    let config = &Config::load(&config_content);
+    // println!("config: {:?}", config);
     
     // get the files
     let csv_files = create_files_list(&config.directories, &config.files);
 
+    // flags for what needs to be created
+    let create_webserver = config.gen_webserver.unwrap_or(false);
+    let create_models = config.gen_models.unwrap_or(false);
+    let create_sql = config.gen_sql.unwrap_or(false);
+
     let system = System::new("csv2api");
-    let mut struct_meta: Vec<ParsedContent> = vec![];
+    let mut structs: Vec<String> = vec![];
+    let mut column_meta: Vec<(String, Vec<models::ColumnDef>)> = Vec::new();
 
     // process the files
     for file in csv_files.iter() {
@@ -75,35 +82,55 @@ fn main() {
         
         match parser.execute() {
             Ok(parsed_content) => {
-                if let Some(_gen_models) = config.gen_models {
+                if create_models {
                     call_code_gen_struct_actor(config.output.clone(), parsed_content.clone());
                 }
 
-                if let Some(_gen_webserver) = config.gen_webserver {
+                if create_webserver {
                     call_code_gen_handler_actor(config.output.clone(), parsed_content.clone());
                 }
 
-                if let Some(_gen_sql) = config.gen_sql {
+                if create_sql {
                     //println!("I should generate the sql");
                 }
 
-                struct_meta.push(parsed_content);
+                structs.push(parsed_content.get_struct_name());
+                column_meta.push((parsed_content.get_struct_name(), parsed_content.columns));
             },
             Err(e) => {
                 println!("ERROR: Parsing {} threw {}", file, e);
             }
         }
     }
-
-    println!("before run");
-    system.run();
-    println!("after run");
     
+    if create_webserver {
+        let output = config.output.clone();
+        let base_dir = format!("{}/{}/src", &output.output_dir, &output.project_name.unwrap());
+        let actors_dir = format!("{}/actors", base_dir);
+        let db_dir = format!("{}/db", base_dir);
+        let mod_src = CodeGen::generate_mod_file(&structs);
+        let web_svc_code = CodeGen::generate_webservice("db placeholder".to_string(), &structs);
+        let db_layer_code = SqliteCodeGen::generate_db_layer(&column_meta);
+
+        call_code_gen_db_actor(actors_dir.clone());
+        CodeGen::write_code_to_file(&db_dir, "mod.rs", db_layer_code);
+        CodeGen::write_code_to_file(&base_dir, "main.rs", web_svc_code);
+        CodeGen::write_code_to_file(&actors_dir, "mod.rs", format!("{}pub mod db;", mod_src));
+        CodeGen::write_code_to_file(&format!("{}/models", base_dir), "mod.rs", mod_src);
+    }
+
+    system.run();
 }
 
 fn call_code_gen_struct_actor(output_cfg: OutputCfg, parsed_content: ParsedContent) {
     let addr = CodeGen.start();
-    let res = addr.send(CodeGenStruct{output_cfg: output_cfg, parsed_content: parsed_content});
+    let output_dir = &output_cfg.output_dir;
+    let project_name = output_cfg.project_name.unwrap_or("".to_string());
+    
+    let res = addr.send(CodeGenStruct{
+        struct_name: parsed_content.get_struct_name(),
+        models_dir: format!("{}/{}/src/models", output_dir, project_name),
+        parsed_content: parsed_content});
 
     Arbiter::spawn(res.then(|res| {
         match res {
@@ -118,7 +145,13 @@ fn call_code_gen_struct_actor(output_cfg: OutputCfg, parsed_content: ParsedConte
 
 fn call_code_gen_handler_actor(output_cfg: OutputCfg, parsed_content: ParsedContent) {
     let addr = CodeGen.start();
-    let res = addr.send(CodeGenHandler{output_cfg: output_cfg, parsed_content: parsed_content});
+    let output_dir = &output_cfg.output_dir;
+    let project_name = output_cfg.project_name.unwrap_or("".to_string());
+    
+    let res = addr.send(CodeGenHandler{
+        struct_name: parsed_content.get_struct_name(),
+        actors_dir: format!("{}/{}/src/actors", output_dir, project_name),
+        parsed_content: parsed_content});
 
     Arbiter::spawn(res.then(|res| {
         match res {
@@ -131,6 +164,26 @@ fn call_code_gen_handler_actor(output_cfg: OutputCfg, parsed_content: ParsedCont
     }));
 }
 
+fn call_code_gen_db_actor(db_dir: String) {
+    let addr = CodeGen.start();
+    let file_name = "db.rs".to_string();
+    let dir_path = db_dir.clone();
+
+    let res = addr.send(CodeGenDbActor{
+        db_src_dir: db_dir.clone(),
+        file_name: file_name,
+    });
+    
+    Arbiter::spawn(res.then(|res| {
+        match res {
+            Ok(_) => println!("Created the db actor"),
+            _ => println!("Something wrong"),
+        }
+        
+        System::current().stop();
+        future::result(Ok(()))
+    }));
+}
 
 fn create_files_list(dirs: &Vec<String>, cfg_files: &Vec<String>) -> Vec<String> {
     let mut files: Vec<String> = Vec::new();
@@ -154,7 +207,10 @@ fn create_files_list(dirs: &Vec<String>, cfg_files: &Vec<String>) -> Vec<String>
     }
 
     for f in cfg_files {
-        files.push(f.to_string());
+        if !files.contains(f) {
+            files.push(f.to_string());
+        }
+        
     }
 
     files.to_owned()

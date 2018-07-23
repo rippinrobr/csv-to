@@ -7,75 +7,44 @@ use std::io;
 use std::path::Path;
 
 #[derive(Clone, Debug, PartialEq, Deserialize)]
-pub struct SqliteCfg {
-    db_path: String,
-}
-
-#[derive(Clone, Debug, PartialEq, Deserialize)]
 pub struct DbCfg {
-    sqlite: Option<SqliteCfg>,
-}
-
-impl DbCfg {
-    pub fn has_sqlite(self) -> bool {
-        if let Some(_) = self.sqlite {
-            return true;
-        }
-
-        false
-    }
+    db_type: Option<String>,
+    db_uri: Option<String>
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize)]
 pub struct CodeGenCfg {
-    pub project_dir: String,
+    pub output_dir: String,
     pub project_name: String,
 }
 
 impl CodeGenCfg{
-    pub fn create_project_dir(self) -> io::Result<()> {
-        let src_path = &format!("{}/{}/src/models", self.project_dir, self.project_name);
-        if Path::new(src_path).exists() {
-            return Ok(());
-        }
+    // pub fn create_project_dir(self) -> io::Result<()> {
+    //     let src_path = &format!("{}/{}/src/models", self.project_dir, self.project_name);
+    //     if Path::new(src_path).exists() {
+    //         return Ok(());
+    //     }
 
-        create_dir_all(src_path)
-    }
+    //     create_dir_all(src_path)
+    // }
 
-    pub fn models_dir(self) -> String {
-        format!("{}/{}/src/models", self.project_dir, self.project_name)
-    }
-       
-    pub fn actors_dir(self) -> String {
-        format!("{}/{}/src/actors", self.project_dir, self.project_name)
-    }
+    // pub fn models_dir(self) -> String {
+    //     format!("{}/{}/src/models", self.project_dir, self.project_name)
+    // }
+    
+    // pub fn actors_dir(self) -> String {
+    //     format!("{}/{}/src/actors", self.project_dir, self.project_name)
+    // }
+
+    // pub fn handlers_dir(self) -> String {
+    //     format!("{}/{}/src/handlers", self.out, self.project_name)
+    // }
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize)]
 pub struct OutputCfg {
-    pub db: Option<DbCfg>,
-    pub code_gen: Option<CodeGenCfg>
-}
-
-impl OutputCfg {
-    pub fn create_project(self) -> Result<(), String>  {
-        if let Some(code_gen_cfg) = self.code_gen {
-            let src_path = &format!("{}/{}/src/models", code_gen_cfg.project_dir, code_gen_cfg.project_name);
-            if Path::new(src_path).exists() {
-                return Ok(());
-            } 
-            
-
-            let res = match create_dir_all(src_path) {
-                Err(e) => Err(format!("Error: {}", e)),
-                _ => Ok(())
-            };
-
-            return res;
-        }
-
-        Ok(())
-    }
+    pub output_dir: String,
+    pub project_name: Option<String>
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize)]
@@ -86,7 +55,8 @@ pub struct Config {
     pub input_type: InputType,
     pub files: Vec<String>,
     pub directories: Vec<String>,
-    pub output: OutputCfg
+    pub output: OutputCfg,
+    pub output_db: DbCfg,
 }
 
 impl Config {

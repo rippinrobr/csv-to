@@ -7,10 +7,9 @@ gen_webserver = true
 gen_sql = true 
 
 [output]
-  [output.code_gen]
-  project_dir = ".."
+  output_dir = ".."
   project_name = "hockey_db_api"
 
-  [output.db]
-    [output.db.sqlite]
-    db_path = "../hockey-db/database/hockey_databank_2017.db"
+[output_db]
+  db_type = "sqlite"
+  db_uri = "../hockey-db/database/hockey_databank_2017.db"
