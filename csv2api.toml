@@ -12,4 +12,4 @@ gen_sql = true
 
 [output_db]
   db_type = "sqlite"
-  db_uri = "../hockey-db/database/hockey_databank_2017.db"
+  db_uri = "../hockey_db_api/database/hockey_databank_2017.db"

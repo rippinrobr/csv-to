@@ -1,44 +1,21 @@
 extern crate toml;
 
 use workers::input::*;
-use std::error::Error;
-use std::fs::{create_dir_all};
-use std::io;
-use std::path::Path;
+// use std::error::Error;
+// use std::fs::{create_dir_all};
+// use std::io;
+// use std::path::Path;
 
 #[derive(Clone, Debug, PartialEq, Deserialize)]
 pub struct DbCfg {
-    db_type: Option<String>,
-    db_uri: Option<String>
+    pub db_type: Option<String>,
+    pub db_uri: Option<String>
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize)]
 pub struct CodeGenCfg {
     pub output_dir: String,
     pub project_name: String,
-}
-
-impl CodeGenCfg{
-    // pub fn create_project_dir(self) -> io::Result<()> {
-    //     let src_path = &format!("{}/{}/src/models", self.project_dir, self.project_name);
-    //     if Path::new(src_path).exists() {
-    //         return Ok(());
-    //     }
-
-    //     create_dir_all(src_path)
-    // }
-
-    // pub fn models_dir(self) -> String {
-    //     format!("{}/{}/src/models", self.project_dir, self.project_name)
-    // }
-    
-    // pub fn actors_dir(self) -> String {
-    //     format!("{}/{}/src/actors", self.project_dir, self.project_name)
-    // }
-
-    // pub fn handlers_dir(self) -> String {
-    //     format!("{}/{}/src/handlers", self.out, self.project_name)
-    // }
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize)]
@@ -65,9 +42,6 @@ impl Config {
         match toml::from_str(config_str) {
             Ok(config) => {
                 config
-                // let mut cfg: Config = config;
-                // cfg.add_files_in_directories();
-                // (cfg, cfg.add_files_in_directories())
             },
             Err(e) => panic!("############################################\n{}", format!("Config ERROR: {}", e))
         }

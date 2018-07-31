@@ -10,6 +10,7 @@ use std::path::Path;
 use super::config::{OutputCfg};
 use super::ParsedContent;
 
+// TODO: MOVE write_code_to_file into the mod.rs file
 pub enum CodeGenTarget {
     CurlScript,
     DbActor,
@@ -183,6 +184,7 @@ impl CodeGen {
         create_extern_create_defs() + &scope.to_string() + &create_main_fn(db_path, &entities)
     }
 
+    // TODO: MOVE this func into the mod.rs file
     pub fn write_code_to_file(dir_path: &str, file_name: &str, code: String) -> Result<String, Error> {
 
         match File::create(format!("{}/{}", dir_path, &file_name).to_lowercase()) {

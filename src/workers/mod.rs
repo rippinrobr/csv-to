@@ -10,12 +10,6 @@ pub mod sql_gen;
 use csv::{StringRecord};
 use csv::Error;
 use models::{ColumnDef};
-use std::collections::HashSet;
-
-
-pub trait WorkOrder {
-    fn execute() -> Result<i32, String>;
-}
 
 #[derive(Debug)]
 pub struct ParsedContent {
@@ -23,8 +17,8 @@ pub struct ParsedContent {
     pub content: Vec<StringRecord>,
     pub file_name: String,
     pub records_parsed: usize,
-    
 }
+
 impl Clone for ParsedContent {
     fn clone(&self) -> ParsedContent { 
         ParsedContent {

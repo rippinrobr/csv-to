@@ -1,10 +1,15 @@
 input_type = "CSV"
-files = ["../baseballdatabank/core/Pitchin.csv" ]
+files = []
 directories = [ "../baseballdatabank/core" ]
+create_db = true
+gen_models = true
+gen_webserver = true
+gen_sql = true 
 
 [output]
-  gen_models = true
-  
-  [output.db]
-    [output.db.sqlite]
-    db_path = "../tabletopbaseball_loader/database/baseball_databank_2017.db"
+  output_dir = ".."
+  project_name = "baseball_stats_api"
+
+[output_db]
+  db_type = "sqlite"
+  db_uri = "../baseball_stats_api/database/baseball_stats.db"

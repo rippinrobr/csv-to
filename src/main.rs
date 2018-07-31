@@ -16,28 +16,23 @@ extern crate toml;
 use actix::*;
 use actix::prelude::*;
 use futures::{future, Future};
-use std::fs::{self, DirEntry};
+use models::{ColumnDef};
+use std::fs::{self, write};
+use std::fs::OpenOptions;
 use std::path::Path;
 use std::fs::File;
 use std::io::prelude::*;
 use workers::{
     ParsedContent,
-    config::Config,
-    config::OutputCfg,
+    config::{Config, DbCfg, OutputCfg},
     output::{Output},
     parse_csv::{ParseFile},
     code_gen::{CodeGen, CodeGenStruct, CodeGenHandler, CodeGenDbActor},
-    sqlite::SqliteDB,
+    sqlite::{SqliteDB, SqliteCreateTable, SQLGen},
     sqlite_code_gen::SqliteCodeGen,
-    sql_gen::SQLGen
 };
 
-// WITHOUT RAYON cargo run  2.47s user 0.14s system 98% cpu 2.645 total
-// WITH RAYON 
 
-// TODO: Add support for command line args and .env files
-// TODO: Rename Output to be OuputProjectDir
-// TODO: Refactor main to create smaller, single purpose functions
 fn main() {
     let matches = clap::App::new("csv2api")
         .version("0.0.1")
@@ -62,7 +57,6 @@ fn main() {
         .expect("something went wrong reading the config file");
     
     let config = &Config::load(&config_content);
-    // println!("config: {:?}", config);
     
     // get the files
     let csv_files = create_files_list(&config.directories, &config.files);
@@ -91,7 +85,7 @@ fn main() {
                 }
 
                 if create_sql {
-                    //println!("I should generate the sql");
+                    sqlite_load_table(config.clone(), &parsed_content.file_name.replace(".csv", ""), parsed_content.columns.clone(), parsed_content.content_to_string_vec().unwrap());
                 }
 
                 structs.push(parsed_content.get_struct_name());
@@ -167,8 +161,7 @@ fn call_code_gen_handler_actor(output_cfg: OutputCfg, parsed_content: ParsedCont
 fn call_code_gen_db_actor(db_dir: String) {
     let addr = CodeGen.start();
     let file_name = "db.rs".to_string();
-    let dir_path = db_dir.clone();
-
+    
     let res = addr.send(CodeGenDbActor{
         db_src_dir: db_dir.clone(),
         file_name: file_name,
@@ -177,6 +170,40 @@ fn call_code_gen_db_actor(db_dir: String) {
     Arbiter::spawn(res.then(|res| {
         match res {
             Ok(_) => println!("Created the db actor"),
+            _ => println!("Something wrong"),
+        }
+        
+        System::current().stop();
+        future::result(Ok(()))
+    }));
+}
+
+fn sqlite_load_table(cfg: Config, table_name: &str, columns: Vec<ColumnDef>, contents: Vec<Vec<String>>) {
+    let addr = SQLGen.start();
+    let tname = table_name.to_string().clone();
+    let db_uri = cfg.output_db.db_uri.unwrap();
+    let dir = cfg.output.output_dir.to_owned();
+    let project_name = cfg.output.project_name;
+    let db_conn = SqliteDB::new(&db_uri).unwrap();
+    
+    let res = addr.send(SqliteCreateTable{
+        columns: columns.clone(),
+        db_conn: db_conn,
+        table_name: table_name.to_string(),
+    });
+    
+    Arbiter::spawn(res.then( move |res| {
+        match res {
+            // now that the table is created I can insert the data
+            Ok(table_sql) => {
+                let writer_dbconn = SqliteDB::new(&db_uri).unwrap();
+                let stmt = SQLGen::generate_insert_stmt(&tname, &columns.clone()).unwrap();
+                println!("{}", stmt);
+                match writer_dbconn.insert_rows(stmt, &columns, contents) {
+                    Ok(num_inserted) => println!("{} records insert into {}", num_inserted, tname),
+                    Err(e) => eprintln!("ERROR: {} inserting record into {}", e, tname)
+                }
+            },
             _ => println!("Something wrong"),
         }
         
