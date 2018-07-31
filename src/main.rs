@@ -14,18 +14,15 @@ extern crate serde_derive;
 extern crate toml;
 
 use actix::*;
-use actix::prelude::*;
 use futures::{future, Future};
 use models::{ColumnDef};
-use std::fs::{self, write};
-use std::fs::OpenOptions;
+use std::fs::{self};
 use std::path::Path;
 use std::fs::File;
 use std::io::prelude::*;
 use workers::{
     ParsedContent,
-    config::{Config, DbCfg, OutputCfg},
-    output::{Output},
+    config::{Config, OutputCfg},
     parse_csv::{ParseFile},
     code_gen::{CodeGen, CodeGenStruct, CodeGenHandler, CodeGenDbActor},
     sqlite::{SqliteDB, SqliteCreateTable, SQLGen},
@@ -99,11 +96,12 @@ fn main() {
     
     if create_webserver {
         let output = config.output.clone();
+        let output_db_uri = config.output_db.db_uri.clone();
         let base_dir = format!("{}/{}/src", &output.output_dir, &output.project_name.unwrap());
         let actors_dir = format!("{}/actors", base_dir);
         let db_dir = format!("{}/db", base_dir);
         let mod_src = CodeGen::generate_mod_file(&structs);
-        let web_svc_code = CodeGen::generate_webservice("db placeholder".to_string(), &structs);
+        let web_svc_code = CodeGen::generate_webservice(output_db_uri.unwrap(), &structs);
         let db_layer_code = SqliteCodeGen::generate_db_layer(&column_meta);
 
         call_code_gen_db_actor(actors_dir.clone());
@@ -182,8 +180,6 @@ fn sqlite_load_table(cfg: Config, table_name: &str, columns: Vec<ColumnDef>, con
     let addr = SQLGen.start();
     let tname = table_name.to_string().clone();
     let db_uri = cfg.output_db.db_uri.unwrap();
-    let dir = cfg.output.output_dir.to_owned();
-    let project_name = cfg.output.project_name;
     let db_conn = SqliteDB::new(&db_uri).unwrap();
     
     let res = addr.send(SqliteCreateTable{
@@ -195,10 +191,10 @@ fn sqlite_load_table(cfg: Config, table_name: &str, columns: Vec<ColumnDef>, con
     Arbiter::spawn(res.then( move |res| {
         match res {
             // now that the table is created I can insert the data
-            Ok(table_sql) => {
+            Ok(_) => {
                 let writer_dbconn = SqliteDB::new(&db_uri).unwrap();
                 let stmt = SQLGen::generate_insert_stmt(&tname, &columns.clone()).unwrap();
-                println!("{}", stmt);
+                
                 match writer_dbconn.insert_rows(stmt, &columns, contents) {
                     Ok(num_inserted) => println!("{} records insert into {}", num_inserted, tname),
                     Err(e) => eprintln!("ERROR: {} inserting record into {}", e, tname)
@@ -242,166 +238,3 @@ fn create_files_list(dirs: &Vec<String>, cfg_files: &Vec<String>) -> Vec<String>
 
     files.to_owned()
 }
-
-//     // TODO: Add to Output.Sqlite config
-//     //let sqlite_db_path = "../hockey-db/database/baseball_databank_2017.db";
-//     // TODO: Remove this and use the value in config if it exists
-//     let sqlite_db_path = "../hockey-db/database/hockey_databank_2017.db";
-    
-//     let output = Output::new("../hockey-db/src".to_string(),
-//                             "../hockey-db/sql".to_string());    
-//     // TODO: Move this into the section where I know that SQL is to be generated
-//     let sql_generator = SQLGen::new("../hockey-db/sql".to_string());
-//     // let sqlite_db = SqliteDB::new(sqlite_db_path).unwrap();
-
-
-//     let models_dir: &str = &(output.src_directory.clone() + "/models");
-//     // let mut created_file_names: Vec<String> = Vec::new();
-//     // let mut create_table_statements: Vec<String> = Vec::new();
-//     let mut column_meta: Vec<(String, Vec<models::ColumnDef>)> = Vec::new();
-
-
-// //    let files = config.get_files();
-//     for file_path in files {
-//         let parser = ParseFile::new(file_path.to_string());
-//         match parser.execute() {
-//             Ok(parsed_content) => {
-                
-//                 if config.output.gen_models.unwrap_or(false) {
-//                     let cfg = config.clone();
-//                     //println!("{:#?}", cfg.output);
-//                     let models_dir = &cfg.output.code_gen.unwrap().models_dir();
-//                     //create_models(&parsed_content, &models_dir); 
-//                     let struct_name = parsed_content.get_struct_name().clone();                    
-//                     let struct_string = CodeGen::generate_struct(&struct_name, &parsed_content.columns);
-//                     match CodeGen::write_code_to_file(models_dir, &format!("{}.rs",struct_name), struct_string) {
-//                         Err(e) => eprintln!("ERROR: {} [models_dir: {} file: {}]", e, models_dir, file_path),
-//                         Ok(file_name) => println!("Created file {}", file_name)
-//                     }
-//                 }
-//             },
-//             Err(e) => {
-//                 println!("ERROR: {} for file {} ", e, file_path);
-//             }
-//         }
-//     }
-//     //             let tmp_struct_name = parsed_content.get_struct_name().clone();
-//     //             let struct_name = tmp_struct_name;
-//     //             column_meta.push((struct_name.clone(), parsed_content.columns.clone()));
-
-//                 //let _cfg = config.to_owned();
-//                 // if cfg.should_gen_models() {
-//                 //     let struct_string = CodeGen::generate_struct(&struct_name, &parsed_content.columns);
-//                 //     match CodeGen::write_code_to_file(models_dir, &format!("{}.rs",struct_name), struct_string) {
-//                 //         Err(e) => eprintln!("ERROR: {}", e),
-//                 //         Ok(file_name) => println!("Created file {}", file_name)
-//                 //     }
-//                 // }
-
-//                 // COMMENTED OUT WHILE I WORK ON MOVING THE 
-//                 // let struct_string = CodeGen::generate_struct(&struct_name, &parsed_content.columns);
-//                 // match CodeGen::write_code_to_file(models_dir, &format!("{}.rs",struct_name), struct_string) {
-//                 //     Err(e) => eprintln!("ERROR: {}", e),
-//                 //     Ok(file_name) => {
-//                 //         println!("Created file {}", file_name);
-                        
-//                 //         // TODO: instead of writing out the files at the end I want to write them out as the code is generated
-//                 //         // at lest for the models
-//                 //         created_file_names.push(file_name.replace(".rs", ""));
-
-//                 //         // TODO: Move the sqlite generation out to its own match.  Eventually this will be its own
-//                 //         // actor
-//                 //         match SQLGen::generate_create_table(&struct_name, &parsed_content.columns) {
-//                 //             Ok(stmt) => {
-//                 //                 create_table_statements.push(stmt.to_owned());
-//                 //                 match sqlite_db.create_table(stmt.clone()) {
-//                 //                     Ok(_) => {
-//                 //                         println!("the table {} was created", struct_name);
-//                 //                         let stmt = SQLGen::generate_insert_stmt(&struct_name, &parsed_content.columns).unwrap();
-//                 //                         match sqlite_db.insert_rows(stmt, &parsed_content.columns, parsed_content.content_to_string_vec().unwrap()) {
-//                 //                             Ok(num_inserted) => println!("{} records insert into {}", num_inserted, struct_name),
-//                 //                             Err(e) => eprintln!("ERROR: {} inserting record into {}", e, struct_name)
-//                 //                         }
-//                 //                     },
-//                 //                     Err(e) => eprintln!("ERROR: there was a problem creating the table {}: {}", struct_name, e)
-//                 //                 };
-//                 //             },
-//                 //             Err(e) => eprintln!("[Main.generate_create_table] Error: {}", e)
-//                 //         };
-//                 //     }
-//                 // };
-//            // },
-//            //  Err(e) => println!("error: {}", e);
-//     //     };
-//     // }
-
-//     // TODO: Change this if so that it keys off of a config value. This section may not be needed 
-//     // or if it is there will be a smaller amount of code here
-//     // if created_file_names.len() > 0 {
-//     //     let mod_file_contents = CodeGen::generate_mod_file_contents(&created_file_names);
-//     //     match CodeGen::write_code_to_file(models_dir, "mod.rs", mod_file_contents) {
-//     //         Ok(_) => println!("Created file mod.rs"),
-//     //         Err(e) => eprintln!("ERROR: {}", e)
-//     //     };
-
-//     //     let db_actor_file_contents = CodeGen::generate_db_actor();
-//     //     let actors_dir: &str = &format!("{}/actors", output.src_directory);
-//     //     match CodeGen::write_code_to_file(actors_dir, "db_actor.rs", db_actor_file_contents) {
-//     //         Ok(_) => println!("Created file actors/db_actor.rs"),
-//     //         Err(e) => eprintln!("ERROR: {}", e)
-//     //     };
-
-//     //     println!("INFO: actors_dir: {}", actors_dir);
-//     //     let actor_mod_file_str = CodeGen::generate_mod_file(actors_dir);
-//     //     match CodeGen::write_code_to_file(actors_dir, "mod.rs", actor_mod_file_str) {
-//     //         Ok(_) => println!("Created file mod.rs"),
-//     //         Err(e) => eprintln!("ERROR: creating actors/mod.rs {}", e)
-//     //     };
-
-//     //     let main_fn_src = CodeGen::generate_webservice(sqlite_db_path.to_string(), &created_file_names);
-//     //     match CodeGen::write_code_to_file(&output.src_directory, "main.rs", main_fn_src) {
-//     //         Ok(_) => println!("Created file main.rs"),
-//     //         Err(e) => eprintln!("ERROR: {}", e)
-//     //     }
-
-//     //     let db_layer_src = SqliteCodeGen::generate_db_layer(&column_meta);
-//     //     match CodeGen::write_code_to_file(&format!("{}/db", output.src_directory), "mod.rs", db_layer_src) {
-//     //         Ok(_) => println!("Created file db/mod.rs"),
-//     //         Err(e) => eprintln!("ERROR: {}", e)
-//     //     }
-
-//     //     for meta in &column_meta {
-//     //         let actor_src = CodeGen::create_handler_actor(meta);
-//     //         let file_name = &format!("{}.rs", &meta.0.to_lowercase());
-//     //         match CodeGen::write_code_to_file(&format!("{}/actors", output.src_directory), file_name, actor_src) {
-//     //             Ok(_) => {
-//     //                 println!("Created file actors/{}", file_name);
-//     //             },
-//     //             Err(e) => eprintln!("ERROR: {}", e)
-//     //         }
-
-//     //     }
-
-//     //     match CodeGen::create_curl_script("../tabletopbaseball_loader", &created_file_names) {
-//         //     Ok(_) => println!("Created file curl_test.sh"),
-//         //     Err(e) => eprintln!("ERROR: {}", e)
-//         // }
-//     //}
-
-//     // if create_table_statements.len() > 0 {
-//     //     match sql_generator.write_sql_to_file("schema", create_table_statements.join("\n")) {
-//     //         Ok(_) => println!("Created file schema.sql"),
-//     //         Err(e) => eprintln!("Error writing schema.sql file {}", e)
-//     //     };
-//     // }
-// }
-
-// fn create_models(parsed_content: &ParsedContent, model_dir_path: &str ) {
-//     let struct_name = parsed_content.get_struct_name().clone();
-//     let struct_string = CodeGen::generate_struct(&struct_name, &parsed_content.columns);
-    
-//     match CodeGen::write_code_to_file(model_dir_path, &format!("{}.rs",struct_name), struct_string) {
-//         Err(e) => eprintln!("ERROR: {}", e),
-//         Ok(file_name) => println!("Created file {}", file_name)
-//     }
-// }

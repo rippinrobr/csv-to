@@ -1,10 +1,6 @@
 extern crate toml;
 
 use workers::input::*;
-// use std::error::Error;
-// use std::fs::{create_dir_all};
-// use std::io;
-// use std::path::Path;
 
 #[derive(Clone, Debug, PartialEq, Deserialize)]
 pub struct DbCfg {
