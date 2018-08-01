@@ -3,7 +3,10 @@ name = "csv2api"
 version = "0.1.0"
 authors = ["Rob Rowe <robrowe04@gmail.com>"]
 
+[workspace]
+
 [dependencies]
+csv_converter = { path = "csv_converter"}
 actix = "0.7.0"
 barrel = "0.2.3"
 clap = "2.31.2"

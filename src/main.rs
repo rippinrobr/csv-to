@@ -1,6 +1,7 @@
 pub mod models;
 pub mod workers;
 
+extern crate csv_converter;
 extern crate actix;
 extern crate barrel;
 extern crate clap;
@@ -13,6 +14,8 @@ extern crate sqlite;
 extern crate serde_derive;
 extern crate toml;
 
+use csv_converter::config::{Config, OutputCfg};
+//use csv_converter::input;
 use actix::*;
 use futures::{future, Future};
 use models::{ColumnDef};
@@ -22,7 +25,6 @@ use std::fs::File;
 use std::io::prelude::*;
 use workers::{
     ParsedContent,
-    config::{Config, OutputCfg},
     parse_csv::{ParseFile},
     code_gen::{CodeGen, CodeGenStruct, CodeGenHandler, CodeGenDbActor},
     sqlite::{SqliteDB, SqliteCreateTable, SQLGen},

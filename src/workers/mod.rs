@@ -1,6 +1,6 @@
 pub mod code_gen;
-pub mod config;
-pub mod input;
+// pub mod config;
+// pub mod input;
 pub mod output;
 pub mod parse_csv;
 pub mod sqlite;

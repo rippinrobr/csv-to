@@ -7,7 +7,7 @@ use std::fs::File;
 use std::io::Error;
 use std::io::prelude::*;
 use std::path::Path;
-use super::config::{OutputCfg};
+use csv_converter::config::{OutputCfg};
 use super::ParsedContent;
 
 // TODO: MOVE write_code_to_file into the mod.rs file
