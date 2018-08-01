@@ -1,4 +1,4 @@
-pub mod models;
+// pub mod models;
 pub mod workers;
 
 extern crate csv_converter;
@@ -15,10 +15,11 @@ extern crate serde_derive;
 extern crate toml;
 
 use csv_converter::config::{Config, OutputCfg};
+use csv_converter::code_gen::CodeGen;
+use csv_converter::models::{ColumnDef};
 //use csv_converter::input;
 use actix::*;
 use futures::{future, Future};
-use models::{ColumnDef};
 use std::fs::{self};
 use std::path::Path;
 use std::fs::File;
@@ -26,7 +27,7 @@ use std::io::prelude::*;
 use workers::{
     ParsedContent,
     parse_csv::{ParseFile},
-    code_gen::{CodeGen, CodeGenStruct, CodeGenHandler, CodeGenDbActor},
+    code_gen::{ Generator, CodeGenStruct, CodeGenHandler, CodeGenDbActor},
     sqlite::{SqliteDB, SqliteCreateTable, SQLGen},
     sqlite_code_gen::SqliteCodeGen,
 };
@@ -67,7 +68,7 @@ fn main() {
 
     let system = System::new("csv2api");
     let mut structs: Vec<String> = vec![];
-    let mut column_meta: Vec<(String, Vec<models::ColumnDef>)> = Vec::new();
+    let mut column_meta: Vec<(String, Vec<ColumnDef>)> = Vec::new();
 
     // process the files
     for file in csv_files.iter() {
@@ -117,7 +118,7 @@ fn main() {
 }
 
 fn call_code_gen_struct_actor(output_cfg: OutputCfg, parsed_content: ParsedContent) {
-    let addr = CodeGen.start();
+    let addr = Generator.start();
     let output_dir = &output_cfg.output_dir;
     let project_name = output_cfg.project_name.unwrap_or("".to_string());
     
@@ -138,7 +139,7 @@ fn call_code_gen_struct_actor(output_cfg: OutputCfg, parsed_content: ParsedConte
 }
 
 fn call_code_gen_handler_actor(output_cfg: OutputCfg, parsed_content: ParsedContent) {
-    let addr = CodeGen.start();
+    let addr = Generator.start();
     let output_dir = &output_cfg.output_dir;
     let project_name = output_cfg.project_name.unwrap_or("".to_string());
     
@@ -159,7 +160,7 @@ fn call_code_gen_handler_actor(output_cfg: OutputCfg, parsed_content: ParsedCont
 }
 
 fn call_code_gen_db_actor(db_dir: String) {
-    let addr = CodeGen.start();
+    let addr = Generator.start();
     let file_name = "db.rs".to_string();
     
     let res = addr.send(CodeGenDbActor{

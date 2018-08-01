@@ -4,7 +4,7 @@ use std::io::Error;
 use std::io::prelude::*;
 use barrel::*;
 use barrel::backend::Pg;
-use models::ColumnDef;
+use csv_converter::models::ColumnDef;
 
 
 pub struct SQLGen {

@@ -1,6 +1,6 @@
 extern crate csv;
 
-use models::{DataTypes, ColumnDef};
+use csv_converter::models::{DataTypes, ColumnDef};
 use workers::{ParsedContent};
 use csv::StringRecord;
 use regex::Regex;

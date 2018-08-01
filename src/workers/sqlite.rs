@@ -1,7 +1,7 @@
 use actix::prelude::*;
 use barrel::*;
 use barrel::backend::Pg;
-use models::{ColumnDef, DataTypes};
+use csv_converter::models::{ColumnDef, DataTypes};
 use sqlite;
 use sqlite::{Connection, Error, Value};
 use std::path::Path;
