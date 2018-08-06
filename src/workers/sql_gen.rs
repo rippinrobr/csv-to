@@ -77,7 +77,7 @@ impl SQLGen {
 #[cfg(test)]
 mod tests {
     use workers::sql_gen::SQLGen;
-    use models::{ColumnDef, DataTypes};
+    use csv_converter::models::{ColumnDef, DataTypes};
 
     #[test] 
     fn generate_create_table() {

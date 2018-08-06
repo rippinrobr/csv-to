@@ -80,7 +80,7 @@ impl SqliteCodeGen {
 mod tests {
     use workers::sqlite_code_gen::SqliteCodeGen;
     use codegen::{Function, Impl, Scope, Struct};
-    use models::{ColumnDef, DataTypes};
+    use csv_converter::models::{ColumnDef, DataTypes};
 
     #[test] 
     fn generate_use_and_extern_statements() {

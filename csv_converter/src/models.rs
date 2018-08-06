@@ -117,8 +117,7 @@ impl ParsedContent {
 mod tests {
     use csv::{StringRecord};
     use csv::Error;
-    use workers::ParsedContent;
-    use models::{ColumnDef, DataTypes};
+    use models::{ColumnDef, DataTypes, ParsedContent};
 
     #[test]
     fn new() {

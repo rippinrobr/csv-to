@@ -254,105 +254,23 @@ fn create_main_fn(db_path: String, entities: &Vec<String>) -> String {
 }
 
 
-// // Messages and Actors from here down
-// pub struct CodeGenStruct {
-//     pub struct_name: String,
-//     pub models_dir: String, 
-//     pub parsed_content: ParsedContent,
-// }
-
-// impl Message for CodeGenStruct {
-//     type Result = String;
-// }
-
-// impl Handler<CodeGenStruct> for CodeGen {
-//     type Result = String;
-
-//     fn handle(&mut self, msg: CodeGenStruct, _: &mut Context<Self>) -> Self::Result {
-//         let file_name = format!("{}.rs", &msg.struct_name.to_lowercase());
-//         let struct_src = CodeGen::generate_struct(&msg.struct_name, &msg.parsed_content.columns);
-        
-//         match CodeGen::write_code_to_file(&msg.models_dir, &file_name, struct_src.clone()) {
-//             Err(e) => eprintln!("ERROR: {} trying to write {}/{}", e, &msg.models_dir, file_name),
-//             Ok(_) => print!("Created {}/{}", &msg.models_dir, file_name)
-//         };
-        
-//         "".to_string()
-//     }
-// }
-
-// pub struct CodeGenHandler {
-//     pub struct_name: String,
-//     pub actors_dir: String, 
-//     pub parsed_content: ParsedContent,
-// }
-
-// impl<'a> Message for CodeGenHandler {
-//     type Result = String;
-// }
-
-// impl Handler<CodeGenHandler> for CodeGen {
-//     type Result = String;
-
-//     fn handle(&mut self, msg: CodeGenHandler, _: &mut Context<Self>) -> Self::Result {
-//         let file_name = format!("{}.rs", &msg.struct_name.to_lowercase());
-//         let actor_code = CodeGen::create_handler_actor(&msg.struct_name);
-
-//         match CodeGen::write_code_to_file(&msg.actors_dir, &file_name, actor_code){
-//             Err(e) => eprintln!("ERROR: {} trying to write {}/{}", e, &msg.actors_dir, file_name),
-//             Ok(_) => print!("Created {}/{}", &msg.actors_dir, file_name)
-//         };
-
-//         "".to_string()
-//     }
-// }
-
-// pub struct CodeGenDbActor{
-//     pub db_src_dir: String,
-//     pub file_name: String,
-// }
-
-// impl Message for CodeGenDbActor {
-//     type Result = String;
-// }
-
-// impl Handler<CodeGenDbActor> for CodeGen {
-//     type Result = String;
-    
-//     fn handle(&mut self, msg: CodeGenDbActor, _: &mut Context<Self>) -> Self::Result {
-//         let actor_code = CodeGen::generate_db_actor();
-
-//         match CodeGen::write_code_to_file(&msg.db_src_dir, &msg.file_name, actor_code){
-//             Err(e) => eprintln!("ERROR: {} trying to write {}/{}", e, &msg.db_src_dir, &msg.file_name),
-//             Ok(_) => print!("Created {}/{}", &msg.db_src_dir, &msg.file_name)
-//         };
-
-//         "".to_string()
-//     }
-// }
-
-// impl Actor for CodeGen {
-//     type Context = Context<Self>;
-// }
-
-
 #[cfg(test)]
 mod tests {
-    use workers::code_gen::CodeGen;
+    use code_gen::CodeGen;
     use models::{ColumnDef, DataTypes};
-    use codegen::{Block, Formatter, Function, Impl, Scope, Struct};
+    use codegen::{Impl, Scope};
 
     #[test]
     fn generate_mod_file() {
         let expected = "pub mod sqlite;\npub mod code_gen;\npub mod sql_gen;\npub mod sqlite_code_gen;\npub mod config;\npub mod output;\npub mod input;\npub mod parse_csv;\n".to_string();
-        let actual = CodeGen::generate_mod_file("./src/workers");
+        let actual = CodeGen::generate_mod_file(&vec!["./src/workers".to_string()]);
         assert_eq!(expected, actual);
     }
 
     #[test]
     fn create_handler_actor() {
         let expected_len = 520;
-        let actual = CodeGen::create_handler_actor(&("my_actor".to_string(), vec![ColumnDef::new("my_col".to_string(), DataTypes::String)]));
+        let actual = CodeGen::create_handler_actor("my_actor");
 
         assert_eq!(actual.len(), expected_len);
     }

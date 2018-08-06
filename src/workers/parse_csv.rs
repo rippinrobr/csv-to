@@ -1,7 +1,6 @@
 extern crate csv;
 
-use csv_converter::models::{DataTypes, ColumnDef};
-use workers::{ParsedContent};
+use csv_converter::models::{DataTypes, ColumnDef, ParsedContent};
 use csv::StringRecord;
 use regex::Regex;
 use std::collections::HashSet;

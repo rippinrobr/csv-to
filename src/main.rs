@@ -16,7 +16,7 @@ extern crate toml;
 
 use csv_converter::config::{Config, OutputCfg};
 use csv_converter::code_gen::CodeGen;
-use csv_converter::models::{ColumnDef};
+use csv_converter::models::{ColumnDef, ParsedContent};
 //use csv_converter::input;
 use actix::*;
 use futures::{future, Future};
@@ -25,7 +25,6 @@ use std::path::Path;
 use std::fs::File;
 use std::io::prelude::*;
 use workers::{
-    ParsedContent,
     parse_csv::{ParseFile},
     code_gen::{ Generator, CodeGenStruct, CodeGenHandler, CodeGenDbActor},
     sqlite::{SqliteDB, SqliteCreateTable, SQLGen},

@@ -77,7 +77,7 @@ impl Input {
 
 #[cfg(test)]
 mod test {
-    use workers::input::InputType;
+    use input::InputType;
 
     #[test]
     fn check_csv_str_inputs() {
