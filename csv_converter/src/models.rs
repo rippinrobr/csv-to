@@ -46,6 +46,7 @@ impl fmt::Debug for DataTypes {
 pub struct ColumnDef{
     pub name: String, 
     pub data_type: DataTypes,
+    pub has_data: bool,
 }
 
 impl ColumnDef {
@@ -53,13 +54,30 @@ impl ColumnDef {
         ColumnDef{
             name: name, 
             data_type: data_type,
+            has_data: false
         }
+    }
+
+    pub fn new_empty() -> ColumnDef {
+        ColumnDef {
+            name: "".to_string(),
+            data_type: DataTypes::Empty,
+            has_data: false
+        }
+    }
+
+    pub fn set_data_type(&mut self, data_type: DataTypes) {
+        self.data_type = data_type;
+    }
+
+    pub fn col_has_data(&mut self) {
+        self.has_data = true;
     }
 }
 
 impl fmt::Debug for ColumnDef {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}: {:?}", self.name, self.data_type)
+        write!(f, "{}: data_type: {:?}", self.name, self.data_type)
     }
 }
 

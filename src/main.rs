@@ -52,11 +52,15 @@ fn main() {
     // processing the toml file to get the configuration values
     let mut toml_file_handle = File::open(toml_file_path).expect("csv2api.toml not found");
     let mut config_content = String::new();
+    let mut change_datatype_to_string = false;
+
     toml_file_handle.read_to_string(&mut config_content)
         .expect("something went wrong reading the config file");
     
     let config = &Config::load(&config_content);
-    
+    if let Some(val) = config.change_to_string {
+        change_datatype_to_string = val
+    }
     // get the files
     let csv_files = create_files_list(&config.directories, &config.files);
 
@@ -73,7 +77,7 @@ fn main() {
     for file in csv_files.iter() {
         let parser = ParseFile::new(file.clone());
         
-        match parser.execute() {
+        match parser.execute(change_datatype_to_string) {
             Ok(parsed_content) => {
                 if create_models {
                     call_code_gen_struct_actor(config.output.clone(), parsed_content.clone());

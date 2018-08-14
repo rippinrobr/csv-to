@@ -51,7 +51,7 @@ impl SqliteDB {
                 let value = match col_value.parse::<i64>() {
                     Ok(v) => v,
                     Err(e) => {
-                        eprintln!("WARNING: i64 parse error: {} => '{}' is not an int: {}", col.name,  col_value, e);
+                        //eprintln!("WARNING: i64 parse error: {} => '{}' is not an int: {}", col.name,  col_value, e);
                         0
                     }
                 };
@@ -61,7 +61,7 @@ impl SqliteDB {
                 let value = match col_value.parse::<f64>() {
                     Ok(v) => v,
                     Err(e) => {
-                        eprintln!("WARNING: f64 parse error: {} => '{}' f64 parse error: : {}", col.name, col_value, e);
+                        //eprintln!("WARNING: f64 parse error: {} => '{}' f64 parse error: : {}", col.name, col_value, e);
                         0.0
                     }
                 };

@@ -43,7 +43,7 @@ impl ParseFile {
         }
     }
 
-    pub fn execute(&self) -> Result<ParsedContent, Error> {
+    pub fn execute(&self, change_to_string: bool) -> Result<ParsedContent, Error> {
         let mut num_lines: usize = 0;
         let mut headers: Vec<String> = Vec::new();
         let mut data_types: Vec<DataTypes> = Vec::new();
@@ -60,7 +60,6 @@ impl ParseFile {
             .has_headers(false)
             .from_reader(reader);
         
-
         for result in rdr.records() {
             let record = result?.clone();
             if num_lines == 0 {
@@ -70,7 +69,8 @@ impl ParseFile {
                 headers = Vec::with_capacity(col_count);
                 for n in 0..col_count {
                     data_types.push(DataTypes::Empty);
-                    headers.push( self.check_col_name(&h[n]));
+                    let col_name = self.check_col_name(&h[n]);
+                    headers.push(col_name.to_owned());
                 }
             } else {
                 let mut col_index = 0;
@@ -78,7 +78,10 @@ impl ParseFile {
                     if data_types[col_index] != DataTypes::String && data_types[col_index] != DataTypes::F64 {
                         let potential_type = check_col_data_type(col_data);
                         if potential_type != data_types[col_index] {
-                            data_types[col_index] = potential_type;
+                            if data_types[col_index] == DataTypes::Empty || change_to_string == true {
+                                println!("[{}] => data_types[col_index]: '{:#?}'\tpotential_type: {:#?}", headers[col_index], data_types[col_index], potential_type);
+                                data_types[col_index] = potential_type;
+                            }
                         }
                     }
                     col_index += 1;
