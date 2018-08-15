@@ -18,7 +18,8 @@ pub struct ParseFile {
     rust_keywords: HashSet<String>,
 }
 
-//TODO: write errors out to stderr 
+// TODO: write errors out to stderr  
+// FIXME: Find a better way of doing keyword checks
 impl ParseFile {
     pub fn new(path:String) -> ParseFile {
         let mut rust_keywords: HashSet<String> = HashSet::new();
@@ -43,7 +44,7 @@ impl ParseFile {
         }
     }
 
-    pub fn execute(&self, change_to_string: bool) -> Result<ParsedContent, Error> {
+    pub fn execute(&self) -> Result<ParsedContent, Error> {
         let mut num_lines: usize = 0;
         let mut headers: Vec<String> = Vec::new();
         let mut data_types: Vec<DataTypes> = Vec::new();
@@ -83,7 +84,8 @@ impl ParseFile {
                         let potential_type = check_col_data_type(col_data);
                         if potential_type != data_types[col_index] {
                             if data_types[col_index] == DataTypes::Empty {
-                                println!("[{}] => data_types[col_index]: '{:#?}'\tpotential_type: {:#?}", headers[col_index], data_types[col_index], potential_type);
+                                // I'm not convinced I won't need this for more debugging so I'm going to leave it here for a bit.
+                                // println!("[{}] => data_types[col_index]: '{:#?}'\tpotential_type: {:#?}", headers[col_index], data_types[col_index], potential_type);
                                 data_types[col_index] = potential_type;
                             }
                         }
@@ -109,7 +111,7 @@ impl ParseFile {
 
     // TODO: Need to do something if the col name is a single char long and 
     // is not a letter.
-    // TODO: CLean this mess up
+    // FIXME: CLean this mess up
     fn check_col_name(&self, name: &str) -> String {
         if self.rust_keywords.contains(&name.to_lowercase()) {
             return format!("_{}", name);

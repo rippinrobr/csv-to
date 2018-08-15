@@ -22,9 +22,6 @@ pub struct OutputCfg {
 
 #[derive(Clone, Debug, PartialEq, Deserialize)]
 pub struct Config {
-    // change_to_string should be set to true IF you want to change a column that was previously
-    // flagged as a numeric datatype to a string if an empty column value is encountered.
-    pub change_to_string: Option<bool>,
     pub gen_models: Option<bool>,
     pub gen_sql: Option<bool>,
     pub gen_webserver: Option<bool>, 
