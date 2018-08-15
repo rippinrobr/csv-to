@@ -1,4 +1,3 @@
-use actix::prelude::*;
 use std::fs::File;
 use std::io::Error;
 use std::io::prelude::*;
@@ -9,10 +8,6 @@ use csv_converter::models::ColumnDef;
 
 pub struct SQLGen {
     sql_directory: String,
-}
-
-impl Actor for SQLGen {
-    type Context = Context<Self>;
 }
 
 impl SQLGen {

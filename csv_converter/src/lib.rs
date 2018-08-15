@@ -2,6 +2,7 @@ pub mod code_gen;
 pub mod config;
 pub mod input;
 pub mod models;
+pub mod output;
 
 extern crate barrel;
 extern crate codegen;
