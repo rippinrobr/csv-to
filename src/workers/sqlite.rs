@@ -6,7 +6,7 @@ use sqlite;
 use sqlite::{Connection, Error, Value};
 use std::path::Path;
 use std::vec::Vec;
-use csv::StringRecord;
+
 pub struct SqliteDB {
     db_conn: Connection,
 } 

@@ -30,8 +30,7 @@ use workers::{
     sqlite_code_gen::SqliteCodeGen,
 };
 
-// TODO: Clean up warnings from the build
-
+// FIXME: Clean up warnings from the build
 fn main() {
     let matches = clap::App::new("csv2api")
         .version("0.0.1")
