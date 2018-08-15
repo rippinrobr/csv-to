@@ -18,6 +18,7 @@ use csv_converter::config::{Config, OutputCfg};
 use csv_converter::code_gen::CodeGen;
 use csv_converter::models::{ColumnDef, ParsedContent};
 use csv_converter::parse_csv::{ParseFile};
+use csv_converter::sqlite_code_gen::SqliteCodeGen;
 use actix::*;
 use futures::{future, Future};
 use std::fs::{self};
@@ -26,8 +27,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use workers::{
     code_gen::{ Generator, CodeGenStruct, CodeGenHandler, CodeGenDbActor},
-    sqlite::{SqliteDB, SqliteCreateTable, SQLGen},
-    sqlite_code_gen::SqliteCodeGen,
+    sqlite::{SqliteDB, SqliteCreateTable, SQLGen}
 };
 
 // FIXME: Clean up warnings from the build

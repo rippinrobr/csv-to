@@ -4,6 +4,7 @@ pub mod input;
 pub mod models;
 pub mod output;
 pub mod parse_csv;
+pub mod sqlite_code_gen;
 
 extern crate barrel;
 extern crate codegen;

@@ -1,7 +1,7 @@
 
 
 use codegen::{Block, Function, Impl, Scope, Struct};
-use csv_converter::models::{ColumnDef};
+use super::models::{ColumnDef};
 
 // TODO: Swap the db connection creation in the main fn to use 
 // rusqlite so that I'm using the same crate everywhere
