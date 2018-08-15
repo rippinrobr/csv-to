@@ -75,10 +75,14 @@ impl ParseFile {
             } else {
                 let mut col_index = 0;
                 for col_data in record.iter() {
+                    if col_data == "".to_string() {
+                        continue;
+                    }
+
                     if data_types[col_index] != DataTypes::String && data_types[col_index] != DataTypes::F64 {
                         let potential_type = check_col_data_type(col_data);
                         if potential_type != data_types[col_index] {
-                            if data_types[col_index] == DataTypes::Empty || change_to_string == true {
+                            if data_types[col_index] == DataTypes::Empty {
                                 println!("[{}] => data_types[col_index]: '{:#?}'\tpotential_type: {:#?}", headers[col_index], data_types[col_index], potential_type);
                                 data_types[col_index] = potential_type;
                             }
