@@ -3,7 +3,7 @@ use std::io::Error;
 use std::io::prelude::*;
 use barrel::*;
 use barrel::backend::Pg;
-use csv_converter::models::ColumnDef;
+use super::models::ColumnDef;
 
 
 pub struct SQLGen {
