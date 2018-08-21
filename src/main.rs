@@ -10,8 +10,8 @@ extern crate csv;
 extern crate futures;
 extern crate regex;
 extern crate sqlite;
-#[macro_use]
-extern crate serde_derive;
+// #[macro_use]
+//extern crate serde_derive;
 extern crate toml;
 
 use csv_converter::config::{Config, OutputCfg};
@@ -108,10 +108,25 @@ fn main() {
         let db_layer_code = SqliteCodeGen::generate_db_layer(&column_meta);
 
         call_code_gen_db_actor(actors_dir.clone());
-        CodeGen::write_code_to_file(&db_dir, "mod.rs", db_layer_code);
-        CodeGen::write_code_to_file(&base_dir, "main.rs", web_svc_code);
-        CodeGen::write_code_to_file(&actors_dir, "mod.rs", format!("{}pub mod db;", mod_src));
-        CodeGen::write_code_to_file(&format!("{}/models", base_dir), "mod.rs", mod_src);
+        match CodeGen::write_code_to_file(&db_dir, "mod.rs", db_layer_code) {
+            Ok(msg) => println!("{}", msg),
+            Err(e) => println!("Error while creating mod.rs file. {}",e),
+        };
+
+        match CodeGen::write_code_to_file(&base_dir, "main.rs", web_svc_code) {
+            Ok(msg) => println!("{}", msg),
+            Err(e) => println!("Error while creating main.rs file. {}",e)
+        };
+
+        match CodeGen::write_code_to_file(&actors_dir, "mod.rs", format!("{}pub mod db;", mod_src)) {
+            Ok(msg) => println!("{}", msg),
+            Err(e) => println!("Error while creating main.rs file. {}",e)
+        }
+
+        match CodeGen::write_code_to_file(&format!("{}/models", base_dir), "mod.rs", mod_src.clone()) {
+            Ok(msg) => println!("{}", msg),
+            Err(e) => println!("Error while creating {}/models/mod.rs file. {}", mod_src.clone(), e)
+        }
     }
 
     system.run();

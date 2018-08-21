@@ -4,11 +4,8 @@ use barrel::*;
 use barrel::backend::Pg;
 use csv_converter::{
     db::SqliteDB,
-    models::{ColumnDef, DataTypes}
+    models::{ColumnDef}
 };
-use sqlite;
-use sqlite::{Connection, Error, Value};
-use std::path::Path;
 use std::vec::Vec;
 
 pub struct SQLGen;
