@@ -1,12 +1,18 @@
 use codegen::{Block, Function, Impl, Scope, Struct};
-use models::{ColumnDef};
-use std::fs;
-use std::fs::File;
+use models::{ColumnDef,};
 use std::io::Error;
-use std::io::prelude::*;
-use std::path::Path;
+
+pub enum CodeGenTarget {
+    CurlScript,
+    DbActor,
+    Handler,
+    ModFile,
+    Struct,
+    WebService,
+}
 
 pub struct CodeGen;
+
 
 impl CodeGen {
     
@@ -30,7 +36,6 @@ impl CodeGen {
         and_then_block.after(").responder()");
 
         myfn.push_block(and_then_block);
-
         myfn
     }
 
@@ -55,11 +60,11 @@ impl CodeGen {
         scope.to_string()
     }
 
-    pub fn create_handler_actor(struct_meta: &(String, Vec<ColumnDef>)) -> String {
+    pub fn create_handler_actor(struct_name: &str) -> String { //struct_meta: &(String, Vec<ColumnDef>)) -> String {
         let mut scope = Scope::new();
-        let struct_name = &struct_meta.0;
+        //let struct_name = &struct_meta.0;
         
-        for (u0, u1) in vec![("actix::prelude", "*"), ("db", "DB"), (&format!("models::{}", struct_name.to_lowercase()), "*"), ("super::db_actor", "DbExecutor")] {
+        for (u0, u1) in vec![("actix::prelude", "*"), ("db", "DB"), (&format!("models::{}", struct_name.to_lowercase()), "*"), ("super::db", "DbExecutor")] {
             scope.import(u0, u1);
         }
 
@@ -106,32 +111,15 @@ impl CodeGen {
         scope.to_string()
     }
 
-    pub fn generate_mod_file(dir: &str) -> String {
+    pub fn generate_mod_file(entities: &Vec<String>) -> String {
         let mut scope = Scope::new();
         
-        let dir_path = Path::new(dir);
-        if dir_path.is_dir() {
-            //println!("dir, {}, is a directory!", dir);
-            let paths = fs::read_dir(dir_path).unwrap();
-            for dir_entry in paths {
-                let path = dir_entry.unwrap().path();
-                //println!("path: {}", path.to_str().unwrap());
-                if path.is_file() { 
-                    let file_name = path.file_name().unwrap().to_str().unwrap();
-
-                    if !file_name.ends_with("rs") || file_name == "mod.rs" {
-                        continue;
-                    }
-                    //println!("going to add {}", &format!("pub mod {};", file_name.replace(".rs", "")));
-                    scope.raw(&format!("pub mod {};", file_name.replace(".rs", "")));
-                }
-            }
+        for entity in entities {
+            scope.raw(&format!("pub mod {};", entity.to_lowercase()));
         }
-
+        
         scope.to_string().replace("\n\n", "\n") + "\n"
     }
-
-    
 
     pub fn generate_db_actor() -> String {
         let mut scope = Scope::new();
@@ -152,7 +140,7 @@ impl CodeGen {
     pub fn generate_webservice(db_path: String, entities: &Vec<String>) -> String {
         let mut scope = Scope::new();
         
-        for use_stmt in vec![("actix", "{Addr,Syn}"), ("actix::prelude", "*"), ("actors::db_actor", "*"), ("actix_web", "http, App, AsyncResponder, HttpRequest, HttpResponse"),
+        for use_stmt in vec![("actix", "{Addr,Syn}"), ("actix::prelude", "*"), ("actors::db", "*"), ("actix_web", "http, App, AsyncResponder, HttpRequest, HttpResponse"),
                             ("actix_web::server", "HttpServer"), ("futures", "Future"), ("actix_web", "Error"), ("actix_web", "Json"), ("actix_web::middleware", "Logger"),
                             ("rusqlite", "Connection"), ("models", "*")] {
             scope.import(use_stmt.0, use_stmt.1);
@@ -187,19 +175,6 @@ impl CodeGen {
         create_extern_create_defs() + &scope.to_string() + &create_main_fn(db_path, &entities)
     }
 
-    pub fn write_code_to_file(dir_path: &str, file_name: &str, code: String) -> Result<String, Error> {
-
-        match File::create(format!("{}/{}", dir_path, &file_name).to_lowercase()) {
-            Ok(mut file) => {
-                match file.write_all(&code.into_bytes()) {
-                    Ok(_) => Ok(file_name.to_string()),
-                    Err(e) => Err(e)
-                }
-            },
-            Err(e) => Err(e)
-        }
-    }
-
     pub fn create_curl_script(output_dir: &str, entities: &Vec<String>) -> Result<String, Error> {
         let mut scope = Scope::new();
         scope.raw("#!/bin/bash\n");
@@ -208,7 +183,7 @@ impl CodeGen {
                 scope.raw(&format!("curl http://localhost:8088/{}", lower_ent));
         }
 
-        return CodeGen::write_code_to_file(output_dir, "curl_test.sh", scope.to_string().replace("\n\n", "\n"))    
+        return super::write_code_to_file(output_dir, "curl_test.sh", scope.to_string().replace("\n\n", "\n"))    
     }
 
 }
@@ -259,22 +234,21 @@ fn create_main_fn(db_path: String, entities: &Vec<String>) -> String {
 
 #[cfg(test)]
 mod tests {
-    use workers::code_gen::CodeGen;
+    use code_gen::CodeGen;
     use models::{ColumnDef, DataTypes};
-    use codegen::{Block, Formatter, Function, Impl, Scope, Struct};
+    use codegen::{Impl, Scope};
 
     #[test]
     fn generate_mod_file() {
-        let expected = "pub mod sqlite;\npub mod code_gen;\npub mod sql_gen;\npub mod sqlite_code_gen;\npub mod output;\npub mod input;\npub mod parse_csv;\n".to_string();
-        let actual = CodeGen::generate_mod_file("./src/workers");
-        println!("actual: {}", actual);
-        assert_eq!(actual, expected);
+        let expected = "pub mod sqlite;\npub mod code_gen;\npub mod sql_gen;\npub mod sqlite_code_gen;\npub mod config;\npub mod output;\npub mod input;\npub mod parse_csv;\n".to_string();
+        let actual = CodeGen::generate_mod_file(&vec!["./src/workers".to_string()]);
+        assert_eq!(expected, actual);
     }
 
     #[test]
     fn create_handler_actor() {
         let expected_len = 520;
-        let actual = CodeGen::create_handler_actor(&("my_actor".to_string(), vec![ColumnDef::new("my_col".to_string(), DataTypes::String)]));
+        let actual = CodeGen::create_handler_actor("my_actor");
 
         assert_eq!(actual.len(), expected_len);
     }

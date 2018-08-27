@@ -1,4 +1,5 @@
-use models::{ColumnDef, DataTypes};
+
+use super::models::{ColumnDef, DataTypes};
 use sqlite;
 use sqlite::{Connection, Error, Value};
 use std::path::Path;
@@ -41,14 +42,16 @@ impl SqliteDB {
         Ok(rows_inserted_count)
     }
 
+    // get_value_type converts the given col_val to approprate type for 
+    // the col provided.  For numeric columns if a non integer or float is
+    // provided in col_value the value of 0 or 0.0 will be returned.
     fn get_value_type(col: &ColumnDef, col_value: String) -> sqlite::Value {
         match col.data_type {
             DataTypes::String => Value::String(col_value),
             DataTypes::I64 => {
                 let value = match col_value.parse::<i64>() {
                     Ok(v) => v,
-                    Err(e) => {
-                        eprintln!("WARNING: i64 parse error: {} => '{}' is not an int: {}", col.name,  col_value, e);
+                    Err(_) => {
                         0
                     }
                 };
@@ -57,8 +60,7 @@ impl SqliteDB {
             DataTypes::F64 => {
                 let value = match col_value.parse::<f64>() {
                     Ok(v) => v,
-                    Err(e) => {
-                        eprintln!("WARNING: f64 parse error: {} => '{}' f64 parse error: : {}", col.name, col_value, e);
+                    Err(_) => {
                         0.0
                     }
                 };
@@ -70,9 +72,10 @@ impl SqliteDB {
 
 }
 
+
 #[cfg(test)]
 mod tests {
-    use workers::sqlite::SqliteDB;
+    use super::db::SqliteDB;
 
     #[test]
     fn new() {

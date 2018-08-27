@@ -1,12 +1,12 @@
 
 
-use codegen::{Block, Function, Impl, Scope, Struct};
-use models::{ColumnDef};
+use codegen::{Function, Impl, Scope, Struct};
+use super::models::{ColumnDef};
 
 // TODO: Swap the db connection creation in the main fn to use 
 // rusqlite so that I'm using the same crate everywhere
 pub struct SqliteCodeGen {
-    db_path : String,
+    //db_path : String,
 }
 
 impl SqliteCodeGen {
@@ -80,7 +80,7 @@ impl SqliteCodeGen {
 mod tests {
     use workers::sqlite_code_gen::SqliteCodeGen;
     use codegen::{Function, Impl, Scope, Struct};
-    use models::{ColumnDef, DataTypes};
+    use csv_converter::models::{ColumnDef, DataTypes};
 
     #[test] 
     fn generate_use_and_extern_statements() {

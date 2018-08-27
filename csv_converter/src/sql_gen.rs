@@ -3,7 +3,8 @@ use std::io::Error;
 use std::io::prelude::*;
 use barrel::*;
 use barrel::backend::Pg;
-use models::ColumnDef;
+use super::models::ColumnDef;
+
 
 pub struct SQLGen {
     sql_directory: String,
@@ -67,10 +68,11 @@ impl SQLGen {
     }
 }
 
+
 #[cfg(test)]
 mod tests {
     use workers::sql_gen::SQLGen;
-    use models::{ColumnDef, DataTypes};
+    use csv_converter::models::{ColumnDef, DataTypes};
 
     #[test] 
     fn generate_create_table() {

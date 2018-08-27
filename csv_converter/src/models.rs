@@ -1,19 +1,88 @@
-pub mod code_gen;
-pub mod input;
-pub mod output;
-pub mod parse_csv;
-pub mod sqlite;
-pub mod sqlite_code_gen;
-pub mod sql_gen;
+use std::fmt;
+use barrel::Type;
+
+#[derive(PartialEq,Clone, Copy)]
+pub enum DataTypes {
+    Empty,
+    F64,
+    I64, 
+    String,
+}
+
+impl DataTypes {
+    pub fn string(&self) -> &str {
+        match *self {
+            DataTypes::Empty => "",
+            DataTypes::F64 => "f64",
+            DataTypes::I64 => "i64",
+            DataTypes::String => "String"
+        }
+    }
+
+    pub fn to_database_type(&self) -> Type {
+        match *self {
+            DataTypes::Empty => Type::Text,
+            DataTypes::F64 => Type::Double,
+            DataTypes::I64 => Type::Integer,
+            DataTypes::String => Type::Text
+        }
+    }
+}
+
+impl fmt::Debug for DataTypes {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let printable = match *self {
+            DataTypes::Empty => "",
+            DataTypes::F64 => "f64",
+            DataTypes::I64 => "i64",
+            DataTypes::String => "string"
+        };
+        write!(f, "{:#?}", printable)
+    }
+}
+
+
+#[derive(Clone)]
+pub struct ColumnDef{
+    pub name: String, 
+    pub data_type: DataTypes,
+    pub has_data: bool,
+}
+
+impl ColumnDef {
+    pub fn new(name: String, data_type: DataTypes) -> ColumnDef {
+        ColumnDef{
+            name: name, 
+            data_type: data_type,
+            has_data: false
+        }
+    }
+
+    pub fn new_empty() -> ColumnDef {
+        ColumnDef {
+            name: "".to_string(),
+            data_type: DataTypes::Empty,
+            has_data: false
+        }
+    }
+
+    pub fn set_data_type(&mut self, data_type: DataTypes) {
+        self.data_type = data_type;
+    }
+
+    pub fn col_has_data(&mut self) {
+        self.has_data = true;
+    }
+}
+
+impl fmt::Debug for ColumnDef {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}: data_type: {:?}", self.name, self.data_type)
+    }
+}
 
 use csv::{StringRecord};
 use csv::Error;
-use models::{ColumnDef};
-use std::collections::HashSet;
-
-pub trait WorkOrder {
-    fn execute() -> Result<i32, String>;
-}
 
 #[derive(Debug)]
 pub struct ParsedContent {
@@ -21,7 +90,17 @@ pub struct ParsedContent {
     pub content: Vec<StringRecord>,
     pub file_name: String,
     pub records_parsed: usize,
-    
+}
+
+impl Clone for ParsedContent {
+    fn clone(&self) -> ParsedContent { 
+        ParsedContent {
+            columns: (*self).columns.clone(),
+            content: (*self).content.clone(),
+            file_name: (*self).file_name.clone(),
+            records_parsed: (*self).records_parsed,
+        }
+    }
 }
 
 impl ParsedContent {
@@ -56,8 +135,7 @@ impl ParsedContent {
 mod tests {
     use csv::{StringRecord};
     use csv::Error;
-    use workers::ParsedContent;
-    use models::{ColumnDef, DataTypes};
+    use models::{ColumnDef, DataTypes, ParsedContent};
 
     #[test]
     fn new() {

@@ -1,7 +1,6 @@
 extern crate csv;
 
-use models::{DataTypes, ColumnDef};
-use workers::{ParsedContent};
+use super::models::{DataTypes, ColumnDef, ParsedContent};
 use csv::StringRecord;
 use regex::Regex;
 use std::collections::HashSet;
@@ -19,9 +18,10 @@ pub struct ParseFile {
     rust_keywords: HashSet<String>,
 }
 
-//TODO: write errors out to stderr 
+// TODO: write errors out to stderr  
+// FIXME: Find a better way of doing keyword checks
 impl ParseFile {
-    pub fn new(path:String, col_name_re: Regex) -> ParseFile {
+    pub fn new(path:String) -> ParseFile {
         let mut rust_keywords: HashSet<String> = HashSet::new();
 
         for kw in vec!["as".to_string(), "break".to_string(), "const".to_string(), "continue".to_string(), "crate".to_string(), 
@@ -39,7 +39,7 @@ impl ParseFile {
         
         ParseFile {
             path: path,
-            col_name_re:  col_name_re,
+            col_name_re:  Regex::new(r"^[a-zA-Z_][a-zA-Z0-9_]+$").unwrap(),
             rust_keywords: rust_keywords,
         }
     }
@@ -50,7 +50,6 @@ impl ParseFile {
         let mut data_types: Vec<DataTypes> = Vec::new();
         let mut columns: Vec<ColumnDef> = Vec::new();
         let mut data: Vec<StringRecord> = Vec::new();
-        let mut col_count: usize = 0;
         
         // Build the CSV reader and iterate over each record.
         let file = File::open(&self.path)?;
@@ -61,25 +60,33 @@ impl ParseFile {
             .has_headers(false)
             .from_reader(reader);
         
-
         for result in rdr.records() {
             let record = result?.clone();
             if num_lines == 0 {
                 let h = record;
-                col_count = h.len();
+                let col_count = h.len();
                 data_types = Vec::with_capacity(col_count);
                 headers = Vec::with_capacity(col_count);
                 for n in 0..col_count {
                     data_types.push(DataTypes::Empty);
-                    headers.push( self.check_col_name(&h[n]));
+                    let col_name = self.check_col_name(&h[n]);
+                    headers.push(col_name.to_owned());
                 }
             } else {
                 let mut col_index = 0;
                 for col_data in record.iter() {
+                    if col_data == "".to_string() {
+                        continue;
+                    }
+
                     if data_types[col_index] != DataTypes::String && data_types[col_index] != DataTypes::F64 {
                         let potential_type = check_col_data_type(col_data);
                         if potential_type != data_types[col_index] {
-                            data_types[col_index] = potential_type;
+                            if data_types[col_index] == DataTypes::Empty {
+                                // I'm not convinced I won't need this for more debugging so I'm going to leave it here for a bit.
+                                // println!("[{}] => data_types[col_index]: '{:#?}'\tpotential_type: {:#?}", headers[col_index], data_types[col_index], potential_type);
+                                data_types[col_index] = potential_type;
+                            }
                         }
                     }
                     col_index += 1;
@@ -103,7 +110,7 @@ impl ParseFile {
 
     // TODO: Need to do something if the col name is a single char long and 
     // is not a letter.
-    // TODO: CLean this mess up
+    // FIXME: CLean this mess up
     fn check_col_name(&self, name: &str) -> String {
         if self.rust_keywords.contains(&name.to_lowercase()) {
             return format!("_{}", name);

@@ -1,15 +1,16 @@
 use std::fmt;
-use std::io;
-use std::fs::{self, DirEntry};
+use std::fs::{self};
 use std::path::Path;
+use std::string::ToString;
 
-#[derive(PartialEq)]
+#[derive(Clone, PartialEq, Deserialize)]
 pub enum InputType {
     CSV,
     NotSupported
 }
 
 impl InputType {
+    
     pub fn get_input_type(str_type: &str) -> InputType {
         
         if str_type == "CSV" || str_type == "csv" {
@@ -30,9 +31,17 @@ impl fmt::Debug for InputType {
     }
 }
 
+impl ToString for InputType {
+    fn to_string(&self) -> String {
+        (match *self {
+            InputType::CSV => "CSV",
+            InputType::NotSupported => "NOT_SUPPORTED"
+        }).to_string()
+    }
+}
 // TODO: Add support for a TOML file to take in input parameters 
 //       and any other params that will be or are required
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct Input {
     pub input_type: InputType,
     pub files: Vec<String>,
@@ -67,7 +76,7 @@ impl Input {
 
 #[cfg(test)]
 mod test {
-    use workers::input::InputType;
+    use input::InputType;
 
     #[test]
     fn check_csv_str_inputs() {
