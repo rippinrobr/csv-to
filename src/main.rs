@@ -204,20 +204,29 @@ fn sqlite_load_table(cfg: Config, table_name: &str, columns: Vec<ColumnDef>, con
         db_conn: db_conn,
         table_name: table_name.to_string(),
     });
+
     
     Arbiter::spawn(res.then( move |res| {
         match res {
             // now that the table is created I can insert the data
-            Ok(_) => {
-                let writer_dbconn = SqliteDB::new(&db_uri).unwrap();
-                let stmt = SQLGen::generate_insert_stmt(&tname, &columns.clone()).unwrap();
-                
-                match writer_dbconn.insert_rows(stmt, &columns, contents) {
-                    Ok(num_inserted) => println!("{} records insert into {}", num_inserted, tname),
-                    Err(e) => eprintln!("ERROR: {} inserting record into {}", e, tname)
+            Ok(msg) => {
+                match msg {
+                    Ok(_) => {
+                        let writer_dbconn = SqliteDB::new(&db_uri).unwrap();
+                        let stmt = SQLGen::generate_insert_stmt(&tname, &columns.clone()).unwrap();
+                        
+                        match writer_dbconn.insert_rows(stmt, &columns, contents) {
+                            Ok(num_inserted) => println!("{} records insert into {}", num_inserted, tname),
+                            Err(e) => eprintln!("ERROR: {} inserting record into {}", e, tname)
+                        }
+                    },
+                    Err(e) => {
+                        eprintln!("ERROR: {}", e)
+                    }
                 }
-            },
-            _ => println!("Something wrong"),
+            }
+            ,
+            _ => unreachable!(),
         }
         
         System::current().stop();
