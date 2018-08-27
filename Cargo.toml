@@ -1,6 +1,6 @@
 [package]
 name = "csv2api"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Rob Rowe <robrowe04@gmail.com>"]
 
 [workspace]
