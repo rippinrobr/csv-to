@@ -60,28 +60,33 @@ pub struct SqliteCreateTable {
 }
 
 impl Message for SqliteCreateTable {
-    type Result = String;
+    type Result = Result<String, String>;
 }
 
 impl Handler<SqliteCreateTable> for SQLGen {
-    type Result = String;
+    type Result = Result<String, String>;
 
     fn handle(&mut self, msg: SqliteCreateTable, _: &mut Context<Self>) -> Self::Result {
-        let table_sql = match SQLGen::generate_create_table(&msg.table_name, &msg.columns) {
+        match SQLGen::generate_create_table(&msg.table_name, &msg.columns) {
             Ok(create_table_sql) => {
                 match msg.db_conn.create_table(create_table_sql.clone()) {
-                    Ok(_) => println!("Created table {}", &msg.table_name),
-                    Err(e) => eprintln!("Error creating table: {}", e)
+                    Ok(_) => {
+                        println!("Created table {}", &msg.table_name);
+                        return Ok("".to_string())
+                    },
+                    Err(e) => {
+                        return Err(format!("ERROR creating table: {}", e))
+                    }
                 }
-                create_table_sql
             },
             Err(e) => {
                 eprintln!("[generate_create_table] Error: {}", e);
-                String::from("")
+                return Err(String::from(""))
             }
         };
         
-        table_sql
+        // println!("results: {:?}", results);
+        // results
     }
 }
 
