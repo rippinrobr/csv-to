@@ -1,15 +1,7 @@
 use codegen::{Block, Function, Impl, Scope, Struct};
-use futures::Future;
 use models::{ColumnDef,};
-use std::fs;
-use std::fs::File;
 use std::io::Error;
-use std::io::prelude::*;
-use std::path::Path;
-use super::config::{OutputCfg};
-use models::ParsedContent;
 
-// TODO: MOVE write_code_to_file into the mod.rs file
 pub enum CodeGenTarget {
     CurlScript,
     DbActor,
@@ -183,20 +175,6 @@ impl CodeGen {
         create_extern_create_defs() + &scope.to_string() + &create_main_fn(db_path, &entities)
     }
 
-    // TODO: MOVE this func into the mod.rs file
-    pub fn write_code_to_file(dir_path: &str, file_name: &str, code: String) -> Result<String, Error> {
-
-        match File::create(format!("{}/{}", dir_path, &file_name).to_lowercase()) {
-            Ok(mut file) => {
-                match file.write_all(&code.into_bytes()) {
-                    Ok(_) => Ok(file_name.to_string()),
-                    Err(e) => Err(e)
-                }
-            },
-            Err(e) => Err(e)
-        }
-    }
-
     pub fn create_curl_script(output_dir: &str, entities: &Vec<String>) -> Result<String, Error> {
         let mut scope = Scope::new();
         scope.raw("#!/bin/bash\n");
@@ -205,7 +183,7 @@ impl CodeGen {
                 scope.raw(&format!("curl http://localhost:8088/{}", lower_ent));
         }
 
-        return CodeGen::write_code_to_file(output_dir, "curl_test.sh", scope.to_string().replace("\n\n", "\n"))    
+        return super::write_code_to_file(output_dir, "curl_test.sh", scope.to_string().replace("\n\n", "\n"))    
     }
 
 }

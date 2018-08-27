@@ -1,4 +1,5 @@
 use actix::prelude::*;
+use csv_converter;
 use csv_converter::code_gen::{CodeGen};
 use csv_converter::models::ParsedContent;
 
@@ -23,7 +24,7 @@ impl Handler<CodeGenStruct> for Generator {
         let file_name = format!("{}.rs", &msg.struct_name.to_lowercase());
         let struct_src = CodeGen::generate_struct(&msg.struct_name, &msg.parsed_content.columns);
         
-        match CodeGen::write_code_to_file(&msg.models_dir, &file_name, struct_src.clone()) {
+        match csv_converter::write_code_to_file(&msg.models_dir, &file_name, struct_src.clone()) {
             Err(e) => eprintln!("ERROR: {} trying to write {}/{}", e, &msg.models_dir, file_name),
             Ok(_) => print!("Created {}/{}", &msg.models_dir, file_name)
         };
@@ -49,7 +50,7 @@ impl Handler<CodeGenHandler> for Generator {
         let file_name = format!("{}.rs", &msg.struct_name.to_lowercase());
         let actor_code = CodeGen::create_handler_actor(&msg.struct_name);
 
-        match CodeGen::write_code_to_file(&msg.actors_dir, &file_name, actor_code){
+        match csv_converter::write_code_to_file(&msg.actors_dir, &file_name, actor_code){
             Err(e) => eprintln!("ERROR: {} trying to write {}/{}", e, &msg.actors_dir, file_name),
             Ok(_) => print!("Created {}/{}", &msg.actors_dir, file_name)
         };
@@ -73,7 +74,7 @@ impl Handler<CodeGenDbActor> for Generator {
     fn handle(&mut self, msg: CodeGenDbActor, _: &mut Context<Self>) -> Self::Result {
         let actor_code = CodeGen::generate_db_actor();
 
-        match CodeGen::write_code_to_file(&msg.db_src_dir, &msg.file_name, actor_code){
+        match csv_converter::write_code_to_file(&msg.db_src_dir, &msg.file_name, actor_code){
             Err(e) => eprintln!("ERROR: {} trying to write {}/{}", e, &msg.db_src_dir, &msg.file_name),
             Ok(_) => print!("Created {}/{}", &msg.db_src_dir, &msg.file_name)
         };

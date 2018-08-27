@@ -1,6 +1,5 @@
 use std::fmt;
-use std::io;
-use std::fs::{self, DirEntry};
+use std::fs::{self};
 use std::path::Path;
 use std::string::ToString;
 

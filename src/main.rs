@@ -1,5 +1,5 @@
 // pub mod models;
-pub mod workers;
+pub mod actors;
 
 extern crate csv_converter;
 extern crate actix;
@@ -27,12 +27,11 @@ use std::fs::{self};
 use std::path::Path;
 use std::fs::File;
 use std::io::prelude::*;
-use workers::{
+use actors::{
     code_gen::{ Generator, CodeGenStruct, CodeGenHandler, CodeGenDbActor},
     sqlite::{SQLGen, SqliteCreateTable}
 };
 
-// FIXME: Clean up warnings from the build
 fn main() {
     let matches = clap::App::new("csv2api")
         .version("0.0.1")
@@ -108,22 +107,22 @@ fn main() {
         let db_layer_code = SqliteCodeGen::generate_db_layer(&column_meta);
 
         call_code_gen_db_actor(actors_dir.clone());
-        match CodeGen::write_code_to_file(&db_dir, "mod.rs", db_layer_code) {
+        match csv_converter::write_code_to_file(&db_dir, "mod.rs", db_layer_code) {
             Ok(msg) => println!("{}", msg),
             Err(e) => println!("Error while creating mod.rs file. {}",e),
         };
 
-        match CodeGen::write_code_to_file(&base_dir, "main.rs", web_svc_code) {
+        match csv_converter::write_code_to_file(&base_dir, "main.rs", web_svc_code) {
             Ok(msg) => println!("{}", msg),
             Err(e) => println!("Error while creating main.rs file. {}",e)
         };
 
-        match CodeGen::write_code_to_file(&actors_dir, "mod.rs", format!("{}pub mod db;", mod_src)) {
+        match csv_converter::write_code_to_file(&actors_dir, "mod.rs", format!("{}pub mod db;", mod_src)) {
             Ok(msg) => println!("{}", msg),
             Err(e) => println!("Error while creating main.rs file. {}",e)
         }
 
-        match CodeGen::write_code_to_file(&format!("{}/models", base_dir), "mod.rs", mod_src.clone()) {
+        match csv_converter::write_code_to_file(&format!("{}/models", base_dir), "mod.rs", mod_src.clone()) {
             Ok(msg) => println!("{}", msg),
             Err(e) => println!("Error while creating {}/models/mod.rs file. {}", mod_src.clone(), e)
         }

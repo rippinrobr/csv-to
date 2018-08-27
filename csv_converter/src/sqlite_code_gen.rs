@@ -1,12 +1,12 @@
 
 
-use codegen::{Block, Function, Impl, Scope, Struct};
+use codegen::{Function, Impl, Scope, Struct};
 use super::models::{ColumnDef};
 
 // TODO: Swap the db connection creation in the main fn to use 
 // rusqlite so that I'm using the same crate everywhere
 pub struct SqliteCodeGen {
-    db_path : String,
+    //db_path : String,
 }
 
 impl SqliteCodeGen {

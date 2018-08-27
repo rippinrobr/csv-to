@@ -50,7 +50,6 @@ impl ParseFile {
         let mut data_types: Vec<DataTypes> = Vec::new();
         let mut columns: Vec<ColumnDef> = Vec::new();
         let mut data: Vec<StringRecord> = Vec::new();
-        let mut col_count: usize = 0;
         
         // Build the CSV reader and iterate over each record.
         let file = File::open(&self.path)?;
@@ -65,7 +64,7 @@ impl ParseFile {
             let record = result?.clone();
             if num_lines == 0 {
                 let h = record;
-                col_count = h.len();
+                let col_count = h.len();
                 data_types = Vec::with_capacity(col_count);
                 headers = Vec::with_capacity(col_count);
                 for n in 0..col_count {
