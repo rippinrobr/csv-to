@@ -102,7 +102,7 @@ impl Handler<SqliteLoadTable> for SQLGen {
     type Result = String;
 
     fn handle(&mut self, msg: SqliteLoadTable, _: &mut Context<Self>) -> Self::Result {
-        println!("SqliteLoadTable");
+        
         match SQLGen::generate_insert_stmt(&msg.table_name, &msg.columns) {
             Ok(insert_sql) => {
                 match msg.db_conn.insert_rows(insert_sql, &msg.columns, msg.content) {
