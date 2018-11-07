@@ -109,22 +109,34 @@ fn main() {
         call_code_gen_db_actor(actors_dir.clone());
         match csv_converter::write_code_to_file(&db_dir, "mod.rs", db_layer_code) {
             Ok(msg) => println!("{}", msg),
-            Err(e) => println!("Error while creating mod.rs file. {}",e),
+            Err(e) => {
+                eprintln!("Error while creating {}/mod.rs file. {}",db_dir, e);
+                std::process::exit(1);
+            },
         };
 
         match csv_converter::write_code_to_file(&base_dir, "main.rs", web_svc_code) {
             Ok(msg) => println!("{}", msg),
-            Err(e) => println!("Error while creating main.rs file. {}",e)
+            Err(e) => {
+                eprintln!("Error while creating {}/main.rs file. {}",base_dir, e);
+                std::process::exit(1);
+            }
         };
 
         match csv_converter::write_code_to_file(&actors_dir, "mod.rs", format!("{}pub mod db;", mod_src)) {
             Ok(msg) => println!("{}", msg),
-            Err(e) => println!("Error while creating main.rs file. {}",e)
+            Err(e) => {
+                eprintln!("Error while creating {}/main.rs file. {}", actors_dir, e);
+                std::process::exit(1);
+            }
         }
 
         match csv_converter::write_code_to_file(&format!("{}/models", base_dir), "mod.rs", mod_src.clone()) {
             Ok(msg) => println!("{}", msg),
-            Err(e) => println!("Error while creating {}/models/mod.rs file. {}", mod_src.clone(), e)
+            Err(e) => {
+                eprintln!("Error while creating {}/models/mod.rs file. {}", mod_src.clone(), e);
+                std::process::exit(1);
+            }
         }
     }
 

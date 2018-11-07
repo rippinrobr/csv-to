@@ -1,0 +1,15 @@
+input_type = "CSV"
+files = []
+directories = [ "../hockey-databank/core" ]
+create_db = true
+gen_models = true
+gen_webserver = true
+gen_sql = true 
+
+[output]
+  output_dir = ".."
+  project_name = "hockey_stats_api"
+
+[output_db]
+  db_type = "sqlite"
+  db_uri = "../hockey_stats_api/database/hockey_stats.db"
