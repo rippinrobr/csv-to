@@ -1,11 +1,12 @@
 [package]
 name = "csv2api"
-version = "0.1.1"
+version = "0.1.3"
 authors = ["Rob Rowe <robrowe04@gmail.com>"]
 
 [workspace]
+members = ["csv_converter"]
 
-[dependencies]
+[dependencies] 
 csv_converter = { path = "csv_converter"}
 actix = "0.7.0"
 barrel = "0.2.3"
