@@ -36,7 +36,7 @@ fn main() {
     let default_toml_file = "csv2api.toml";
 
     let matches = clap::App::new("csv2api")
-        .version("0.0.1")
+        .version(clap::crate_version!())
         .about("Parses and stores Wikipedia conspiracy theories data")
         .author("Rob Rowe.")
         .arg(clap::Arg::with_name("toml")
