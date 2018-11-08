@@ -21,6 +21,8 @@ pub struct OutputCfg {
     pub project_name: Option<String>
 }
 
+
+
 #[derive(Clone, Debug, PartialEq, Deserialize)]
 pub struct Config {
     pub gen_models: Option<bool>,
@@ -35,6 +37,10 @@ pub struct Config {
 
 impl Config {
 
+    pub fn get_project_directory(self) -> String {
+        format!("{}/{}", self.output.output_dir, self.output.project_name.unwrap())
+    }
+
     pub fn load(config_str: &str) -> Config {
         match toml::from_str(config_str) {
             Ok(config) => {
@@ -44,17 +50,20 @@ impl Config {
         }
     }
 
-    pub fn does_project_dir_exist(&self) -> Result<bool, String>{
-        let project_path = Path::new(&self.output.output_dir);
+    pub fn does_project_dir_exist(config: Config) -> Result<bool, String>{
+        let project_path_string = config.get_project_directory();
+        println!("project_path_string: {}", project_path_string);
 
+        let project_path = Path::new(&project_path_string);
+        println!("project_path: {:?}", project_path);
         if project_path.exists() {
             if project_path.is_dir() {
                 return Ok(true);
             } 
-            return Err(format!("The path '{}' provided is a file, not a directory.", self.output.output_dir).clone());  
+            return Err(format!("The path '{}' provided is a file, not a directory.", project_path_string).clone());  
         } 
 
-        Ok(false)
+        Err(format!("The path '{} does not exist.", project_path_string))
     }
 }
 

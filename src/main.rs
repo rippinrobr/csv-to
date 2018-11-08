@@ -9,18 +9,16 @@ extern crate csv;
 extern crate futures;
 extern crate regex;
 extern crate sqlite;
-// #[macro_use]
-//extern crate serde_derive;
 extern crate toml;
 
-use csv_converter::config::{Config, OutputCfg};
+use csv_converter::config::{Config};
+use csv_converter::config::OutputCfg;
 use csv_converter::code_gen::CodeGen;
 use csv_converter::models::{ColumnDef, ParsedContent};
 use csv_converter::parse_csv::{ParseFile};
 use csv_converter::sqlite_code_gen::SqliteCodeGen;
 use csv_converter::db::{SqliteDB};
 use actix::*;
-//use actix::prelude::*;
 use futures::{future, Future};
 use std::fs::{self};
 use std::path::Path;
@@ -32,17 +30,16 @@ use actors::{
 };
 
 fn main() {
+    let app_name = "csv2api";
     let default_toml_file = "csv2api.toml";
+    let create_directories_flag_name = "create-directories";
+    let toml_path_flag = "toml";
 
-    // TODO: 
-    // if -cd is set then do not ask the user if they want the directories generated
-    // for them, just do it.  It is an optional flag. It is alos possible to
-    // pass this flag in the toml file
-    let matches = clap::App::new("csv2api")
+    let matches = clap::App::new(app_name)
         .version(clap::crate_version!())
         .about("Parses and stores Wikipedia conspiracy theories data")
         .author("Rob Rowe.")
-        .arg(clap::Arg::with_name("toml")
+        .arg(clap::Arg::with_name(toml_path_flag)
             .short("t")
             .long("toml")
             .value_name("PATH TO TOML FILE")
@@ -51,16 +48,19 @@ fn main() {
             .takes_value(true)
             .required(false)
             .validator(validate_fs_path))
-        .arg(clap::Arg::with_name("create-directories")
-            .short("cd")
+        .arg(clap::Arg::with_name(create_directories_flag_name)
+            .short("c")
             .long("create-directories")
             .help("if this flag is provided and your project directories do not exist, they will be created automatically if this flag isn't provided the user will be asked if they want the directories to be created")
             .takes_value(false)
-            .required(false))
+            .required(false))   
         .get_matches();
     
+    // check to see if the user wants any missing directories to be created
+    let create_directories = matches.occurrences_of(create_directories_flag_name) > 0;
+
     // If there isn't a -t or --toml switch then go with the default file
-    let toml_file_path = matches.value_of("toml").unwrap_or("csv2api.toml");
+    let toml_file_path = matches.value_of(toml_path_flag).unwrap_or("csv2api.toml");
     if toml_file_path == default_toml_file {
         match validate_fs_path(toml_file_path.to_string()) {
             Err(e) => {
@@ -70,6 +70,7 @@ fn main() {
             _ => ()
         }
     }
+
     // processing the toml file to get the configuration values
     let mut toml_file_handle = File::open(toml_file_path).expect("csv2api.toml not found");
     let mut config_content = String::new();
@@ -78,32 +79,60 @@ fn main() {
         .expect("something went wrong reading the config file");
     
     let config = &Config::load(&config_content);
-    // get the files
-    let csv_files = create_files_list(&config.directories, &config.files);
-
+    
     // flags for what needs to be created
     let create_webserver = config.gen_webserver.unwrap_or(false);
     let create_models = config.gen_models.unwrap_or(false);
     let create_sql = config.gen_sql.unwrap_or(false);
 
-    match config.does_project_dir_exist() {
-        Ok(exists) => {
-            println!("Does the project directory exists? {}", exists);
+    match Config::does_project_dir_exist(config.clone()) {
+        Err(_) => {
+            
+            let cfg = config.clone();
+            let project_path = cfg.get_project_directory();
+            
+            if !create_directories {
+                eprintln!("\nERROR: The project directory '{}' does not exist\nERROR: use the -cd or --create-directory to have {} create the directory for you", project_path, app_name);
+                std::process::exit(1);
+;            }
+
+            // I will prompt the user here if they didn't provide the -c | --create-directory flag
+            match create_dir(&project_path) {
+                Err(e) => show_dir_creation_error_and_exit(e),
+                Ok(_) => {
+                    println!("Created the project directory {}", project_path);
+
+                    if create_models {
+                        let model_dir = &format!("{}/src/models", project_path);
+                        match create_dir(model_dir) {
+                            Err(e) => show_dir_creation_error_and_exit(e),
+                            Ok(_) => println!("Created the directory '{}'", model_dir),
+                        }
+                    }
+
+                    if create_webserver {
+                        let actor_dir = &format!("{}/src/actors", project_path);
+                        match create_dir(actor_dir) {
+                            Err(e) => show_dir_creation_error_and_exit(e),
+                            Ok(_) => println!("Created the directory '{}'", actor_dir),
+                        }
+                    }
+
+                    if create_sql {
+                        let db_dir = &format!("{}/src/db", project_path);
+                        match create_dir(db_dir) {
+                            Err(e) => show_dir_creation_error_and_exit(e),
+                            Ok(_) => println!("Created the directory '{}'", db_dir),
+                        }
+                    }
+                }
+            }
         },
-        Err(e) => {
-            eprintln!("{}", e);
-            std::process::exit(1);
-        }
+        Ok(_) => ()
     }
-    // TODO: Add the validation steps for the paths for all three of these 
-    // generation options above.
-    // IF the project directory doesn't exist ask the user if they want
-    // it created. 
-    //  - if no display usage and exit with an exit code of 1
-    //  - if yes, then pass in the models, sql and webserver flags 
-    //       into a new function called create_project_dir_structure
-    //       which will create the directories before doing any csv 
-    //       parsing 
+    
+    // get the files
+    let csv_files = create_files_list(&config.directories, &config.files);
 
     let system = System::new("csv2api");
     let mut structs: Vec<String> = vec![];
@@ -181,6 +210,16 @@ fn main() {
     }
 
     system.run();
+}
+
+fn show_dir_creation_error_and_exit(e: std::io::Error) {
+    eprintln!("Unable to create the project directory, Error: {}", e);
+    std::process::exit(1);
+}
+
+fn create_dir(path: &str) -> std::io::Result<()> {
+   let path = Path::new(path);
+   fs::create_dir_all(path)
 }
 
 fn validate_fs_path(path: String) -> Result<(), String> {
