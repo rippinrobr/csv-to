@@ -1,6 +1,7 @@
 extern crate toml;
 
 use input::*;
+use std::path::Path;
 
 #[derive(Clone, Debug, PartialEq, Deserialize)]
 pub struct DbCfg {
@@ -43,7 +44,18 @@ impl Config {
         }
     }
 
+    pub fn does_project_dir_exist(&self) -> Result<bool, String>{
+        let project_path = Path::new(&self.output.output_dir);
 
+        if project_path.exists() {
+            if project_path.is_dir() {
+                return Ok(true);
+            } 
+            return Err(format!("The path '{}' provided is a file, not a directory.", self.output.output_dir).clone());  
+        } 
+
+        Ok(false)
+    }
 }
 
 #[cfg(test)]

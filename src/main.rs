@@ -1,4 +1,3 @@
-// pub mod models;
 pub mod actors;
 
 extern crate csv_converter;
@@ -35,6 +34,10 @@ use actors::{
 fn main() {
     let default_toml_file = "csv2api.toml";
 
+    // TODO: 
+    // if -cd is set then do not ask the user if they want the directories generated
+    // for them, just do it.  It is an optional flag. It is alos possible to
+    // pass this flag in the toml file
     let matches = clap::App::new("csv2api")
         .version(clap::crate_version!())
         .about("Parses and stores Wikipedia conspiracy theories data")
@@ -48,6 +51,12 @@ fn main() {
             .takes_value(true)
             .required(false)
             .validator(validate_fs_path))
+        .arg(clap::Arg::with_name("create-directories")
+            .short("cd")
+            .long("create-directories")
+            .help("if this flag is provided and your project directories do not exist, they will be created automatically if this flag isn't provided the user will be asked if they want the directories to be created")
+            .takes_value(false)
+            .required(false))
         .get_matches();
     
     // If there isn't a -t or --toml switch then go with the default file
@@ -76,6 +85,25 @@ fn main() {
     let create_webserver = config.gen_webserver.unwrap_or(false);
     let create_models = config.gen_models.unwrap_or(false);
     let create_sql = config.gen_sql.unwrap_or(false);
+
+    match config.does_project_dir_exist() {
+        Ok(exists) => {
+            println!("Does the project directory exists? {}", exists);
+        },
+        Err(e) => {
+            eprintln!("{}", e);
+            std::process::exit(1);
+        }
+    }
+    // TODO: Add the validation steps for the paths for all three of these 
+    // generation options above.
+    // IF the project directory doesn't exist ask the user if they want
+    // it created. 
+    //  - if no display usage and exit with an exit code of 1
+    //  - if yes, then pass in the models, sql and webserver flags 
+    //       into a new function called create_project_dir_structure
+    //       which will create the directories before doing any csv 
+    //       parsing 
 
     let system = System::new("csv2api");
     let mut structs: Vec<String> = vec![];
