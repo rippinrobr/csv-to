@@ -33,6 +33,8 @@ use actors::{
 };
 
 fn main() {
+    let default_toml_file = "csv2api.toml";
+
     let matches = clap::App::new("csv2api")
         .version("0.0.1")
         .about("Parses and stores Wikipedia conspiracy theories data")
@@ -41,14 +43,24 @@ fn main() {
             .short("t")
             .long("toml")
             .value_name("PATH TO TOML FILE")
-            .help("an alternative TOML file")
+            .help("A file containing settings used during the parsing and generation processes.")
+            .default_value(default_toml_file)
             .takes_value(true)
-            .required(false))
+            .required(false)
+            .validator(validate_fs_path))
         .get_matches();
     
     // If there isn't a -t or --toml switch then go with the default file
     let toml_file_path = matches.value_of("toml").unwrap_or("csv2api.toml");
-
+    if toml_file_path == default_toml_file {
+        match validate_fs_path(toml_file_path.to_string()) {
+            Err(e) => {
+                eprintln!("{}", e);
+                std::process::exit(1);
+            },
+            _ => ()
+        }
+    }
     // processing the toml file to get the configuration values
     let mut toml_file_handle = File::open(toml_file_path).expect("csv2api.toml not found");
     let mut config_content = String::new();
@@ -141,6 +153,19 @@ fn main() {
     }
 
     system.run();
+}
+
+fn validate_fs_path(path: String) -> Result<(), String> {
+    let given_path = Path::new(&path);
+    if !given_path.exists() {
+      return Err(format!("The path '{}' does not exist.", path))
+    }
+    
+    if given_path.is_dir() {
+        return Err(format!("The path '{}' is a directory, not a *.toml file.", path))
+    } 
+
+    Ok(())
 }
 
 fn call_code_gen_struct_actor(output_cfg: OutputCfg, parsed_content: ParsedContent) {
