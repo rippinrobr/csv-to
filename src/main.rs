@@ -142,7 +142,7 @@ fn main() {
     // get the files
     let csv_files = create_files_list(&config.directories, &config.files);
 
-    let system = System::new("csv2api");
+    let system = System::new(app_name);
     let mut structs: Vec<String> = vec![];
     let mut column_meta: Vec<(String, Vec<ColumnDef>)> = Vec::new();
 
