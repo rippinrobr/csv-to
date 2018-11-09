@@ -45,6 +45,14 @@ impl Config {
         format!("{}/src/models", self.get_project_directory_path())
     }
 
+    pub fn get_actors_directory_path(self) -> String {
+        format!("{}/src/actors", self.get_project_directory_path())
+    }
+
+    pub fn get_db_directory_path(self) -> String {
+        format!("{}/src/db", self.get_project_directory_path())
+    }
+
     pub fn load(config_str: &str) -> Config {
         match toml::from_str(config_str) {
             Ok(config) => {
