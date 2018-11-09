@@ -89,12 +89,12 @@ fn main() {
         Err(_) => {
             
             let cfg = config.clone();
-            let project_path = cfg.get_project_directory();
+            let project_path = cfg.get_project_directory_path();
             
             if !create_directories {
                 eprintln!("\nERROR: The project directory '{}' does not exist\nERROR: use the -cd or --create-directory to have {} create the directory for you", project_path, app_name);
                 std::process::exit(1);
-;            }
+            }
 
             // I will prompt the user here if they didn't provide the -c | --create-directory flag
             match create_dir(&project_path) {
@@ -103,32 +103,29 @@ fn main() {
                     println!("Created the project directory {}", project_path);
 
                     if create_models {
-                        let model_dir = &format!("{}/src/models", project_path);
-                        match create_dir(model_dir) {
-                            Err(e) => show_dir_creation_error_and_exit(e),
-                            Ok(_) => println!("Created the directory '{}'", model_dir),
-                        }
+                        create_models_dir(&project_path)
                     }
 
                     if create_webserver {
-                        let actor_dir = &format!("{}/src/actors", project_path);
-                        match create_dir(actor_dir) {
-                            Err(e) => show_dir_creation_error_and_exit(e),
-                            Ok(_) => println!("Created the directory '{}'", actor_dir),
-                        }
+                        create_web_code_dir(&project_path)
                     }
 
                     if create_sql {
-                        let db_dir = &format!("{}/src/db", project_path);
-                        match create_dir(db_dir) {
-                            Err(e) => show_dir_creation_error_and_exit(e),
-                            Ok(_) => println!("Created the directory '{}'", db_dir),
-                        }
+                        create_sql_dir(&project_path)
                     }
                 }
             }
         },
-        Ok(_) => ()
+        Ok(_) => {
+            //let cfg = config.clone();
+            
+            if create_models {
+                // match Config::does_models_dir_exist(&cfg) {
+                //     Err(_) => create_models_dir(&project_path),
+                //     Ok(_) => ()
+                // }
+            }
+        }
     }
     
     // get the files
@@ -220,6 +217,30 @@ fn show_dir_creation_error_and_exit(e: std::io::Error) {
 fn create_dir(path: &str) -> std::io::Result<()> {
    let path = Path::new(path);
    fs::create_dir_all(path)
+}
+
+fn create_models_dir(project_path: &str)  {
+    let model_dir = &format!("{}/src/models", project_path);
+    match create_dir(model_dir) {
+        Err(e) => show_dir_creation_error_and_exit(e),
+        Ok(_) => println!("Created the directory '{}'", model_dir),
+    }
+}
+
+fn create_web_code_dir(project_path: &str) {
+    let actor_dir = &format!("{}/src/actors", project_path);
+    match create_dir(actor_dir) {
+        Err(e) => show_dir_creation_error_and_exit(e),
+        Ok(_) => println!("Created the directory '{}'", actor_dir),
+    }
+}
+
+fn create_sql_dir(project_path: &str) {
+    let db_dir = &format!("{}/src/db", project_path);
+    match create_dir(db_dir) {
+        Err(e) => show_dir_creation_error_and_exit(e),
+        Ok(_) => println!("Created the directory '{}'", db_dir),
+    }
 }
 
 fn validate_fs_path(path: String) -> Result<(), String> {

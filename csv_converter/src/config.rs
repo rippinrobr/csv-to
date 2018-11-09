@@ -37,8 +37,12 @@ pub struct Config {
 
 impl Config {
 
-    pub fn get_project_directory(self) -> String {
+    pub fn get_project_directory_path(self) -> String {
         format!("{}/{}", self.output.output_dir, self.output.project_name.unwrap())
+    }
+
+    pub fn get_models_directory_path(self) -> String {
+        format!("{}/src/models", self.get_project_directory_path())
     }
 
     pub fn load(config_str: &str) -> Config {
@@ -51,11 +55,9 @@ impl Config {
     }
 
     pub fn does_project_dir_exist(config: Config) -> Result<bool, String>{
-        let project_path_string = config.get_project_directory();
-        println!("project_path_string: {}", project_path_string);
-
+        let project_path_string = config.get_project_directory_path();
         let project_path = Path::new(&project_path_string);
-        println!("project_path: {:?}", project_path);
+        
         if project_path.exists() {
             if project_path.is_dir() {
                 return Ok(true);
