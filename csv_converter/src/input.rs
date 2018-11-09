@@ -3,7 +3,7 @@ use std::fs::{self};
 use std::path::Path;
 use std::string::ToString;
 
-#[derive(Clone, PartialEq, Deserialize)]
+#[derive(Copy, Clone, PartialEq, Deserialize)]
 pub enum InputType {
     CSV,
     NotSupported

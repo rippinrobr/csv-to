@@ -1,6 +1,7 @@
 extern crate toml;
 
 use input::*;
+use std::path::Path;
 
 #[derive(Clone, Debug, PartialEq, Deserialize)]
 pub struct DbCfg {
@@ -20,6 +21,8 @@ pub struct OutputCfg {
     pub project_name: Option<String>
 }
 
+
+
 #[derive(Clone, Debug, PartialEq, Deserialize)]
 pub struct Config {
     pub gen_models: Option<bool>,
@@ -34,6 +37,22 @@ pub struct Config {
 
 impl Config {
 
+    pub fn get_project_directory_path(self) -> String {
+        format!("{}/{}", self.output.output_dir, self.output.project_name.unwrap())
+    }
+
+    pub fn get_models_directory_path(self) -> String {
+        format!("{}/src/models", self.get_project_directory_path())
+    }
+
+    pub fn get_actors_directory_path(self) -> String {
+        format!("{}/src/actors", self.get_project_directory_path())
+    }
+
+    pub fn get_db_directory_path(self) -> String {
+        format!("{}/src/db", self.get_project_directory_path())
+    }
+
     pub fn load(config_str: &str) -> Config {
         match toml::from_str(config_str) {
             Ok(config) => {
@@ -43,7 +62,19 @@ impl Config {
         }
     }
 
+    pub fn does_project_dir_exist(config: Config) -> Result<bool, String>{
+        let project_path_string = config.get_project_directory_path();
+        let project_path = Path::new(&project_path_string);
+        
+        if project_path.exists() {
+            if project_path.is_dir() {
+                return Ok(true);
+            } 
+            return Err(format!("The path '{}' provided is a file, not a directory.", project_path_string).clone());  
+        } 
 
+        Err(format!("The path '{} does not exist.", project_path_string))
+    }
 }
 
 #[cfg(test)]

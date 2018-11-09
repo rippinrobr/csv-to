@@ -1,4 +1,3 @@
-// pub mod models;
 pub mod actors;
 
 extern crate csv_converter;
@@ -10,18 +9,16 @@ extern crate csv;
 extern crate futures;
 extern crate regex;
 extern crate sqlite;
-// #[macro_use]
-//extern crate serde_derive;
 extern crate toml;
 
-use csv_converter::config::{Config, OutputCfg};
+use csv_converter::config::{Config};
+use csv_converter::config::OutputCfg;
 use csv_converter::code_gen::CodeGen;
 use csv_converter::models::{ColumnDef, ParsedContent};
 use csv_converter::parse_csv::{ParseFile};
 use csv_converter::sqlite_code_gen::SqliteCodeGen;
 use csv_converter::db::{SqliteDB};
 use actix::*;
-//use actix::prelude::*;
 use futures::{future, Future};
 use std::fs::{self};
 use std::path::Path;
@@ -33,13 +30,16 @@ use actors::{
 };
 
 fn main() {
+    let app_name = "csv2api";
     let default_toml_file = "csv2api.toml";
+    let create_directories_flag_name = "create-directories";
+    let toml_path_flag = "toml";
 
-    let matches = clap::App::new("csv2api")
+    let matches = clap::App::new(app_name)
         .version(clap::crate_version!())
         .about("Parses and stores Wikipedia conspiracy theories data")
         .author("Rob Rowe.")
-        .arg(clap::Arg::with_name("toml")
+        .arg(clap::Arg::with_name(toml_path_flag)
             .short("t")
             .long("toml")
             .value_name("PATH TO TOML FILE")
@@ -48,10 +48,19 @@ fn main() {
             .takes_value(true)
             .required(false)
             .validator(validate_fs_path))
+        .arg(clap::Arg::with_name(create_directories_flag_name)
+            .short("c")
+            .long("create-directories")
+            .help("if this flag is provided and your project directories do not exist, they will be created automatically if this flag isn't provided the user will be asked if they want the directories to be created")
+            .takes_value(false)
+            .required(false))   
         .get_matches();
     
+    // check to see if the user wants any missing directories to be created
+    let create_directories = matches.occurrences_of(create_directories_flag_name) > 0;
+
     // If there isn't a -t or --toml switch then go with the default file
-    let toml_file_path = matches.value_of("toml").unwrap_or("csv2api.toml");
+    let toml_file_path = matches.value_of(toml_path_flag).unwrap_or("csv2api.toml");
     if toml_file_path == default_toml_file {
         match validate_fs_path(toml_file_path.to_string()) {
             Err(e) => {
@@ -61,6 +70,7 @@ fn main() {
             _ => ()
         }
     }
+
     // processing the toml file to get the configuration values
     let mut toml_file_handle = File::open(toml_file_path).expect("csv2api.toml not found");
     let mut config_content = String::new();
@@ -69,15 +79,70 @@ fn main() {
         .expect("something went wrong reading the config file");
     
     let config = &Config::load(&config_content);
-    // get the files
-    let csv_files = create_files_list(&config.directories, &config.files);
-
+    
     // flags for what needs to be created
     let create_webserver = config.gen_webserver.unwrap_or(false);
     let create_models = config.gen_models.unwrap_or(false);
     let create_sql = config.gen_sql.unwrap_or(false);
+            
+    match does_path_exist(&config.clone().get_project_directory_path()) {
+        Err(_) => {
+            let my_cfg = config.clone();
+    
+            if !create_directories {
+                eprintln!("\nERROR: The project directory '{}' does not exist\nERROR: use the -cd or --create-directory to have {} create the directory for you", &my_cfg.get_project_directory_path(), app_name);
+                std::process::exit(1);
+            }
 
-    let system = System::new("csv2api");
+            // I will prompt the user here if they didn't provide the -c | --create-directory flag
+            create_dir(&config.clone().get_project_directory_path());
+    
+            if create_models {
+                create_dir(&config.clone().get_models_directory_path());
+            }
+
+            if create_webserver {
+                create_dir(&config.clone().get_actors_directory_path());
+            }
+
+            if create_sql {
+                create_dir(&my_cfg.get_db_directory_path());
+            }
+        },
+        Ok(_) => {
+            let model_path_str = &config.clone().get_models_directory_path();
+            if create_models && does_path_exist(model_path_str).is_err() {
+                if !create_directories {
+                    eprintln!("\nERROR: The directory '{}' does not exist\nERROR: use the -cd or --create-directory to have {} create the directory for you", model_path_str, app_name);
+                    std::process::exit(1);
+                }
+                create_dir(model_path_str);
+            }
+
+            let actors_path_str = &config.clone().get_actors_directory_path();
+            if create_webserver && does_path_exist(actors_path_str).is_err() {
+                if !create_directories {
+                    eprintln!("\nERROR: The directory '{}' does not exist\nERROR: use the -cd or --create-directory to have {} create the directory for you", actors_path_str, app_name);
+                    std::process::exit(1);
+                }
+                create_dir(actors_path_str);
+            }
+            
+            let db_code_path_str = &config.clone().get_db_directory_path();
+            if create_sql && does_path_exist(db_code_path_str).is_err() {
+                if !create_directories {
+                    eprintln!("\nERROR: The directory '{}' does not exist\nERROR: use the -cd or --create-directory to have {} create the directory for you", db_code_path_str, app_name);
+                    std::process::exit(1);
+                }
+                create_dir(db_code_path_str);
+            }
+        }
+    }
+    
+    // get the files
+    let csv_files = create_files_list(&config.directories, &config.files);
+
+    let system = System::new(app_name);
     let mut structs: Vec<String> = vec![];
     let mut column_meta: Vec<(String, Vec<ColumnDef>)> = Vec::new();
 
@@ -153,6 +218,33 @@ fn main() {
     }
 
     system.run();
+}
+
+fn does_path_exist(path_str: &str) -> Result<bool, String>{
+    let project_path = Path::new(path_str);
+    
+    if project_path.exists() {
+        if project_path.is_dir() {
+            return Ok(true);
+        } 
+        return Err(format!("The path '{}' provided is a file, not a directory.", path_str).clone());  
+    } 
+    
+    Err(format!("The path '{} does not exist.", path_str))
+}
+
+fn show_dir_creation_error_and_exit(e: std::io::Error) {
+    eprintln!("Unable to create the project directory, Error: {}", e);
+    std::process::exit(1);
+}
+
+fn create_dir(path_str: &str) {
+   let path = Path::new(path_str);
+
+   match fs::create_dir_all(path) {
+        Err(e) => show_dir_creation_error_and_exit(e),
+        Ok(_) => println!("Created the directory '{}'", path_str),
+    };
 }
 
 fn validate_fs_path(path: String) -> Result<(), String> {

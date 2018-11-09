@@ -9,6 +9,7 @@ pub struct SqliteDB {
     db_conn: Connection,
 } 
 
+
 impl SqliteDB {
     pub fn new(path: &str) -> Result<SqliteDB, Error> {
         let path_obj = Path::new(path);
