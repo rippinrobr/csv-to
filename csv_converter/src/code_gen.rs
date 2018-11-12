@@ -1,5 +1,5 @@
 use codegen::{Block, Function, Impl, Scope, Struct};
-use models::{ColumnDef,};
+use models::ColumnDef;
 use std::io::Error;
 
 pub enum CodeGenTarget {
@@ -234,6 +234,7 @@ fn create_main_fn(db_path: String, entities: &Vec<String>) -> String {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use code_gen::CodeGen;
     use models::{ColumnDef, DataTypes};
     use codegen::{Impl, Scope};

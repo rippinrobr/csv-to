@@ -22,7 +22,6 @@ pub struct OutputCfg {
 }
 
 
-
 #[derive(Clone, Debug, PartialEq, Deserialize)]
 pub struct Config {
     pub gen_models: Option<bool>,
@@ -80,7 +79,7 @@ impl Config {
 #[cfg(test)]
 mod tests {
     use super::*;
-
+    
     #[test]
     fn load_input() {
         let test_yaml = r#"
