@@ -234,15 +234,15 @@ fn create_main_fn(db_path: String, entities: &Vec<String>) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use code_gen::CodeGen;
     use models::{ColumnDef, DataTypes};
     use codegen::{Impl, Scope};
 
     #[test]
     fn generate_mod_file() {
-        let expected = "pub mod sqlite;\npub mod code_gen;\npub mod sql_gen;\npub mod sqlite_code_gen;\npub mod config;\npub mod output;\npub mod input;\npub mod parse_csv;\n".to_string();
-        let actual = CodeGen::generate_mod_file(&vec!["./src/workers".to_string()]);
+        let expected = "pub mod sqlite;\npub mod code_gen;\npub mod sql_gen;\n".to_string();
+        let mods = &vec![String::from("sqlite"), String::from("code_gen"), String::from("sql_gen")];
+        let actual = CodeGen::generate_mod_file(mods);
         assert_eq!(expected, actual);
     }
 
