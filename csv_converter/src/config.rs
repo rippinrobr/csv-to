@@ -9,6 +9,25 @@ pub struct DbCfg {
     pub db_uri: Option<String>
 }
 
+impl DbCfg {
+    pub fn validate(self) -> Result<bool,String> {
+        let db_type = self.db_type.clone().unwrap_or_else(|| String::from(""));
+        let db_uri = self.db_uri.clone().unwrap_or_else(|| String::from(""));
+
+        if db_type != "sqlite" {
+            return Err(format!("The db_type '{:?}' is not supported.  Only sqlite is supported at this time.", self.db_type))
+        }
+
+        let dbpath = Path::new(&db_uri);
+        println!("dbpath.parent: {:?}", dbpath.parent().unwrap());
+        if !dbpath.parent().unwrap().exists() {
+            return Err(format!("The db_uri '{:?}' does not exist.", db_uri))
+        }
+
+        Ok(true)
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Deserialize)]
 pub struct CodeGenCfg {
     pub output_dir: String,
@@ -36,6 +55,20 @@ pub struct Config {
 
 impl Config {
 
+    pub fn does_project_dir_exist(config: Config) -> Result<bool, String>{
+        let project_path_string = config.get_project_directory_path();
+        let project_path = Path::new(&project_path_string);
+        
+        if project_path.exists() {
+            if project_path.is_dir() {
+                return Ok(true);
+            } 
+            return Err(format!("The path '{}' provided is a file, not a directory.", project_path_string).clone());  
+        } 
+
+        Err(format!("The path '{} does not exist.", project_path_string))
+    }
+    
     pub fn get_project_directory_path(self) -> String {
         format!("{}/{}", self.output.output_dir, self.output.project_name.unwrap())
     }
@@ -61,18 +94,8 @@ impl Config {
         }
     }
 
-    pub fn does_project_dir_exist(config: Config) -> Result<bool, String>{
-        let project_path_string = config.get_project_directory_path();
-        let project_path = Path::new(&project_path_string);
-        
-        if project_path.exists() {
-            if project_path.is_dir() {
-                return Ok(true);
-            } 
-            return Err(format!("The path '{}' provided is a file, not a directory.", project_path_string).clone());  
-        } 
-
-        Err(format!("The path '{} does not exist.", project_path_string))
+    pub fn validate(self) -> bool {
+        false
     }
 }
 
@@ -80,6 +103,23 @@ impl Config {
 mod tests {
     use super::*;
     
+    #[test]
+    fn validate_dbcfg_sqlite_db_uri_exists() {
+        let dbconfig = DbCfg {
+            db_type: Some(String::from("sqlite")),
+            db_uri: Some(String::from("../../hockey_db_api/database/hockey_stats.db")),
+        };
+
+
+        match dbconfig.validate() {
+            Ok(_) => assert!(true),
+            Err(e) => {
+                eprintln!("Failed do to this error => {}", e);
+                assert!(false)
+            }
+        }
+    }
+   
     #[test]
     fn load_input() {
         let test_yaml = r#"
