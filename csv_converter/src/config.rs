@@ -86,7 +86,13 @@ mod tests {
         input_type = 'CSV'
         files = ['a.csv', 'b.csv' ]
         directories = ['~/src/baseballdatabank/core', '~/src/hockeydatabank' ]
+        [output]
+            output_dir = ".."
+            project_name = "baseball_stats_api"
 
+        [output_db]
+            db_type = "sqlite"
+            db_uri = "./bd_batting.db"
         "#;
         
         let actual = Config::load(test_yaml);

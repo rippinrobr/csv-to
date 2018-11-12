@@ -248,7 +248,7 @@ mod tests {
 
     #[test]
     fn create_handler_actor() {
-        let expected_len = 520;
+        let expected_len = 514;
         let actual = CodeGen::create_handler_actor("my_actor");
 
         assert_eq!(actual.len(), expected_len);
@@ -276,7 +276,7 @@ mod tests {
 
     #[test]
     fn generate_webservice_main() {
-        let expected_len = 1398;
+        let expected_len = 1392;
         let actual = CodeGen::generate_webservice("test.db".to_string(),&vec![]);
 
         assert_eq!(actual.len(), expected_len);
