@@ -2,6 +2,7 @@ extern crate toml;
 
 use input::*;
 use std::path::Path;
+use std::fs::File;
 
 #[derive(Clone, Debug, PartialEq, Deserialize)]
 pub struct DbCfg {
@@ -13,15 +14,29 @@ impl DbCfg {
     pub fn validate(self) -> Result<bool,String> {
         let db_type = self.db_type.clone().unwrap_or_else(|| String::from(""));
         let db_uri = self.db_uri.clone().unwrap_or_else(|| String::from(""));
-
+        
         if db_type != "sqlite" {
             return Err(format!("The db_type '{:?}' is not supported.  Only sqlite is supported at this time.", self.db_type))
         }
 
+        // if someone has set a value to db_type 
+        if db_uri == "" {
+            return Err(String::from("the db_uri value cannot be empty"))
+        }
+
         let dbpath = Path::new(&db_uri);
-        println!("dbpath.parent: {:?}", dbpath.parent().unwrap());
-        if !dbpath.parent().unwrap().exists() {
-            return Err(format!("The db_uri '{:?}' does not exist.", db_uri))
+        if !dbpath.exists() {
+            let parent = dbpath.parent().unwrap();
+            if !parent.exists() {
+                return Err(format!("The db_uri '{:?}' does not exist.", db_uri))
+            }
+
+            // if I'm here then the parent directory exists so 
+            // I should create the db file then, right?
+            match File::create(&db_uri) {
+                Err(e) => return Err(String::from("Unable to create the database '{:?}'")),
+                _ => ()
+            };
         }
 
         Ok(true)
@@ -105,14 +120,18 @@ mod tests {
     
     #[test]
     fn validate_dbcfg_sqlite_db_uri_exists() {
+        let db_path = String::from("/tmp/hockey-stats-db/database/hockey_stats.db");
         let dbconfig = DbCfg {
             db_type: Some(String::from("sqlite")),
-            db_uri: Some(String::from("../../hockey_db_api/database/hockey_stats.db")),
+            db_uri: Some(db_path.clone()),
         };
 
 
         match dbconfig.validate() {
-            Ok(_) => assert!(true),
+            Ok(_) => {
+                std::fs::remove_file(db_path);
+                assert!(true)
+            },
             Err(e) => {
                 eprintln!("Failed do to this error => {}", e);
                 assert!(false)

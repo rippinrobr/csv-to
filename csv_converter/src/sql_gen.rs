@@ -3,7 +3,6 @@ use std::io::Error;
 use std::io::prelude::*;
 use barrel::*;
 use barrel::backend::Pg;
-use super::models;
 
 
 pub struct SQLGen {
@@ -73,11 +72,12 @@ impl SQLGen {
 mod tests {
     use sql_gen::SQLGen;
     use models::{ColumnDef, DataTypes};
+    use super::*;
 
     #[test] 
     fn generate_create_table() {
         let table_def = "CREATE TABLE \"people\" (\"name\" TEXT, \"age\" INTEGER, \"weight\" DOUBLE);".to_string();
-        let cols: Vec<super::models::ColumnDef> = vec![ColumnDef::new("name".to_string(), DataTypes::String), ColumnDef::new("age".to_string(), DataTypes::I64), ColumnDef::new("weight".to_string(), DataTypes::F64)];
+        let cols: Vec<ColumnDef> = vec![ColumnDef::new("name".to_string(), DataTypes::String), ColumnDef::new("age".to_string(), DataTypes::I64), ColumnDef::new("weight".to_string(), DataTypes::F64)];
         ;
         match SQLGen::generate_create_table("people", &cols) {
             Ok(table) => assert_eq!(table_def, table),
@@ -89,7 +89,7 @@ mod tests {
     #[test] 
     fn generate_insert_stmt() {
         let insert_stmt = "INSERT INTO people (name, age, weight) VALUES (?1, ?2, ?3)".to_string();
-        let cols: Vec<super::models::ColumnDef> = vec![ColumnDef::new("name".to_string(), DataTypes::String), ColumnDef::new("age".to_string(), DataTypes::I64), ColumnDef::new("weight".to_string(), DataTypes::F64)];
+        let cols: Vec<ColumnDef> = vec![ColumnDef::new("name".to_string(), DataTypes::String), ColumnDef::new("age".to_string(), DataTypes::I64), ColumnDef::new("weight".to_string(), DataTypes::F64)];
         match SQLGen::generate_insert_stmt("people", &cols) {
             Ok(stmt) => assert_eq!(insert_stmt, stmt),
             Err(_) => assert!(false)

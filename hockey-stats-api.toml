@@ -1,6 +1,6 @@
 input_type = "CSV"
 files = []
-directories = [ "../hockey-databank/core" ]
+directories = [ "../hockey-databank" ]
 create_db = true
 gen_models = true
 gen_webserver = true
@@ -12,4 +12,4 @@ gen_sql = true
 
 [output_db]
   db_type = "sqlite"
-  db_uri = "../hockey_db_api/database/hockey_stats.db"
+  db_uri = "../hockey_db_api/database/hockey_databank.db"
