@@ -1,5 +1,5 @@
 use codegen::{Block, Function, Impl, Scope, Struct};
-use models::{ColumnDef,};
+use models::ColumnDef;
 use std::io::Error;
 
 pub enum CodeGenTarget {
@@ -240,14 +240,15 @@ mod tests {
 
     #[test]
     fn generate_mod_file() {
-        let expected = "pub mod sqlite;\npub mod code_gen;\npub mod sql_gen;\npub mod sqlite_code_gen;\npub mod config;\npub mod output;\npub mod input;\npub mod parse_csv;\n".to_string();
-        let actual = CodeGen::generate_mod_file(&vec!["./src/workers".to_string()]);
+        let expected = "pub mod sqlite;\npub mod code_gen;\npub mod sql_gen;\n".to_string();
+        let mods = &vec![String::from("sqlite"), String::from("code_gen"), String::from("sql_gen")];
+        let actual = CodeGen::generate_mod_file(mods);
         assert_eq!(expected, actual);
     }
 
     #[test]
     fn create_handler_actor() {
-        let expected_len = 520;
+        let expected_len = 514;
         let actual = CodeGen::create_handler_actor("my_actor");
 
         assert_eq!(actual.len(), expected_len);
@@ -275,7 +276,7 @@ mod tests {
 
     #[test]
     fn generate_webservice_main() {
-        let expected_len = 1398;
+        let expected_len = 1392;
         let actual = CodeGen::generate_webservice("test.db".to_string(),&vec![]);
 
         assert_eq!(actual.len(), expected_len);

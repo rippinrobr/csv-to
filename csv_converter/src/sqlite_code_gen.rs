@@ -78,9 +78,9 @@ impl SqliteCodeGen {
 
 #[cfg(test)]
 mod tests {
-    use workers::sqlite_code_gen::SqliteCodeGen;
+    use sqlite_code_gen::SqliteCodeGen;
     use codegen::{Function, Impl, Scope, Struct};
-    use csv_converter::models::{ColumnDef, DataTypes};
+    use models::{ColumnDef, DataTypes};
 
     #[test] 
     fn generate_use_and_extern_statements() {

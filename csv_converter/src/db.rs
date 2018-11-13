@@ -76,14 +76,14 @@ impl SqliteDB {
 
 #[cfg(test)]
 mod tests {
-    use super::db::SqliteDB;
+    use db::SqliteDB;
 
     #[test]
     fn new() {
         let my_path = "/tmp/test.db";
 
         match SqliteDB::new(my_path) {
-            Ok(db) => {
+            Ok(_) => {
                 assert!(true);
             },
             Err(e) => {

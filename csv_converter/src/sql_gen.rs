@@ -3,7 +3,6 @@ use std::io::Error;
 use std::io::prelude::*;
 use barrel::*;
 use barrel::backend::Pg;
-use super::models::ColumnDef;
 
 
 pub struct SQLGen {
@@ -17,7 +16,7 @@ impl SQLGen {
         }
     }
 
-    pub fn generate_create_table(name: &str, columns: &Vec<ColumnDef>) -> Result<String, String> {
+    pub fn generate_create_table(name: &str, columns: &Vec<super::models::ColumnDef>) -> Result<String, String> {
         if name == "" {
             return Err("[generate_create_table] name cannot be empty.".to_string());
         }
@@ -37,7 +36,7 @@ impl SQLGen {
         Ok(format!("{};", &m.make::<Pg>()))
     }
 
-    pub fn generate_insert_stmt(name: &str, columns: &Vec<ColumnDef>) -> Result<String, String> { 
+    pub fn generate_insert_stmt(name: &str, columns: &Vec<super::models::ColumnDef>) -> Result<String, String> { 
         if name == "" {
             return Err("[generate_insert_stmt] name cannot be empty.".to_string());
         }
@@ -71,8 +70,9 @@ impl SQLGen {
 
 #[cfg(test)]
 mod tests {
-    use workers::sql_gen::SQLGen;
-    use csv_converter::models::{ColumnDef, DataTypes};
+    use sql_gen::SQLGen;
+    use models::{ColumnDef, DataTypes};
+    use super::*;
 
     #[test] 
     fn generate_create_table() {

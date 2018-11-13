@@ -2,11 +2,45 @@ extern crate toml;
 
 use input::*;
 use std::path::Path;
+use std::fs::File;
 
 #[derive(Clone, Debug, PartialEq, Deserialize)]
 pub struct DbCfg {
     pub db_type: Option<String>,
     pub db_uri: Option<String>
+}
+
+impl DbCfg {
+    pub fn validate(self) -> Result<bool,String> {
+        let db_type = self.db_type.clone().unwrap_or_else(|| String::from(""));
+        let db_uri = self.db_uri.clone().unwrap_or_else(|| String::from(""));
+        
+        if db_type != "sqlite" {
+            return Err(format!("The db_type '{:?}' is not supported.  Only sqlite is supported at this time.", self.db_type))
+        }
+
+        // if someone has set a value to db_type 
+        if db_uri == "" {
+            return Err(String::from("the db_uri value cannot be empty"))
+        }
+
+        let dbpath = Path::new(&db_uri);
+        if !dbpath.exists() {
+            let parent = dbpath.parent().unwrap();
+            if !parent.exists() {
+                return Err(format!("The db_uri '{:?}' does not exist.", db_uri))
+            }
+
+            // if I'm here then the parent directory exists so 
+            // I should create the db file then, right?
+            match File::create(&db_uri) {
+                Err(e) => return Err(String::from("Unable to create the database '{:?}'")),
+                _ => ()
+            };
+        }
+
+        Ok(true)
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize)]
@@ -20,7 +54,6 @@ pub struct OutputCfg {
     pub output_dir: String,
     pub project_name: Option<String>
 }
-
 
 
 #[derive(Clone, Debug, PartialEq, Deserialize)]
@@ -37,6 +70,20 @@ pub struct Config {
 
 impl Config {
 
+    pub fn does_project_dir_exist(config: Config) -> Result<bool, String>{
+        let project_path_string = config.get_project_directory_path();
+        let project_path = Path::new(&project_path_string);
+        
+        if project_path.exists() {
+            if project_path.is_dir() {
+                return Ok(true);
+            } 
+            return Err(format!("The path '{}' provided is a file, not a directory.", project_path_string).clone());  
+        } 
+
+        Err(format!("The path '{} does not exist.", project_path_string))
+    }
+    
     pub fn get_project_directory_path(self) -> String {
         format!("{}/{}", self.output.output_dir, self.output.project_name.unwrap())
     }
@@ -62,24 +109,64 @@ impl Config {
         }
     }
 
-    pub fn does_project_dir_exist(config: Config) -> Result<bool, String>{
-        let project_path_string = config.get_project_directory_path();
-        let project_path = Path::new(&project_path_string);
-        
-        if project_path.exists() {
-            if project_path.is_dir() {
-                return Ok(true);
-            } 
-            return Err(format!("The path '{}' provided is a file, not a directory.", project_path_string).clone());  
-        } 
-
-        Err(format!("The path '{} does not exist.", project_path_string))
+    pub fn validate(self) -> bool {
+        false
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    
+    #[test]
+    fn validate_dbcfg_sqlite_db_uri_exists() {
+        let db_path = String::from("/tmp/hockey-stats-db/database/hockey_stats.db");
+        let dbconfig = DbCfg {
+            db_type: Some(String::from("sqlite")),
+            db_uri: Some(db_path.clone()),
+        };
+
+
+        match dbconfig.validate() {
+            Ok(_) => {
+                std::fs::remove_file(db_path);
+                assert!(true)
+            },
+            Err(e) => {
+                eprintln!("Failed do to this error => {}", e);
+                assert!(false)
+            }
+        }
+    }
+   
+    #[test]
+    fn validate_dbcfg_sqlite_db_uri_path_does_not_exists() {
+        let db_path = String::from("/tmp/adfasdfasdf/adfasdfasdfasdf");
+        let dbconfig = DbCfg {
+            db_type: Some(String::from("sqlite")),
+            db_uri: Some(db_path.clone()),
+        };
+
+
+        match dbconfig.validate() {
+            Err(_) => assert!(true),
+            Ok(val) => assert!(false)
+        }
+    }
+
+    #[test]
+    fn validate_dbcfg_sqlite_with_both_fields_none() {
+        let db_path = String::from("");
+        let dbconfig = DbCfg {
+            db_type: None,
+            db_uri: None,
+        };
+
+        match dbconfig.validate() {
+            Err(_) => assert!(true),
+            Ok(val) => assert!(false)
+        }
+    }
 
     #[test]
     fn load_input() {
@@ -87,7 +174,13 @@ mod tests {
         input_type = 'CSV'
         files = ['a.csv', 'b.csv' ]
         directories = ['~/src/baseballdatabank/core', '~/src/hockeydatabank' ]
+        [output]
+            output_dir = ".."
+            project_name = "baseball_stats_api"
 
+        [output_db]
+            db_type = "sqlite"
+            db_uri = "./bd_batting.db"
         "#;
         
         let actual = Config::load(test_yaml);
