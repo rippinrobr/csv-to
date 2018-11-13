@@ -140,6 +140,35 @@ mod tests {
     }
    
     #[test]
+    fn validate_dbcfg_sqlite_db_uri_path_does_not_exists() {
+        let db_path = String::from("/tmp/adfasdfasdf/adfasdfasdfasdf");
+        let dbconfig = DbCfg {
+            db_type: Some(String::from("sqlite")),
+            db_uri: Some(db_path.clone()),
+        };
+
+
+        match dbconfig.validate() {
+            Err(_) => assert!(true),
+            Ok(val) => assert!(false)
+        }
+    }
+
+    #[test]
+    fn validate_dbcfg_sqlite_with_both_fields_none() {
+        let db_path = String::from("");
+        let dbconfig = DbCfg {
+            db_type: None,
+            db_uri: None,
+        };
+
+        match dbconfig.validate() {
+            Err(_) => assert!(true),
+            Ok(val) => assert!(false)
+        }
+    }
+
+    #[test]
     fn load_input() {
         let test_yaml = r#"
         input_type = 'CSV'
