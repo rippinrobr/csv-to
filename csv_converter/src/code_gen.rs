@@ -2,14 +2,14 @@ use codegen::{Block, Function, Impl, Scope, Struct};
 use models::ColumnDef;
 use std::io::Error;
 
-pub enum CodeGenTarget {
-    CurlScript,
-    DbActor,
-    Handler,
-    ModFile,
-    Struct,
-    WebService,
-}
+// pub enum CodeGenTarget {
+//     CurlScript,
+//     DbActor,
+//     Handler,
+//     ModFile,
+//     Struct,
+//     WebService,
+// }
 
 pub struct CodeGen;
 

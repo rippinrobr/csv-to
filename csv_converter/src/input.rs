@@ -1,5 +1,4 @@
 use std::fmt;
-use std::fs::{self};
 use std::string::ToString;
 
 #[derive(Copy, Clone, PartialEq, Deserialize)]
