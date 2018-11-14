@@ -140,8 +140,11 @@ fn main() {
         }
     }
     
-    // get the files
-    let csv_files = create_files_list(&config.directories, &config.files);
+
+    let csv_files = create_files_list(&config.directories, &config.files).unwrap_or_else(|err| {
+        eprintln!("ERROR Unable to process files => {}", err);
+        std::process::exit(1)
+    });
 
     let system = System::new(app_name);
     let mut structs: Vec<String> = vec![];
@@ -364,7 +367,7 @@ fn sqlite_load_table(cfg: Config, table_name: &str, columns: Vec<ColumnDef>, con
     }));
 }
 
-fn create_files_list(dirs: &Vec<String>, cfg_files: &Vec<String>) -> Vec<String> {
+fn create_files_list(dirs: &Vec<String>, cfg_files: &Vec<String>) -> Result<Vec<String>, String> {
     let mut files: Vec<String> = Vec::new();
 
     for d in dirs {
@@ -392,5 +395,10 @@ fn create_files_list(dirs: &Vec<String>, cfg_files: &Vec<String>) -> Vec<String>
         
     }
 
-    files.to_owned()
+    if files.len() == 0 {
+       return  Err(String::from("No CSV files found"))
+    } 
+
+    
+    return Ok(files.to_owned())
 }
