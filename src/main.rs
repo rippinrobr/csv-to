@@ -37,7 +37,7 @@ fn main() {
 
     let matches = clap::App::new(app_name)
         .version(clap::crate_version!())
-        .about("Parses and stores Wikipedia conspiracy theories data")
+        .about("Parses CSV files and can optionally generate code, create a database and a simple REST API")
         .author("Rob Rowe.")
         .arg(clap::Arg::with_name(toml_path_flag)
             .short("t")
