@@ -60,6 +60,7 @@ fn main() {
     let create_directories = matches.occurrences_of(create_directories_flag_name) > 0;
 
     // If there isn't a -t or --toml switch then go with the default file
+    // if the default file doesn't exist, print an error and exit
     let toml_file_path = matches.value_of(toml_path_flag).unwrap_or("csv2api.toml");
     if toml_file_path == default_toml_file {
         match validate_fs_path(toml_file_path.to_string()) {

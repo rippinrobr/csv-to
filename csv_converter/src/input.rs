@@ -1,6 +1,5 @@
 use std::fmt;
 use std::fs::{self};
-use std::path::Path;
 use std::string::ToString;
 
 #[derive(Copy, Clone, PartialEq, Deserialize)]
@@ -13,7 +12,7 @@ impl InputType {
     
     pub fn get_input_type(str_type: &str) -> InputType {
         
-        if str_type == "CSV" || str_type == "csv" {
+        if str_type.to_uppercase() == "CSV" {
             InputType::CSV
         } else {
             InputType::NotSupported
@@ -39,40 +38,6 @@ impl ToString for InputType {
         }).to_string()
     }
 }
-// TODO: Add support for a TOML file to take in input parameters 
-//       and any other params that will be or are required
-#[derive(Debug, Deserialize)]
-pub struct Input {
-    pub input_type: InputType,
-    pub files: Vec<String>,
-    pub directories: Vec<String>
-}
-
-impl Input {
-    pub fn add_files_in_directories(&mut self) -> usize {
-        let mut num_files: usize = 0;
-        
-        for dir in &self.directories {
-            let dir_path = Path::new(dir);
-            if dir_path.is_dir() {
-                let paths = fs::read_dir(dir_path).unwrap();
-                for dir_entry in paths {
-                    let path = dir_entry.unwrap().path();
-                    if path.is_file() { 
-                        let path_str: String = path.display().to_string();
-                        if !path_str.ends_with("csv") && !path_str.ends_with("CSV") {
-                            continue;
-                        }
-        
-                        &self.files.push(path_str);
-                        num_files += 1;
-                    }
-                }
-            }
-        }
-        num_files
-    }
-}
 
 #[cfg(test)]
 mod test {
@@ -86,6 +51,7 @@ mod test {
 
         assert_eq!(InputType::get_input_type(&upper), InputType::CSV);
         assert_eq!(InputType::get_input_type(&lower), InputType::CSV);
+        assert_eq!(InputType::get_input_type(&mixed), InputType::CSV);
     }
 
     #[test]
