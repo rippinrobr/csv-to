@@ -73,7 +73,6 @@ impl SqliteDB {
 
 }
 
-
 #[cfg(test)]
 mod tests {
     use db::SqliteDB;
