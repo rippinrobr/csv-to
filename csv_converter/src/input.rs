@@ -1,6 +1,18 @@
 use std::fmt;
 use std::string::ToString;
+use std::path::PathBuf;
+use super::models::{DataTypes, ColumnDef, ParsedContent};
+use csv::StringRecord;
 
+#[derive(Clone, Debug)]
+pub struct InputFile {
+    file_path: PathBuf,
+    size: u64,
+    columns: Vec<ColumnDef>,
+    content: Vec<StringRecord>,
+}
+
+// POC below, this may live but it may not
 #[derive(Copy, Clone, PartialEq, Deserialize)]
 pub enum InputType {
     CSV,
