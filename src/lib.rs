@@ -10,6 +10,8 @@ pub mod ports;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
+use csv_converter::models::ParsedContent;
+
 #[derive(Debug, StructOpt)]
 #[structopt(name = "csv-to", about = "creates databases and code from CSV data")]
 pub enum CsvTo {
@@ -30,4 +32,8 @@ pub enum CsvTo {
         #[structopt(short = "n", long = "name", help = "Name of the database to be created")]
         name: String,
     }
+}
+
+pub trait App {
+    fn run(&self) -> Result<ParsedContent, std::io::Error> ;
 }

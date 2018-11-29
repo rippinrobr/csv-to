@@ -10,10 +10,8 @@ pub struct CSVService {
 
 impl CSVService {
     /// Creates a new instance of the CSVService
-    pub fn new() -> CSVService { //: &[InputSource]) -> CSVService {
-        CSVService {
-            //inputs,
-        }
+    pub fn new() -> CSVService {
+        CSVService {}
     }
 }
 
