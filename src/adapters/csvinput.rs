@@ -1,25 +1,28 @@
-
-use crate::ports::inputservice::{InputSource, InputService};
+use std::io;
+use csv::StringRecord;
+use csv_converter::models::{ColumnDef, InputSource, ParsedContent};
+use crate::ports::inputservice::InputService;
 
 #[derive(Clone,Debug)]
-pub struct CSVService<'a> {
-    inputs: &'a [InputSource]
+pub struct CSVService {
+    //inputs: &'a [InputSource]
 }
 
-impl<'a> CSVService<'a> {
+impl CSVService {
     /// Creates a new instance of the CSVService
-    pub fn new(inputs: &[InputSource]) -> CSVService {
+    pub fn new() -> CSVService { //: &[InputSource]) -> CSVService {
         CSVService {
-            inputs,
+            //inputs,
         }
     }
 }
 
-impl<'a> InputService for CSVService<'a> {
+impl InputService for CSVService {
 
-    fn parse(&self) -> Vec<InputSource> {
-        let inputs: Vec<InputSource> = Vec::new();
+    fn parse(&self, input: InputSource) -> Result<ParsedContent, io::Error> {
+        let cols: Vec<ColumnDef> = Vec::new();
+        let content: Vec<StringRecord> = Vec::new();
 
-        inputs.to_owned()
+        Ok(ParsedContent::new(cols, content, input.location,0))
     }
 }

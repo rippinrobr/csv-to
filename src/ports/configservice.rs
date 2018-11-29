@@ -1,4 +1,4 @@
-use super::inputservice::InputSource;
+use csv_converter::models::InputSource;
 
 pub trait ConfigService {
     fn get_input_sources(&self) -> Vec<InputSource>;

@@ -3,8 +3,9 @@ extern crate exitcode;
 extern crate structopt;
 
 use csv_to::{CsvTo, db};
-use csv_to::db::Config;
+use csv_to::db::{Config, DbApp};
 use csv_to::adapters::csvinput::CSVService;
+use csv_to::ports::inputservice::InputService;
 use structopt::StructOpt;
 
 fn main() {
@@ -17,8 +18,15 @@ fn main() {
                 std::process::exit(exitcode::USAGE);
             }
 
-            let app_config = Config::new(files, directories, db_type, connection_info, name);
-            let csv_input = CSVService::new(&app_config.get_input_sources());
+            let db_app = DbApp::new(
+                Config::new(files, directories, db_type, connection_info, name),
+                CSVService::new()
+            );
+
+            db_app.run().unwrap_or_else(|err| {
+                eprintln!("ERROR: {}", err);
+                std::process::exit(exitcode::DATAERR);
+            })
         }
     }
 }

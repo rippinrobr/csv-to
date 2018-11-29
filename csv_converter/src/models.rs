@@ -1,5 +1,6 @@
 use std::fmt;
 use barrel::Type;
+use csv::{Error, StringRecord};
 
 #[derive(PartialEq,Clone, Copy)]
 pub enum DataTypes {
@@ -81,7 +82,12 @@ impl fmt::Debug for ColumnDef {
     }
 }
 
-use csv::{Error, StringRecord};
+
+#[derive(Clone, Debug)]
+pub struct InputSource {
+    pub location: String,
+    pub size: u64,
+}
 
 #[derive(Debug)]
 pub struct ParsedContent {
