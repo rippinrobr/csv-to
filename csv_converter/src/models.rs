@@ -81,8 +81,7 @@ impl fmt::Debug for ColumnDef {
     }
 }
 
-use csv::{StringRecord};
-use csv::Error;
+use csv::{Error, StringRecord};
 
 #[derive(Debug)]
 pub struct ParsedContent {

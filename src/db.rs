@@ -2,12 +2,12 @@ extern crate csv_converter;
 
 use std::path::PathBuf;
 use std::str::FromStr;
-use failure::Fail;
+//use failure::Fail;
 use std::fs;
-use self::error::DbError;
-use glob::glob;
+//use self::error::DbError;
+use glob::{glob_with, MatchOptions};
 use crate::ports::{
-    inputservice::InputService,
+    inputservice::{InputService, InputSource},
     configservice::ConfigService,
 };
 
@@ -40,6 +40,7 @@ where
 #[derive(Debug)]
 pub struct Config {
     files: Vec<String>,
+    directories: Vec<String>,
     db_type: Types,
     connection_info: String,
     name: String,
@@ -47,11 +48,10 @@ pub struct Config {
 
 impl Config {
     /// Creates a struct of all the CmdLine Arguments
-    pub fn new(files_path: Vec<PathBuf>, db_type: Types, connection_info: String, name: String) -> Config {
-        let files = Config::convert_to_vec_of_string(files_path);
-
+    pub fn new(files_path: Vec<PathBuf>, directories: Vec<PathBuf>, db_type: Types, connection_info: String, name: String) -> Config {
         Config {
-            files,
+            files: Config::convert_to_vec_of_string(files_path),
+            directories: Config::convert_to_vec_of_string(directories),
             db_type,
             connection_info,
             name,
@@ -59,15 +59,47 @@ impl Config {
     }
 
     /// get_locations returns the path's to the input files
-    pub fn get_locations(&self) -> &[String] {
-        return &self.files
+    pub fn get_input_sources(self) -> Vec<InputSource> {
+        let mut sources: Vec<InputSource> = Vec::new();
+        let options = &MatchOptions {
+            case_sensitive: false,
+            require_literal_leading_dot: false,
+            require_literal_separator: false,
+        };
+
+        // directories
+        for d in self.directories {
+            for f in  glob_with(&format!("{}/*.{}", d, "csv"), options).unwrap() {
+                match f {
+                    Ok(file_path) => sources.push(Config::create_input_source(file_path.into_os_string().into_string().unwrap_or(String::new())) ),
+                    Err(e) => eprintln!("ERROR: {}", e),
+                }
+            }
+        }
+
+        // files
+        for file_path in self.files {
+           sources.push(Config::create_input_source(file_path) );
+        }
+
+        sources.to_owned()
+    }
+
+    fn create_input_source(file_path: String) -> InputSource {
+        let meta = fs::metadata(file_path.clone()).unwrap();
+        InputSource {
+            location: file_path,
+            size: meta.len(),
+            columns: Vec::new(),
+            content: Vec::new(),
+        }
     }
 
     fn convert_to_vec_of_string(paths: Vec<PathBuf>) -> Vec<String> {
         let mut string_paths: Vec<String> = Vec::new();
 
         for p in paths.into_iter() {
-            string_paths.push(p.into_os_string().into_string().unwrap_or(String::new() ));
+            string_paths.push(p.into_os_string().into_string().unwrap_or(String::new()));
         }
 
         string_paths

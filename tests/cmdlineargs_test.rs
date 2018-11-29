@@ -34,11 +34,10 @@ fn calling_csvto_with_db_but_no_args() {
     let db_usage_msg = "error: The following required arguments were not provided:
     --connection-info <connection_info>
     --type <db_type>
-    --files <files>...
     --name <name>
 
 USAGE:
-    csv-to db --connection-info <connection_info> --type <db_type> --files <files>... --name <name>
+    csv-to db [OPTIONS] --connection-info <connection_info> --type <db_type> --name <name>
 
 For more information try --help
 ";
@@ -57,7 +56,7 @@ Rob Rowe <robrowe04@gmail.com>
 creates and loads a database from CSV file(s)
 
 USAGE:
-    csv-to db --connection-info <connection_info> --type <db_type> --files <files>... --name <name>
+    csv-to db [OPTIONS] --connection-info <connection_info> --type <db_type> --name <name>
 
 FLAGS:
     -h, --help       Prints help information
@@ -66,7 +65,9 @@ FLAGS:
 OPTIONS:
     -c, --connection-info <connection_info>    Database connectivity information
     -t, --type <db_type>                       The type of database to create, currently only SQLite is supported
-    -f, --files <files>...                     The CSV files to be processed, can be /path/to/files/* or a comma
+    -d, --directories <directories>...         The directories that contain CSV files to be processed, a comma delimited
+                                               string of paths
+    -f, --files <files>...                     The CSV files to be processed, can be /path/to/files/ or a comma
                                                delimited string of paths
     -n, --name <name>                          Name of the database to be created
 ";
@@ -87,7 +88,7 @@ Rob Rowe <robrowe04@gmail.com>
 creates and loads a database from CSV file(s)
 
 USAGE:
-    csv-to db --connection-info <connection_info> --type <db_type> --files <files>... --name <name>
+    csv-to db [OPTIONS] --connection-info <connection_info> --type <db_type> --name <name>
 
 FLAGS:
     -h, --help       Prints help information
@@ -96,7 +97,9 @@ FLAGS:
 OPTIONS:
     -c, --connection-info <connection_info>    Database connectivity information
     -t, --type <db_type>                       The type of database to create, currently only SQLite is supported
-    -f, --files <files>...                     The CSV files to be processed, can be /path/to/files/* or a comma
+    -d, --directories <directories>...         The directories that contain CSV files to be processed, a comma delimited
+                                               string of paths
+    -f, --files <files>...                     The CSV files to be processed, can be /path/to/files/ or a comma
                                                delimited string of paths
     -n, --name <name>                          Name of the database to be created
 ";
@@ -137,15 +140,8 @@ fn calling_csvto_with_db_with_version() {
 }
 
 #[test]
-fn calling_csvto_with_db_without_files_and_no_piped_input() {
-    let db_err_msg = "error: The following required arguments were not provided:
-    --files <files>...
-
-USAGE:
-    csv-to db --connection-info <connection_info> --type <db_type> --files <files>... --name <name>
-
-For more information try --help
-";
+fn calling_csvto_with_db_without_files_or_directories_and_no_piped_input() {
+    let db_err_msg = "error: either -f, --files or -d, --directories must be provided\n";
 
     let output = Command::new(CMD_PATH)
         .arg("db")
@@ -161,31 +157,6 @@ For more information try --help
     assert_eq!(db_err_msg, String::from_utf8_lossy(&output.stderr));
 }
 
-
-#[test]
-fn calling_csvto_with_db_without_f_and_no_piped_input() {
-    let db_err_msg = "error: The following required arguments were not provided:
-    --files <files>...
-
-USAGE:
-    csv-to db --connection-info <connection_info> --type <db_type> --files <files>... --name <name>
-
-For more information try --help
-";
-
-    let output = Command::new(CMD_PATH)
-        .arg("db")
-        .arg("-c")
-        .arg("/tmp/my_test.db")
-        .arg("-t")
-        .arg("sqlite")
-        .arg("-n")
-        .arg("my_test_db")
-        .output()
-        .expect("failed to execute process");
-
-    assert_eq!(db_err_msg, String::from_utf8_lossy(&output.stderr));
-}
 #[test]
 fn calling_csvto_with_db_without_name() {
     let db_err_msg = "error: The following required arguments were not provided:

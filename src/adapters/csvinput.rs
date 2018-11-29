@@ -1,15 +1,25 @@
 
-use crate::ports::inputservice::{Input, InputService};
+use crate::ports::inputservice::{InputSource, InputService};
 
-pub struct CSVService {
-    locations: Vec<String>
+#[derive(Clone,Debug)]
+pub struct CSVService<'a> {
+    inputs: &'a [InputSource]
 }
 
-impl InputService for CSVService {
+impl<'a> CSVService<'a> {
     /// Creates a new instance of the CSVService
-    fn new(locations: Vec<String>) -> InputService {
+    pub fn new(inputs: &[InputSource]) -> CSVService {
         CSVService {
-            locations,
+            inputs,
         }
+    }
+}
+
+impl<'a> InputService for CSVService<'a> {
+
+    fn parse(&self) -> Vec<InputSource> {
+        let inputs: Vec<InputSource> = Vec::new();
+
+        inputs.to_owned()
     }
 }

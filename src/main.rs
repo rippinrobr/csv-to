@@ -4,19 +4,21 @@ extern crate structopt;
 
 use csv_to::{CsvTo, db};
 use csv_to::db::Config;
+use csv_to::adapters::csvinput::CSVService;
 use structopt::StructOpt;
 
 fn main() {
     let opt = CsvTo::from_args();
     
     match opt {
-        CsvTo::Db { files, db_type, connection_info, name } => {
-            let app_config = Config::new(files, db_type, connection_info, name);
-            println!("{:#?}", app_config );
-//            db::run(&files, db_type, &connection_info, &name).unwrap_or_else(|err| {
-//                eprintln!("ERROR: An error occurred while attempting to create a database. Error: {:?}", err.get_msg());
-//                std::process::exit(err.get_exit_code());
-//            });
+        CsvTo::Db { files, directories, db_type, connection_info, name } => {
+            if files.len() == 0 && directories.len() == 0 {
+                eprintln!("error: either -f, --files or -d, --directories must be provided");
+                std::process::exit(exitcode::USAGE);
+            }
+
+            let app_config = Config::new(files, directories, db_type, connection_info, name);
+            let csv_input = CSVService::new(&app_config.get_input_sources());
         }
     }
 }

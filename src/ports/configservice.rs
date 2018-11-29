@@ -1,4 +1,5 @@
+use super::inputservice::InputSource;
 
 pub trait ConfigService {
-    fn get_locations(&self) -> &[String];
+    fn get_input_sources(&self) -> Vec<InputSource>;
 }
