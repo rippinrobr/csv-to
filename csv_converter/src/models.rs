@@ -83,7 +83,7 @@ impl ColumnDef {
 
 impl fmt::Debug for ColumnDef {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}: data_type: {:?}", self.name, self.data_type)
+        write!(f, "---\nname: {:?}\ndata_type: {:?}\nhas_data: {:?}", self.name, self.data_type, self.has_data)
     }
 }
 

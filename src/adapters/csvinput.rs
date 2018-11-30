@@ -3,7 +3,7 @@ use std::io;
 use regex::Regex;
 use csv::{Reader, StringRecord};
 
-use csv_converter::models::{ColumnDef, InputSource, ParsedContent};
+use csv_converter::models::{ColumnDef, DataTypes, InputSource, ParsedContent};
 use crate::ports::inputservice::InputService;
 
 
@@ -20,18 +20,19 @@ impl CSVService {
         }
     }
 
-    pub fn create_column_defs(&self, headers: StringRecord) -> Vec<ColumnDef> {
-        let col_defs: Vec<ColumnDef> = Vec::new();
+    pub fn create_column_defs(&self, headers: &StringRecord) -> Vec<ColumnDef> {
+        let mut col_defs: Vec<ColumnDef> = Vec::new();
         let num_cols = headers.len();
 
         for n in 0..num_cols {
             // 0. get the name
             let cleaned_name = self.validate_field_name(&headers[n], &self.field_name_regex);
-            println!("name: {:?} => cleaned_name: {:?}", &headers[n], &cleaned_name);
-            //ColumnDef::new()
-            //parsed_content.push(DataTypes::Empty);
-            //= self.check_col_name(&h[n]);
-//                      headers.push(col_name.to_owned());
+            let cd = ColumnDef {
+                name: cleaned_name.clone(),
+                data_type: DataTypes::Empty,
+                has_data: false,
+            };
+            col_defs.push(cd);
         }
 
         col_defs
@@ -46,32 +47,17 @@ impl InputService for CSVService {
         let mut rdr = Reader::from_path(&input.location)?;
         let mut csv_iter = rdr.records();
         let mut parsed_content = ParsedContent::default();
+        parsed_content.file_name = input.location;
 
-        println!("input.location: {:?}", input.location);
-        if input.has_headers && parsed_content.records_parsed == 0 {
-            match csv_iter.next() {
-                Some(rec) => {
-                    let headers = rec.unwrap();
-                    parsed_content.columns = self.create_column_defs(headers);
-
-                    parsed_content.records_parsed += 1;
-//                    match rec {
-//                       Ok(headers) => {
-//                           parsed_content.columns = self.create_column_defs(headers);
-//                           parsed_content.file_name = input.location;
-//                       },
-//                        None => return format::err_msg("No headers found when the the headers should exist"),
-//                    }
-                },
-                None => {
-                    eprintln!("ERROR: NO RECORD RETURNED");
-                }
+        // this is in its own scope because headers borrows from the reader
+        {
+            match rdr.headers() {
+                Ok(headers) => parsed_content.columns = self.create_column_defs(headers),
+                Err(e) => return Err(failure::err_msg(format!("{}", e)))
             }
         }
-        // take care of headers here if there are any
 
-        // process the rows here
-
-        Ok(ParsedContent::new(cols, content, input.location.clone(),0))
+        println!("parsed_content: {:#?}", parsed_content);
+        Ok(parsed_content)
     }
 }
