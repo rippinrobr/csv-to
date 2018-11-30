@@ -45,7 +45,6 @@ impl InputService for CSVService {
         let cols: Vec<ColumnDef> = Vec::new();
         let content: Vec<StringRecord> = Vec::new();
         let mut rdr = Reader::from_path(&input.location)?;
-        let mut csv_iter = rdr.records();
         let mut parsed_content = ParsedContent::default();
         parsed_content.file_name = input.location;
 
@@ -57,7 +56,14 @@ impl InputService for CSVService {
             }
         }
 
-        println!("parsed_content: {:#?}", parsed_content);
+        // this loop is for the lines in a file
+        for raw_record in rdr.records() {
+            // this loop is for the columns
+            for col_data in raw_record?.clone().iter() {
+                println!("{:?}", col_data);
+            }
+        }
+        //println!("parsed_content: {:#?}", parsed_content);
         Ok(parsed_content)
     }
 }
