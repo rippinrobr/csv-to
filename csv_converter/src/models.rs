@@ -1,3 +1,4 @@
+use std::default::Default;
 use std::fmt;
 use barrel::Type;
 use csv::{Error, StringRecord};
@@ -8,6 +9,10 @@ pub enum DataTypes {
     F64,
     I64, 
     String,
+}
+
+impl Default for DataTypes {
+    fn default() -> DataTypes { DataTypes::Empty }
 }
 
 impl DataTypes {
@@ -43,7 +48,7 @@ impl fmt::Debug for DataTypes {
 }
 
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct ColumnDef{
     pub name: String, 
     pub data_type: DataTypes,
@@ -59,13 +64,13 @@ impl ColumnDef {
         }
     }
 
-    pub fn new_empty() -> ColumnDef {
-        ColumnDef {
-            name: "".to_string(),
-            data_type: DataTypes::Empty,
-            has_data: false
-        }
-    }
+//    pub fn new_empty() -> ColumnDef {
+//        ColumnDef {
+//            name: "".to_string(),
+//            data_type: DataTypes::Empty,
+//            has_data: false
+//        }
+//    }
 
     pub fn set_data_type(&mut self, data_type: DataTypes) {
         self.data_type = data_type;
@@ -85,6 +90,7 @@ impl fmt::Debug for ColumnDef {
 
 #[derive(Clone, Debug)]
 pub struct InputSource {
+    pub has_headers: bool,
     pub location: String,
     pub size: u64,
 }
@@ -104,6 +110,17 @@ impl Clone for ParsedContent {
             content: (*self).content.clone(),
             file_name: (*self).file_name.clone(),
             records_parsed: (*self).records_parsed,
+        }
+    }
+}
+
+impl Default for ParsedContent {
+    fn default() -> ParsedContent {
+        ParsedContent {
+            columns: Vec::new(),
+            content: Vec::new(),
+            file_name: "".to_string(),
+            records_parsed: 0,
         }
     }
 }

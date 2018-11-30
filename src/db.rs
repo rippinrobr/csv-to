@@ -42,7 +42,7 @@ where
         let inputs = self.config_svc.get_input_sources();
 
         for input in inputs {
-            println!("input: {:#?}\nparsed content: {:#?}", input.clone(), self.input_svc.parse(input));
+            self.input_svc.parse(input);
         }
 
         Ok(())
@@ -73,11 +73,11 @@ impl Config {
 
     fn create_input_source(file_path: String) -> InputSource {
         let meta = fs::metadata(file_path.clone()).unwrap();
+        //TODO: default has_headers to true for now, will add a flag that says --no-headers
         InputSource {
+            has_headers: true,
             location: file_path,
             size: meta.len(),
-//            columns: Vec::new(),
-//            content: Vec::new(),
         }
     }
 

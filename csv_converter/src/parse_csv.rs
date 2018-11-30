@@ -55,7 +55,7 @@ impl ParseFile {
         let file = File::open(&self.path)?;
         let reader = io::BufReader::new(file);
         // I'm doing this without headers so I can grab the headers AND
-        // process the data.
+        // process the data.  If true then the header row is skipped apparently
         let mut rdr = csv::ReaderBuilder::new()
             .has_headers(false)
             .from_reader(reader);

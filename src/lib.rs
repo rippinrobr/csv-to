@@ -1,5 +1,6 @@
 extern crate failure;
 extern crate glob;
+#[macro_use] extern crate failure_derive;
 #[macro_use] extern crate structopt;
 extern crate csv_converter;
 
@@ -36,4 +37,25 @@ pub enum CsvTo {
 
 pub trait App {
     fn run(&self) -> Result<ParsedContent, std::io::Error> ;
+}
+
+pub mod errors {
+    use failure::Error;
+
+    // This is a new error type that you've created. It represents the ways a
+    // toolchain could be invalid.
+    //
+    // The custom derive for Fail derives an impl of both Fail and Display.
+    // We don't do any other magic like creating new types.
+    #[derive(Debug, Fail)]
+    enum ToolchainError {
+        #[fail(display = "invalid toolchain name: {}", name)]
+        InvalidToolchainName {
+            name: String,
+        },
+        #[fail(display = "unknown toolchain version: {}", version)]
+        UnknownToolchainVersion {
+            version: String,
+        }
+    }
 }

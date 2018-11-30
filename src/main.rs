@@ -26,7 +26,7 @@ fn main() {
 
     app.run().unwrap_or_else(|err| {
         eprintln!("ERROR: {}", err);
-        std::process::exit(exitcode::DATAERR);
+        std::process::exit(exitcode::IOERR);
     });
 }
 
