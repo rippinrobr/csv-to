@@ -57,13 +57,31 @@ impl InputService for CSVService {
         }
         println!("{:#?}", parsed_content.columns);
         // this loop is for the lines in a file
+        let mut col_index = 0;
         for raw_record in rdr.records() {
             // this loop is for the columns
             for col_data in raw_record?.clone().iter() {
-                //println!("{:?}", col_data);
+                if col_data == "".to_string() {
+                    continue;
+                }
+
+                // update columns data type if necessary
+                if parsed_content.columns[col_index].data_type != DataTypes::String &&
+                    parsed_content.columns[col_index].data_type != DataTypes::F64 {
+                    let current_type = parsed_content.columns[col_index].data_type;
+                    let possible_type = self.check_col_data_type(col_data);
+
+                    if possible_type != current_type &&  current_type == DataTypes::Empty {
+                        parsed_content.columns[col_index].data_type = possible_type;
+                    }
+                }
+
+                parsed_content.push(raw_record.unwrap()?);
+                parsed_content.records_parsed += 1;
+                col_index += 1;
             }
         }
-        //println!("parsed_content: {:#?}", parsed_content);
+        println!("parsed_content.columns: {:#?}", parsed_content.columns);
         Ok(parsed_content)
     }
 }

@@ -3,7 +3,7 @@ use regex::Regex;
 use std::io;
 use std::str;
 use csv::StringRecord;
-use csv_converter::models::{ColumnDef, InputSource, ParsedContent};
+use csv_converter::models::{ColumnDef, DataTypes, InputSource, ParsedContent};
 
 pub trait InputService {
     fn parse(&self, input: InputSource) -> Result<ParsedContent, Error> ;
@@ -31,5 +31,15 @@ pub trait InputService {
         }
 
         name_str
+    }
+
+    fn check_col_data_type(val: &str) -> DataTypes {
+        match val.parse::<i64>() {
+            Ok(_) => DataTypes::I64,
+            _ => match val.parse::<f64>() {
+                Ok(_) => DataTypes::F64,
+                _ => DataTypes::String
+            }
+        }
     }
  }
