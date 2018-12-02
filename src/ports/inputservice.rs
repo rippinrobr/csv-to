@@ -32,14 +32,4 @@ pub trait InputService {
 
         name_str
     }
-
-    fn check_col_data_type(val: &str) -> DataTypes {
-        match val.parse::<i64>() {
-            Ok(_) => DataTypes::I64,
-            _ => match val.parse::<f64>() {
-                Ok(_) => DataTypes::F64,
-                _ => DataTypes::String
-            }
-        }
-    }
  }

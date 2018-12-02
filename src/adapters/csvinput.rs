@@ -37,6 +37,16 @@ impl CSVService {
 
         col_defs
     }
+
+    fn check_field_data_type(val: &str) -> DataTypes {
+        match val.parse::<i64>() {
+            Ok(_) => DataTypes::I64,
+            _ => match val.parse::<f64>() {
+                Ok(_) => DataTypes::F64,
+                _ => DataTypes::String
+            }
+        }
+    }
 }
 
 impl InputService for CSVService {
@@ -55,12 +65,14 @@ impl InputService for CSVService {
                 Err(e) => return Err(failure::err_msg(format!("{}", e)))
             }
         }
-        println!("{:#?}", parsed_content.columns);
+
         // this loop is for the lines in a file
         let mut col_index = 0;
         for raw_record in rdr.records() {
+            let record = raw_record?.clone();
             // this loop is for the columns
-            for col_data in raw_record?.clone().iter() {
+            let mut col_index = 0;
+            for col_data in record.clone().iter() {
                 if col_data == "".to_string() {
                     continue;
                 }
@@ -69,19 +81,17 @@ impl InputService for CSVService {
                 if parsed_content.columns[col_index].data_type != DataTypes::String &&
                     parsed_content.columns[col_index].data_type != DataTypes::F64 {
                     let current_type = parsed_content.columns[col_index].data_type;
-                    let possible_type = self.check_col_data_type(col_data);
+                    let possible_type: DataTypes = CSVService::check_field_data_type( col_data);
 
                     if possible_type != current_type &&  current_type == DataTypes::Empty {
                         parsed_content.columns[col_index].data_type = possible_type;
                     }
                 }
-
-                parsed_content.push(raw_record.unwrap()?);
-                parsed_content.records_parsed += 1;
                 col_index += 1;
             }
+            parsed_content.content.push(record);
+            parsed_content.records_parsed += 1;
         }
-        println!("parsed_content.columns: {:#?}", parsed_content.columns);
         Ok(parsed_content)
     }
 }
