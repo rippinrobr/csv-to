@@ -55,12 +55,12 @@ impl InputService for CSVService {
                 Err(e) => return Err(failure::err_msg(format!("{}", e)))
             }
         }
-
+        println!("{:#?}", parsed_content.columns);
         // this loop is for the lines in a file
         for raw_record in rdr.records() {
             // this loop is for the columns
             for col_data in raw_record?.clone().iter() {
-                println!("{:?}", col_data);
+                //println!("{:?}", col_data);
             }
         }
         //println!("parsed_content: {:#?}", parsed_content);

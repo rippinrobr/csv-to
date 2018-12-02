@@ -1,6 +1,7 @@
 use failure::Error;
 use regex::Regex;
 use std::io;
+use std::str;
 use csv::StringRecord;
 use csv_converter::models::{ColumnDef, InputSource, ParsedContent};
 
@@ -12,29 +13,22 @@ pub trait InputService {
             return String::new();
         }
 
-        let name_str = name.to_string();
+        let mut name_str = name.to_string();
 
         if name_re.is_match(name) {
             return name.to_string()
         }
 
-//        while let Some(name_char) = name_str.chars().next() {
-//            if !name_char.is_alphanumeric() && name_char != '_' {
-//                if name_char == '+' {
-//                    return self.validate_field_name(&name_str.replace(name_char, "plus"), name_re);
-//                }
-//
-//                if name_char == '-' {
-//                    return self.validate_field_name(&name_str.replace(name_char, "minus"), name_re);
-//                }
-//
-//                if name_char == '/' {
-//                    return self.validate_field_name(&name_str.replace(name_char, ""), name_re);
-//                }
-//
-//                return self.validate_field_name(&name_str.replace(name_char, "_"), name_re);
-//            }
-//        }
+        // 0. replace all + and - chars with plus and minus
+        name_str = str::replace(&name_str, "+", "plus");
+        name_str = str::replace(&name_str, "-", "minus");
+        // 0.5 replace / with a _
+        name_str = str::replace(&name_str, "/", "_");
+        // 1. if name starts with a number then add _ at the beginning
+        let first_char = name_str.chars().next().unwrap();
+        if first_char.is_numeric() {
+            return format!("_{}", name_str);
+        }
 
         name_str
     }
