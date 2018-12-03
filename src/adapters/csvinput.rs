@@ -52,8 +52,6 @@ impl CSVService {
 impl InputService for CSVService {
 
     fn parse(&self, input: InputSource) -> Result<ParsedContent, Error> {
-        let cols: Vec<ColumnDef> = Vec::new();
-        let content: Vec<StringRecord> = Vec::new();
         let mut rdr = Reader::from_path(&input.location)?;
         let mut parsed_content = ParsedContent::default();
         parsed_content.file_name = input.location;
