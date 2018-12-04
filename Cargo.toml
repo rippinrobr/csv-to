@@ -9,6 +9,7 @@ members = ["csv_converter"]
 
 [dependencies] 
 actix = "0.7.0"
+assert_fs = "0.10.0"
 barrel = "0.2.3"
 codegen = { git = "https://github.com/carllerche/codegen" } # Soon on crates.io
 csv = "1.0.0"
@@ -17,6 +18,7 @@ exitcode = "1.1.2"
 failure = "0.1.3"
 failure_derive = "0.1.3"
 futures = "0.1.23"
+predicates = "1.0.0"
 regex = "1.0.0"
 serde = "1.0.70"
 serde_derive = "1.0.66"

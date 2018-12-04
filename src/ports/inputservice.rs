@@ -8,9 +8,9 @@ use csv_converter::models::{ColumnDef, DataTypes, InputSource, ParsedContent};
 pub trait InputService {
     fn parse(&self, input: InputSource) -> Result<ParsedContent, Error> ;
 
-    fn validate_field_name(&self, name: &str, name_re: &Regex) -> String {
+    fn validate_field_name(&self, idx: usize,  name: &str, name_re: &Regex) -> String {
         if name == "" {
-            return String::new();
+            return format!("col_{}", idx);
         }
 
         let mut name_str = name.to_string();

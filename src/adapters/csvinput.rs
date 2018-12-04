@@ -1,5 +1,4 @@
-use failure::{Error, err_msg};
-use std::io;
+use failure::{Error};
 use regex::Regex;
 use csv::{Reader, StringRecord};
 
@@ -26,7 +25,7 @@ impl CSVService {
 
         for n in 0..num_cols {
             // 0. get the name
-            let cleaned_name = self.validate_field_name(&headers[n], &self.field_name_regex);
+            let cleaned_name = self.validate_field_name(n, &headers[n], &self.field_name_regex);
             let cd = ColumnDef {
                 name: cleaned_name.clone(),
                 data_type: DataTypes::Empty,
@@ -52,10 +51,16 @@ impl CSVService {
 impl InputService for CSVService {
 
     fn parse(&self, input: InputSource) -> Result<ParsedContent, Error> {
-        let mut rdr = Reader::from_path(&input.location)?;
+        println!("top");
+        let mut rdr = match Reader::from_path(&input.location) {
+            Ok(rdr) => rdr,
+            Err(e) => return Err(failure::err_msg(format!("{}", e)))
+        };
+        println!("line 3");
         let mut parsed_content = ParsedContent::default();
         parsed_content.file_name = input.location;
 
+        println!("here");
         // this is in its own scope because headers borrows from the reader
         {
             match rdr.headers() {
@@ -65,7 +70,6 @@ impl InputService for CSVService {
         }
 
         // this loop is for the lines in a file
-        let mut col_index = 0;
         for raw_record in rdr.records() {
             let record = raw_record?.clone();
             // this loop is for the columns
@@ -91,5 +95,107 @@ impl InputService for CSVService {
             parsed_content.records_parsed += 1;
         }
         Ok(parsed_content)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use csv_converter::models::InputSource;
+
+    #[test]
+    fn create_column_defs_with_valid_string_record() {
+        let record = StringRecord::from(vec!["alpha", "bravo", "charlie"]);
+        let svc = CSVService::new();
+
+        let col_defs = svc.create_column_defs(&record);
+        assert_eq!(3, col_defs.len());
+        assert_eq!(String::from("alpha"), col_defs[0].name);
+        assert_eq!(DataTypes::Empty, col_defs[0].data_type);
+        assert_eq!(false, col_defs[0].has_data);
+
+        assert_eq!(String::from("bravo"), col_defs[1].name);
+        assert_eq!(DataTypes::Empty, col_defs[1].data_type);
+        assert_eq!(false, col_defs[1].has_data);
+
+        assert_eq!(String::from("charlie"), col_defs[2].name);
+        assert_eq!(DataTypes::Empty, col_defs[2].data_type);
+        assert_eq!(false, col_defs[2].has_data);
+
+    }
+
+    #[test]
+    fn create_column_defs_for_file_with_no_headers() {
+        let record = StringRecord::from(vec!["", "", ""]);
+        let svc = CSVService::new();
+
+        let col_defs = svc.create_column_defs(&record);
+        assert_eq!(3, col_defs.len());
+        assert_eq!(String::from("col_0"), col_defs[0].name);
+        assert_eq!(DataTypes::Empty, col_defs[0].data_type);
+        assert_eq!(false, col_defs[0].has_data);
+
+        assert_eq!(String::from("col_1"), col_defs[1].name);
+        assert_eq!(DataTypes::Empty, col_defs[1].data_type);
+        assert_eq!(false, col_defs[1].has_data);
+
+        assert_eq!(String::from("col_2"), col_defs[2].name);
+        assert_eq!(DataTypes::Empty, col_defs[2].data_type);
+        assert_eq!(false, col_defs[2].has_data);
+    }
+
+    #[test]
+    fn check_field_data_type_with_int() {
+        assert_eq!(CSVService::check_field_data_type("111"), DataTypes::I64);
+    }
+
+    #[test]
+    fn check_field_data_type_with_float() {
+        assert_eq!(CSVService::check_field_data_type("11.1"), DataTypes::F64);
+    }
+
+    #[test]
+    fn check_field_data_type_with_string() {
+        assert_eq!(CSVService::check_field_data_type("rob"), DataTypes::String);
+    }
+
+    #[test]
+    fn check_field_data_type_with_empty_string() {
+        assert_eq!(CSVService::check_field_data_type(""), DataTypes::String);
+    }
+
+    #[test]
+    fn parse_with_headers() {
+        use std::fs::File;
+        use std::io::Write;
+        use assert_fs::prelude::*;
+
+        let file_name = "testing_with_headers.csv";
+        // Create a directory inside of `std::env::temp_dir()`.
+        let tmp_dir = assert_fs::TempDir::new().unwrap();
+        let file_path = tmp_dir.path().join(file_name);
+        let mut tmp_file = File::create(file_path.clone()).unwrap();
+
+        writeln!(tmp_file, "first,second,third").unwrap();
+        writeln!(tmp_file, "abc,def,ghi").unwrap();
+        let tmp_path = tmp_dir.into_path();
+
+        let input_source = InputSource{
+            has_headers: true,
+            location: file_path.clone().into_os_string().into_string().unwrap(),
+            size: 0,
+        };
+
+        let svc = CSVService::new();
+        match svc.parse(input_source) {
+            Ok(pc) => {
+                assert_eq!(pc.columns.len(),3);
+                assert_eq!(pc.content.len(), 1);
+            },
+            Err(e) => {
+                std::fs::remove_dir_all(file_path.clone());
+                panic!(format!("No Parsed content!! {}", e))
+            }
+        }
     }
 }

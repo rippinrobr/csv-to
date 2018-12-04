@@ -47,15 +47,15 @@ pub mod errors {
     //
     // The custom derive for Fail derives an impl of both Fail and Display.
     // We don't do any other magic like creating new types.
-    #[derive(Debug, Fail)]
-    enum ToolchainError {
-        #[fail(display = "invalid toolchain name: {}", name)]
-        InvalidToolchainName {
-            name: String,
-        },
-        #[fail(display = "unknown toolchain version: {}", version)]
-        UnknownToolchainVersion {
-            version: String,
-        }
-    }
+//    #[derive(Debug, Fail)]
+//    enum ToolchainError {
+//        #[fail(display = "invalid toolchain name: {}", name)]
+//        InvalidToolchainName {
+//            name: String,
+//        },
+//        #[fail(display = "unknown toolchain version: {}", version)]
+//        UnknownToolchainVersion {
+//            version: String,
+//        }
+//    }
 }
