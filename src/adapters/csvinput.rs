@@ -2,7 +2,7 @@ use failure::{Error};
 use regex::Regex;
 use csv::{Reader, StringRecord};
 
-use csv_converter::models::{ColumnDef, DataTypes, InputSource, ParsedContent};
+use csv_converter::models::{ColumnDef, DataTypes, Input, InputSource, ParsedContent};
 use crate::ports::inputservice::InputService;
 
 
@@ -51,16 +51,11 @@ impl CSVService {
 impl InputService for CSVService {
 
     fn parse(&self, input: InputSource) -> Result<ParsedContent, Error> {
-        println!("top");
-        let mut rdr = match Reader::from_path(&input.location) {
-            Ok(rdr) => rdr,
-            Err(e) => return Err(failure::err_msg(format!("{}", e)))
-        };
-        println!("line 3");
+        let file = input.get_reader()?;
+        let mut rdr = Reader::from_reader(file);
         let mut parsed_content = ParsedContent::default();
         parsed_content.file_name = input.location;
 
-        println!("here");
         // this is in its own scope because headers borrows from the reader
         {
             match rdr.headers() {
@@ -80,6 +75,7 @@ impl InputService for CSVService {
                 }
 
                 // update columns data type if necessary
+                // TODO: turn this into a ColumnDef.is_data_type_changeable() function
                 if parsed_content.columns[col_index].data_type != DataTypes::String &&
                     parsed_content.columns[col_index].data_type != DataTypes::F64 {
                     let current_type = parsed_content.columns[col_index].data_type;
@@ -101,6 +97,7 @@ impl InputService for CSVService {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs::File;
     use csv_converter::models::InputSource;
 
     #[test]
@@ -166,7 +163,6 @@ mod tests {
 
     #[test]
     fn parse_with_headers() {
-        use std::fs::File;
         use std::io::Write;
         use assert_fs::prelude::*;
 
