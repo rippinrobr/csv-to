@@ -68,11 +68,15 @@ impl InputService for CSVService {
 
             match rdr.headers() {
                 Ok(headers) => {
-                    println!("headers: {:?}", headers);
+                    //println!("headers: {:?}", headers);
                     let num_cols = headers.len();
+                    let mut cols: Vec<String> = Vec::new();
+
                     for idx in 0..num_cols {
-                        // create a StringRecord that will work self.create_column_defs
+                        cols.push(format!("col_{}", idx));
                     }
+
+                    parsed_content.columns = self.create_column_defs(&StringRecord::from(cols))
                 },
                 Err(e) => return Err(failure::err_msg(format!("{}", e)))
             }
@@ -81,31 +85,31 @@ impl InputService for CSVService {
 
         // this loop is for the lines in a file
         // THIS IS COMMENTED OUT FOR DEBUGGING NO HEADER PARSING
-//        for raw_record in rdr.records() {
-//            let record = raw_record?.clone();
-//            // this loop is for the columns
-//            let mut col_index = 0;
-//            for col_data in record.clone().iter() {
-//                if col_data == "".to_string() {
-//                    continue;
-//                }
-//
-//                // update columns data type if necessary
-//                // TODO: turn this into a ColumnDef.is_data_type_changeable() function
-//                if parsed_content.columns[col_index].data_type != DataTypes::String &&
-//                    parsed_content.columns[col_index].data_type != DataTypes::F64 {
-//                    let current_type = parsed_content.columns[col_index].data_type;
-//                    let possible_type: DataTypes = CSVService::check_field_data_type( col_data);
-//
-//                    if possible_type != current_type &&  current_type == DataTypes::Empty {
-//                        parsed_content.columns[col_index].data_type = possible_type;
-//                    }
-//                }
-//                col_index += 1;
-//            }
-//            parsed_content.content.push(record);
-//            parsed_content.records_parsed += 1;
-//        }
+        for raw_record in rdr.records() {
+            let record = raw_record?.clone();
+            // this loop is for the columns
+            let mut col_index = 0;
+            for col_data in record.clone().iter() {
+                if col_data == "".to_string() {
+                    continue;
+                }
+
+                // update columns data type if necessary
+                // TODO: turn this into a ColumnDef.is_data_type_changeable() function
+                if parsed_content.columns[col_index].data_type != DataTypes::String &&
+                    parsed_content.columns[col_index].data_type != DataTypes::F64 {
+                    let current_type = parsed_content.columns[col_index].data_type;
+                    let possible_type: DataTypes = CSVService::check_field_data_type( col_data);
+
+                    if possible_type != current_type &&  current_type == DataTypes::Empty {
+                        parsed_content.columns[col_index].data_type = possible_type;
+                    }
+                }
+                col_index += 1;
+            }
+            parsed_content.content.push(record);
+            parsed_content.records_parsed += 1;
+        }
         Ok(parsed_content)
     }
 }
@@ -235,12 +239,12 @@ mod tests {
         match svc.parse(input_source) {
             Ok(pc) => {
                 assert_eq!(pc.columns.len(),3);
-//                if pc.columns.len() == 3 {
-//                    assert_eq!(pc.columns[0].name, "col_0");
-//                    assert_eq!(pc.columns[1].name, "col_1");
-//                    assert_eq!(pc.columns[2].name, "col_2");
-//                }
-//                assert_eq!(pc.content.len(), 1);
+                if pc.columns.len() == 3 {
+                    assert_eq!(pc.columns[0].name, "col_0");
+                    assert_eq!(pc.columns[1].name, "col_1");
+                    assert_eq!(pc.columns[2].name, "col_2");
+                }
+                assert_eq!(pc.content.len(), 1);
             },
             Err(e) => {
                 std::fs::remove_dir_all(file_path.clone());
