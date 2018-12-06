@@ -1,6 +1,6 @@
 use failure::{Error};
 use regex::Regex;
-use csv::{Reader, StringRecord};
+use csv::{Reader, Position, StringRecord};
 
 use csv_converter::models::{ColumnDef, DataTypes, Input, InputSource, ParsedContent};
 use crate::ports::inputservice::InputService;
@@ -21,8 +21,9 @@ impl CSVService {
 
     pub fn create_column_defs(&self, headers: &StringRecord) -> Vec<ColumnDef> {
         let mut col_defs: Vec<ColumnDef> = Vec::new();
+        println!("headers: {:?}", headers);
         let num_cols = headers.len();
-
+        println!("num_cols: {:?}", num_cols);
         for n in 0..num_cols {
             // 0. get the name
             let cleaned_name = self.validate_field_name(n, &headers[n], &self.field_name_regex);
@@ -56,40 +57,55 @@ impl InputService for CSVService {
         let mut parsed_content = ParsedContent::default();
         parsed_content.file_name = input.location;
 
-        // this is in its own scope because headers borrows from the reader
-        {
+        if input.has_headers {
             match rdr.headers() {
                 Ok(headers) => parsed_content.columns = self.create_column_defs(headers),
                 Err(e) => return Err(failure::err_msg(format!("{}", e)))
             }
+        } else {
+            let pos = rdr.position().clone();
+            println!("{:?}", pos);
+
+            match rdr.headers() {
+                Ok(headers) => {
+                    println!("headers: {:?}", headers);
+                    let num_cols = headers.len();
+                    for idx in 0..num_cols {
+                        // create a StringRecord that will work self.create_column_defs
+                    }
+                },
+                Err(e) => return Err(failure::err_msg(format!("{}", e)))
+            }
+            rdr.seek(pos)?;
         }
 
         // this loop is for the lines in a file
-        for raw_record in rdr.records() {
-            let record = raw_record?.clone();
-            // this loop is for the columns
-            let mut col_index = 0;
-            for col_data in record.clone().iter() {
-                if col_data == "".to_string() {
-                    continue;
-                }
-
-                // update columns data type if necessary
-                // TODO: turn this into a ColumnDef.is_data_type_changeable() function
-                if parsed_content.columns[col_index].data_type != DataTypes::String &&
-                    parsed_content.columns[col_index].data_type != DataTypes::F64 {
-                    let current_type = parsed_content.columns[col_index].data_type;
-                    let possible_type: DataTypes = CSVService::check_field_data_type( col_data);
-
-                    if possible_type != current_type &&  current_type == DataTypes::Empty {
-                        parsed_content.columns[col_index].data_type = possible_type;
-                    }
-                }
-                col_index += 1;
-            }
-            parsed_content.content.push(record);
-            parsed_content.records_parsed += 1;
-        }
+        // THIS IS COMMENTED OUT FOR DEBUGGING NO HEADER PARSING
+//        for raw_record in rdr.records() {
+//            let record = raw_record?.clone();
+//            // this loop is for the columns
+//            let mut col_index = 0;
+//            for col_data in record.clone().iter() {
+//                if col_data == "".to_string() {
+//                    continue;
+//                }
+//
+//                // update columns data type if necessary
+//                // TODO: turn this into a ColumnDef.is_data_type_changeable() function
+//                if parsed_content.columns[col_index].data_type != DataTypes::String &&
+//                    parsed_content.columns[col_index].data_type != DataTypes::F64 {
+//                    let current_type = parsed_content.columns[col_index].data_type;
+//                    let possible_type: DataTypes = CSVService::check_field_data_type( col_data);
+//
+//                    if possible_type != current_type &&  current_type == DataTypes::Empty {
+//                        parsed_content.columns[col_index].data_type = possible_type;
+//                    }
+//                }
+//                col_index += 1;
+//            }
+//            parsed_content.content.push(record);
+//            parsed_content.records_parsed += 1;
+//        }
         Ok(parsed_content)
     }
 }
@@ -187,6 +203,44 @@ mod tests {
             Ok(pc) => {
                 assert_eq!(pc.columns.len(),3);
                 assert_eq!(pc.content.len(), 1);
+            },
+            Err(e) => {
+                std::fs::remove_dir_all(file_path.clone());
+                panic!(format!("No Parsed content!! {}", e))
+            }
+        }
+    }
+
+    #[test]
+    fn parse_without_headers() {
+        use std::io::Write;
+        use assert_fs::prelude::*;
+
+        let file_name = "testing_with_headers.csv";
+        // Create a directory inside of `std::env::temp_dir()`.
+        let tmp_dir = assert_fs::TempDir::new().unwrap();
+        let file_path = tmp_dir.path().join(file_name);
+        let mut tmp_file = File::create(file_path.clone()).unwrap();
+
+        writeln!(tmp_file, "abc,def,ghi").unwrap();
+        let tmp_path = tmp_dir.into_path();
+
+        let input_source = InputSource{
+            has_headers: false,
+            location: file_path.clone().into_os_string().into_string().unwrap(),
+            size: 0,
+        };
+
+        let svc = CSVService::new();
+        match svc.parse(input_source) {
+            Ok(pc) => {
+                assert_eq!(pc.columns.len(),3);
+//                if pc.columns.len() == 3 {
+//                    assert_eq!(pc.columns[0].name, "col_0");
+//                    assert_eq!(pc.columns[1].name, "col_1");
+//                    assert_eq!(pc.columns[2].name, "col_2");
+//                }
+//                assert_eq!(pc.content.len(), 1);
             },
             Err(e) => {
                 std::fs::remove_dir_all(file_path.clone());
