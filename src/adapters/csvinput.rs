@@ -21,9 +21,8 @@ impl CSVService {
 
     pub fn create_column_defs(&self, headers: &StringRecord) -> Vec<ColumnDef> {
         let mut col_defs: Vec<ColumnDef> = Vec::new();
-        println!("headers: {:?}", headers);
         let num_cols = headers.len();
-        println!("num_cols: {:?}", num_cols);
+
         for n in 0..num_cols {
             // 0. get the name
             let cleaned_name = self.validate_field_name(n, &headers[n], &self.field_name_regex);
@@ -64,11 +63,9 @@ impl InputService for CSVService {
             }
         } else {
             let pos = rdr.position().clone();
-            println!("{:?}", pos);
 
             match rdr.headers() {
                 Ok(headers) => {
-                    //println!("headers: {:?}", headers);
                     let num_cols = headers.len();
                     let mut cols: Vec<String> = Vec::new();
 

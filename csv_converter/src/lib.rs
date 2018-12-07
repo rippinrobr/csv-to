@@ -3,7 +3,6 @@ pub mod config;
 pub mod input;
 pub mod models;
 pub mod output;
-pub mod parse_csv;
 pub mod db;
 pub mod sqlite_code_gen;
 pub mod sql_gen;
