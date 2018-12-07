@@ -32,6 +32,9 @@ pub enum CsvTo {
         
         #[structopt(short = "n", long = "name", help = "Name of the database to be created")]
         name: String,
+
+        #[structopt(long = "no-headers", help = "The CSV file(s) have no column headers")]
+        no_headers: bool
     }
 }
 

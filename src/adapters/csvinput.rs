@@ -84,7 +84,6 @@ impl InputService for CSVService {
         }
 
         // this loop is for the lines in a file
-        // THIS IS COMMENTED OUT FOR DEBUGGING NO HEADER PARSING
         for raw_record in rdr.records() {
             let record = raw_record?.clone();
             // this loop is for the columns

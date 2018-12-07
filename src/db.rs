@@ -42,8 +42,8 @@ where
         let inputs = self.config_svc.get_input_sources();
 
         for input in inputs {
-            match self.input_svc.parse(input) {
-                Ok(parsed_content) => println!("{:?}", parsed_content.file_name),
+            match self.input_svc.parse(input, ) {
+                Ok(parsed_content) => println!("Parsed file {:?}", parsed_content.file_name),
                 Err(e) => eprintln!("ERROR: {}", e)
             }
         }
@@ -60,25 +60,27 @@ pub struct Config {
     db_type: Types,
     connection_info: String,
     name: String,
+    no_headers: bool,
 }
 
 impl Config {
     /// Creates a struct of all the CmdLine Arguments
-    pub fn new(files_path: Vec<PathBuf>, directories: Vec<PathBuf>, db_type: Types, connection_info: String, name: String) -> Config {
+    pub fn new(files_path: Vec<PathBuf>, directories: Vec<PathBuf>, db_type: Types, connection_info: String, name: String, no_headers: bool) -> Config {
         Config {
             files: Config::convert_to_vec_of_string(files_path),
             directories: Config::convert_to_vec_of_string(directories),
             db_type,
             connection_info,
             name,
+            no_headers,
         }
     }
 
-    fn create_input_source(file_path: String) -> InputSource {
+    fn create_input_source(has_headers: bool, file_path: String) -> InputSource {
         let meta = fs::metadata(file_path.clone()).unwrap();
         //TODO: default has_headers to true for now, will add a flag that says --no-headers
         InputSource {
-            has_headers: true,
+            has_headers,
             location: file_path,
             size: meta.len(),
         }
@@ -111,7 +113,7 @@ impl ConfigService for Config {
         for d in &self.directories {
             for f in  glob_with(&format!("{}/*.{}", d, "csv"), options).unwrap() {
                 match f {
-                    Ok(file_path) => sources.push(Config::create_input_source(file_path.into_os_string().into_string().unwrap_or(String::new())) ),
+                    Ok(file_path) => sources.push(Config::create_input_source(self.has_headers(), file_path.into_os_string().into_string().unwrap_or(String::new())) ),
                     Err(e) => eprintln!("ERROR: {}", e),
                 }
             }
@@ -119,13 +121,15 @@ impl ConfigService for Config {
 
         // files
         for file_path in &self.files {
-           sources.push(Config::create_input_source(file_path.clone()) );
+           sources.push(Config::create_input_source(self.has_headers(),file_path.clone()) );
         }
 
         sources.to_owned()
     }
 
-
+    fn has_headers(&self) -> bool {
+        !self.no_headers
+    }
 }
 
 #[derive(Debug, Clone)]
