@@ -37,7 +37,7 @@ fn calling_csvto_with_db_but_no_args() {
     --name <name>
 
 USAGE:
-    csv-to db [OPTIONS] --connection-info <connection_info> --type <db_type> --name <name>
+    csv-to db [FLAGS] [OPTIONS] --connection-info <connection_info> --type <db_type> --name <name>
 
 For more information try --help
 ";
@@ -51,16 +51,17 @@ For more information try --help
 
 #[test]
 fn calling_csvto_with_db_with_h() {
-let db_usage_msg = "csv-to-db 0.1.3
+    let db_usage_msg = "csv-to-db 0.1.3
 Rob Rowe <robrowe04@gmail.com>
 creates and loads a database from CSV file(s)
 
 USAGE:
-    csv-to db [OPTIONS] --connection-info <connection_info> --type <db_type> --name <name>
+    csv-to db [FLAGS] [OPTIONS] --connection-info <connection_info> --type <db_type> --name <name>
 
 FLAGS:
-    -h, --help       Prints help information
-    -V, --version    Prints version information
+    -h, --help          Prints help information
+        --no-headers    The CSV file(s) have no column headers
+    -V, --version       Prints version information
 
 OPTIONS:
     -c, --connection-info <connection_info>    Database connectivity information
@@ -88,11 +89,12 @@ Rob Rowe <robrowe04@gmail.com>
 creates and loads a database from CSV file(s)
 
 USAGE:
-    csv-to db [OPTIONS] --connection-info <connection_info> --type <db_type> --name <name>
+    csv-to db [FLAGS] [OPTIONS] --connection-info <connection_info> --type <db_type> --name <name>
 
 FLAGS:
-    -h, --help       Prints help information
-    -V, --version    Prints version information
+    -h, --help          Prints help information
+        --no-headers    The CSV file(s) have no column headers
+    -V, --version       Prints version information
 
 OPTIONS:
     -c, --connection-info <connection_info>    Database connectivity information
