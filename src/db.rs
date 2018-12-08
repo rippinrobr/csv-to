@@ -42,7 +42,7 @@ where
         let inputs = self.config_svc.get_input_sources();
 
         for input in inputs {
-            match self.input_svc.parse(input, ) {
+            match self.input_svc.parse(input) {
                 Ok(parsed_content) => println!("Parsed file {:?}", parsed_content.file_name),
                 Err(e) => eprintln!("ERROR: {}", e)
             }

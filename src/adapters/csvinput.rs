@@ -55,7 +55,7 @@ impl InputService for CSVService {
         let mut rdr = Reader::from_reader(file);
         let mut parsed_content = ParsedContent::default();
         parsed_content.file_name = input.location;
-
+        
         if input.has_headers {
             match rdr.headers() {
                 Ok(headers) => parsed_content.columns = self.create_column_defs(headers),
@@ -82,7 +82,14 @@ impl InputService for CSVService {
 
         // this loop is for the lines in a file
         for raw_record in rdr.records() {
-            let record = raw_record?.clone();
+            // TODO: FIX THIS SO I CAN CATCH ERRORS, I want to see if I can fix the error by adding an empty column or removing a column
+            let record = match raw_record {
+                Ok(rec) => rec,
+                Err(e) => {
+                    eprintln!("PARSE ERROR {}: {}", &parsed_content.file_name, e);
+                    continue
+                }
+            };
             // this loop is for the columns
             let mut col_index = 0;
             for col_data in record.clone().iter() {
