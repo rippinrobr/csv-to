@@ -82,7 +82,6 @@ impl InputService for CSVService {
 
         // this loop is for the lines in a file
         for raw_record in rdr.records() {
-            // TODO: FIX THIS SO I CAN CATCH ERRORS, I want to see if I can fix the error by adding an empty column or removing a column
             let record = match raw_record {
                 Ok(rec) => rec,
                 Err(e) => {

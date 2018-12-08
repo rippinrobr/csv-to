@@ -1,9 +1,11 @@
 extern crate csv_converter;
 
+use std::cmp::min;
+use std::fs;
 use std::path::PathBuf;
 use std::str::FromStr;
-//use failure::Fail;
-use std::fs;
+
+use indicatif::{ProgressBar, ProgressStyle};
 use glob::{glob_with, MatchOptions};
 
 //use self::error::DbError;
@@ -40,14 +42,21 @@ where
     /// execute the application logic
     pub fn run(self) -> Result<(), std::io::Error> {
         let inputs = self.config_svc.get_input_sources();
+        let num_files = inputs.len() as u64;
+        let files_processed = 0;
+        let bar = ProgressBar::new(num_files);
+        bar.set_style(ProgressStyle::default_bar()
+            .template("[{msg}] {bar:40.cyan/blue} {pos:>7}/{len:7}")
+            .progress_chars("##-"));
 
         for input in inputs {
+            bar.set_message(&format!("Processing {}", &input.location));
             match self.input_svc.parse(input) {
-                Ok(parsed_content) => println!("Parsed file {:?}", parsed_content.file_name),
-                Err(e) => eprintln!("ERROR: {}", e)
+                Err(e) => eprintln!("ERROR: {}", e),
+                Ok(_) => bar.inc(1)
             }
         }
-
+        bar.finish();
         Ok(())
     }
 }
