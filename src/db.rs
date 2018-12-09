@@ -45,7 +45,7 @@ where
 
         let pbar = ProgressBar::new(inputs.len() as u64);
         pbar.set_style(ProgressStyle::default_bar()
-            .template("{prefix:.green} {msg} [{bar:40.cyan/blue}] {pos:>3/blue}/{len:3}files")
+            .template("{prefix:.green} {msg} [{bar:40.cyan/blue}] {pos:>3/blue}/{len:3}files").bold()
             .progress_chars("=> "));
 
         pbar.set_prefix("Processing");
