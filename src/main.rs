@@ -4,7 +4,10 @@ extern crate structopt;
 
 use csv_to::CsvTo;
 use csv_to::db::{Config, DbApp};
-use csv_to::adapters::csvinput::CSVService;
+use csv_to::adapters::{
+    csvinput::CSVService,
+    sqlitestore::SQLiteStore,
+};
 use structopt::StructOpt;
 
 fn main() {
@@ -19,7 +22,8 @@ fn main() {
 
             DbApp::new(
                 Config::new(files, directories, db_type, connection_info, name, no_headers),
-                CSVService::default()
+                CSVService::default(),
+                 SQLiteStore::new(),
             )
         }
     };

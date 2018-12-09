@@ -4,7 +4,7 @@ extern crate csv_converter;
 use std::fs;
 use std::path::PathBuf;
 use std::str::FromStr;
-use ansi_term::Colour::{Green, Red, White};
+use ansi_term::Colour::{Green, Red};
 use indicatif::{ProgressBar, ProgressStyle};
 use glob::{glob_with, MatchOptions};
 
@@ -13,29 +13,34 @@ use csv_converter::models::{InputSource};
 use crate::ports::{
     inputservice::InputService,
     configservice::ConfigService,
+    storageservice::StorageService,
 };
 
 /// DbApp is used to manage the creation of the database
 /// This app is used when the db sub-command is provided
-pub struct DbApp<C,I>
+pub struct DbApp<C,I,S>
 where
     C: ConfigService,
-    I: InputService
+    I: InputService,
+    S: StorageService,
 {
     config_svc: C,
     input_svc: I,
+    storage_svc: S,
 }
 
-impl<C,I> DbApp<C,I>
+impl<C,I,S> DbApp<C,I,S>
 where
     C: ConfigService,
-    I: InputService
+    I: InputService,
+    S: StorageService,
 {
     /// creates an instance of the DbApp struct
-    pub fn new(config_svc: C, input_svc: I) -> DbApp<C,I> {
+    pub fn new(config_svc: C, input_svc: I, storage_svc: S) -> DbApp<C,I,S> {
         DbApp{
             config_svc,
             input_svc,
+            storage_svc,
         }
     }
 
@@ -60,6 +65,7 @@ where
                     if !pc.errors.is_empty() {
                         errors.append(&mut pc.errors.clone());
                     }
+                    // call the db table generation methods here
                     pbar.inc(1)
                 }
             }

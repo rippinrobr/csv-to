@@ -21,7 +21,7 @@ impl Default for CSVService {
 
 impl CSVService {
 
-    pub fn create_column_defs(&self, headers: &StringRecord) -> Vec<ColumnDef> {
+    fn create_column_defs(&self, headers: &StringRecord) -> Vec<ColumnDef> {
         let mut col_defs: Vec<ColumnDef> = Vec::new();
 
         for (n, header )in  headers.iter().enumerate() {
