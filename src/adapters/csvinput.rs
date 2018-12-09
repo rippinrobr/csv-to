@@ -1,6 +1,6 @@
 use failure::{Error};
 use regex::Regex;
-use csv::{Reader, Position, StringRecord};
+use csv::{Reader, StringRecord};
 
 use csv_converter::models::{ColumnDef, DataTypes, Input, InputSource, ParsedContent};
 use crate::ports::inputservice::InputService;
@@ -11,21 +11,21 @@ pub struct CSVService {
     field_name_regex: Regex,
 }
 
-impl CSVService {
-    /// Creates a new instance of the CSVService
-    pub fn new() -> CSVService {
+impl Default for CSVService {
+    fn default() -> CSVService {
         CSVService {
             field_name_regex: Regex::new(r"^[a-zA-Z_][a-zA-Z0-9_]+$").unwrap(),
         }
     }
+}
+
+impl CSVService {
 
     pub fn create_column_defs(&self, headers: &StringRecord) -> Vec<ColumnDef> {
         let mut col_defs: Vec<ColumnDef> = Vec::new();
-        let num_cols = headers.len();
 
-        for n in 0..num_cols {
-            // 0. get the name
-            let cleaned_name = self.validate_field_name(n, &headers[n], &self.field_name_regex);
+        for (n, header )in  headers.iter().enumerate() {
+            let cleaned_name = self.validate_field_name(n, header, &self.field_name_regex);
             let cd = ColumnDef {
                 name: cleaned_name.clone(),
                 data_type: DataTypes::Empty,
@@ -85,14 +85,14 @@ impl InputService for CSVService {
             let record = match raw_record {
                 Ok(rec) => rec,
                 Err(e) => {
-                    eprintln!("PARSE ERROR {}: {}", &parsed_content.file_name, e);
+                    parsed_content.errors.push(format!("{} -> parse error -> {}", &parsed_content.file_name, e));
                     continue
                 }
             };
             // this loop is for the columns
             let mut col_index = 0;
             for col_data in record.clone().iter() {
-                if col_data == "".to_string() {
+                if col_data == "" {
                     continue;
                 }
 

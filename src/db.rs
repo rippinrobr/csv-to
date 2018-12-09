@@ -1,6 +1,5 @@
 extern crate csv_converter;
 
-use std::cmp::min;
 use std::fs;
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -9,7 +8,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 use glob::{glob_with, MatchOptions};
 
 //use self::error::DbError;
-use csv_converter::models::InputSource;
+use csv_converter::models::{InputSource};
 use crate::ports::{
     inputservice::InputService,
     configservice::ConfigService,
@@ -42,21 +41,41 @@ where
     /// execute the application logic
     pub fn run(self) -> Result<(), std::io::Error> {
         let inputs = self.config_svc.get_input_sources();
-        let num_files = inputs.len() as u64;
-        let files_processed = 0;
-        let bar = ProgressBar::new(num_files);
-        bar.set_style(ProgressStyle::default_bar()
-            .template("[{msg}] {bar:40.cyan/blue} {pos:>7}/{len:7}")
-            .progress_chars("##-"));
+        let mut errors: Vec<String> = Vec::new();
 
+        let pbar = ProgressBar::new(inputs.len() as u64);
+        pbar.set_style(ProgressStyle::default_bar()
+            .template("{prefix:.green} {msg} [{bar:40.cyan/blue}] {pos:>3/blue}/{len:3}files")
+            .progress_chars("=> "));
+
+        pbar.set_prefix("Processing");
+
+        let mut num_files = 0;
         for input in inputs {
-            bar.set_message(&format!("Processing {}", &input.location));
+            pbar.set_message(&format!("{}", &input.location));
             match self.input_svc.parse(input) {
                 Err(e) => eprintln!("ERROR: {}", e),
-                Ok(_) => bar.inc(1)
+                Ok(pc) => {
+                    if !pc.errors.is_empty() {
+                        errors.append(&mut pc.errors.clone());
+                    }
+                    pbar.inc(1)
+                }
+            }
+
+            num_files += 1;
+        }
+        pbar.finish();//_and_clear();
+
+        // Pressing report
+        println!("\nProcessed {} files", num_files);
+        if !errors.is_empty() {
+            println!("\nThere were {} errors.", errors.len());
+            for e in errors {
+                eprintln!("  {}", e);
             }
         }
-        bar.finish();
+
         Ok(())
     }
 }
@@ -99,7 +118,7 @@ impl Config {
         let mut string_paths: Vec<String> = Vec::new();
 
         for p in paths.into_iter() {
-            string_paths.push(p.into_os_string().into_string().unwrap_or(String::new()));
+            string_paths.push(p.into_os_string().into_string().unwrap_or_default());
         }
 
         string_paths
@@ -122,7 +141,7 @@ impl ConfigService for Config {
         for d in &self.directories {
             for f in  glob_with(&format!("{}/*.{}", d, "csv"), options).unwrap() {
                 match f {
-                    Ok(file_path) => sources.push(Config::create_input_source(self.has_headers(), file_path.into_os_string().into_string().unwrap_or(String::new())) ),
+                    Ok(file_path) => sources.push(Config::create_input_source(self.has_headers(),file_path.into_os_string().into_string().unwrap_or_default()) ),
                     Err(e) => eprintln!("ERROR: {}", e),
                 }
             }

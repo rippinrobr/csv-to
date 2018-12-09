@@ -107,6 +107,7 @@ impl Input for InputSource {
 pub struct ParsedContent {
     pub columns: Vec<ColumnDef>,
     pub content: Vec<StringRecord>,
+    pub errors: Vec<String>,
     pub file_name: String,
     pub records_parsed: usize,
 }
@@ -116,6 +117,7 @@ impl Clone for ParsedContent {
         ParsedContent {
             columns: (*self).columns.clone(),
             content: (*self).content.clone(),
+            errors: (*self).errors.clone(),
             file_name: (*self).file_name.clone(),
             records_parsed: (*self).records_parsed,
         }
@@ -127,7 +129,8 @@ impl Default for ParsedContent {
         ParsedContent {
             columns: Vec::new(),
             content: Vec::new(),
-            file_name: "".to_string(),
+            errors: Vec::new(),
+            file_name: String::new(), //"".to_string(),
             records_parsed: 0,
         }
     }
@@ -135,10 +138,11 @@ impl Default for ParsedContent {
 
 impl ParsedContent {
 
-    pub fn new(cols: Vec<ColumnDef>, content: Vec<StringRecord>, file_name: String, num_lines: usize) -> ParsedContent {
+    pub fn new(cols: Vec<ColumnDef>, content: Vec<StringRecord>, errors: Vec<String>, file_name: String, num_lines: usize) -> ParsedContent {
         ParsedContent {
             columns: cols,
             content,
+            errors,
             file_name,
             records_parsed: num_lines,
         }
@@ -175,7 +179,7 @@ mod tests {
         let file_name = "my-file".to_string();
         let num_lines = 22;
 
-        let pc = ParsedContent::new(cols, content.clone(), file_name.clone(), num_lines);
+        let pc = ParsedContent::new(cols, content.clone(), Vec::new(),  file_name.clone(), num_lines);
         assert_eq!(cols_len, pc.columns.len());
         assert_eq!(content.len(), pc.content.len());
         assert_eq!(file_name, pc.file_name);

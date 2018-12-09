@@ -1,9 +1,7 @@
 use failure::Error;
 use regex::Regex;
-use std::io;
 use std::str;
-use csv::StringRecord;
-use csv_converter::models::{ColumnDef, DataTypes, InputSource, ParsedContent};
+use csv_converter::models::{InputSource, ParsedContent};
 
 pub trait InputService {
     fn parse(&self, input: InputSource) -> Result<ParsedContent, Error> ;

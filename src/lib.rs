@@ -43,7 +43,7 @@ pub trait App {
 }
 
 pub mod errors {
-    use failure::Error;
+    //use failure::Error;
 
     // This is a new error type that you've created. It represents the ways a
     // toolchain could be invalid.

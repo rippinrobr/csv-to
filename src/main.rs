@@ -12,14 +12,14 @@ fn main() {
     
     let app = match opt {
         CsvTo::Db { files, directories, db_type, connection_info, name, no_headers } => {
-            if files.len() == 0 && directories.len() == 0 {
+            if files.is_empty() && directories.is_empty() {
                 eprintln!("error: either -f, --files or -d, --directories must be provided");
                 std::process::exit(exitcode::USAGE);
             }
 
             DbApp::new(
                 Config::new(files, directories, db_type, connection_info, name, no_headers),
-                CSVService::new()
+                CSVService::default()
             )
         }
     };
