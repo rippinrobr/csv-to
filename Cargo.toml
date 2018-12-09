@@ -9,6 +9,7 @@ members = ["csv_converter"]
 
 [dependencies] 
 actix = "0.7.0"
+ansi_term = "0.11.0"
 assert_fs = "0.10.0"
 barrel = "0.2.3"
 codegen = { git = "https://github.com/carllerche/codegen" } # Soon on crates.io

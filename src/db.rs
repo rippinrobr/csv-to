@@ -1,9 +1,10 @@
+extern crate ansi_term;
 extern crate csv_converter;
 
 use std::fs;
 use std::path::PathBuf;
 use std::str::FromStr;
-
+use ansi_term::Colour::{Green, Red, White};
 use indicatif::{ProgressBar, ProgressStyle};
 use glob::{glob_with, MatchOptions};
 
@@ -45,7 +46,7 @@ where
 
         let pbar = ProgressBar::new(inputs.len() as u64);
         pbar.set_style(ProgressStyle::default_bar()
-            .template("{prefix:.green} {msg} [{bar:40.cyan/blue}] {pos:>3/blue}/{len:3}files").bold()
+            .template("{prefix:.cyan/blue} {msg} [{bar:40.cyan/blue}] {pos:>3/blue}/{len:3}files")
             .progress_chars("=> "));
 
         pbar.set_prefix("Processing");
@@ -65,19 +66,26 @@ where
 
             num_files += 1;
         }
-        pbar.finish();//_and_clear();
+        pbar.finish_and_clear();
 
         // Pressing report
-        println!("\nProcessed {} files", num_files);
-        if !errors.is_empty() {
-            println!("\nThere were {} errors.", errors.len());
-            for e in errors {
-                eprintln!("  {}", e);
-            }
-        }
+        self.display_report(errors, num_files);
 
         Ok(())
     }
+
+    fn display_report(&self, errors: Vec<String>, num_files: u64) {
+        let processed_msg = format!("Processed {} files", num_files);
+        println!("\n{}", Green.bold().paint(processed_msg));
+        if !errors.is_empty() {
+            let err_msg =format!("There were {} errors", errors.len());
+            println!("{}", Red.bold().paint(err_msg));
+            for e in errors {
+                eprintln!("{}", e);
+            }
+        }
+    }
+
 }
 
 /// Config contains all the parameters provided by the user
