@@ -21,9 +21,12 @@ fn main() {
             }
 
             DbApp::new(
-                Config::new(files, directories, db_type, connection_info, name, no_headers),
+                Config::new(files, directories, db_type, connection_info.clone(), name, no_headers),
                 CSVService::default(),
-                 SQLiteStore::new(),
+                SQLiteStore::new(connection_info.clone()).unwrap_or_else(|err| {
+                    eprintln!("error while attempting to create a database connection: {}", err);
+                    std::process::exit(exitcode::USAGE);
+                }),
             )
         }
     };

@@ -2,6 +2,7 @@ use std::default::Default;
 use std::fmt;
 use std::fs::File;
 use std::io::{self, BufReader};
+use std::path::Path;
 use barrel::Type;
 use csv::{Error, StringRecord};
 
@@ -159,9 +160,10 @@ impl ParsedContent {
         Ok(content_strings)
     }
 
-    pub fn get_struct_name(&self) -> String {
-        let first_letter = self.file_name.trim_right_matches(".csv").chars().next().unwrap();
-        self.file_name.trim_right_matches(".csv").to_string().replace(first_letter, &first_letter.to_string().to_uppercase())
+    pub fn get_struct_name(self) -> String {
+        let name = format!("{}", Path::new(&self.file_name).display());
+        let first_letter = name.trim_right_matches(".csv").chars().next().unwrap();
+        name.trim_right_matches(".csv").to_string().replace(first_letter, &first_letter.to_string().to_uppercase())
     }
 }
 

@@ -2,14 +2,14 @@ extern crate ansi_term;
 extern crate csv_converter;
 
 use std::fs;
-use std::path::PathBuf;
+use std::path::{PathBuf, Path};
 use std::str::FromStr;
 use ansi_term::Colour::{Green, Red};
 use indicatif::{ProgressBar, ProgressStyle};
 use glob::{glob_with, MatchOptions};
 
 //use self::error::DbError;
-use csv_converter::models::{InputSource};
+use csv_converter::models::{ColumnDef, InputSource, ParsedContent};
 use crate::ports::{
     inputservice::InputService,
     configservice::ConfigService,
@@ -62,10 +62,7 @@ where
             match self.input_svc.parse(input) {
                 Err(e) => eprintln!("ERROR: {}", e),
                 Ok(pc) => {
-                    if !pc.errors.is_empty() {
-                        errors.append(&mut pc.errors.clone());
-                    }
-                    // call the db table generation methods here
+                    self.store(self.get_table_name(pc.file_name.clone()), pc.records_parsed, pc.columns.clone(), pc.content.clone());
                     pbar.inc(1)
                 }
             }
@@ -92,6 +89,27 @@ where
         }
     }
 
+    fn store(&self, name: String, records_parsed: usize, columns: Vec<ColumnDef>, content: Vec<csv::StringRecord>) -> Result<(), failure::Error> {
+
+        println!("struct name: {}", name);
+        return match self.storage_svc.create_store(name.clone(), columns) {
+            Ok(_) => {
+                self.storage_svc.store_data(name.clone(), content);
+                match self.storage_svc.validate(name, records_parsed) {
+                    Err(e) => Err(failure::err_msg(format!("validation error: {}", e))),
+                    Ok(_) => Ok(()),
+                }
+            },
+            Err(err) => return Err(failure::err_msg(format!("unable to create storage {}", err))),
+        };
+    }
+
+    fn get_table_name(&self, file_path: String) -> String {
+        // TODO: Clean this up
+        let name = String::from(Path::new(&file_path).file_name().unwrap().to_str().unwrap());
+        let first_letter = name.trim_right_matches(".csv").chars().next().unwrap();
+        name.trim_right_matches(".csv").to_string().replace(first_letter, &first_letter.to_string().to_uppercase())
+    }
 }
 
 /// Config contains all the parameters provided by the user
