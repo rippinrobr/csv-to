@@ -125,7 +125,7 @@ mod tests {
     #[test]
     fn create_column_defs_with_valid_string_record() {
         let record = StringRecord::from(vec!["alpha", "bravo", "charlie"]);
-        let svc = CSVService::new();
+        let svc = CSVService::default();
 
         let col_defs = svc.create_column_defs(&record);
         assert_eq!(3, col_defs.len());
@@ -146,7 +146,7 @@ mod tests {
     #[test]
     fn create_column_defs_for_file_with_no_headers() {
         let record = StringRecord::from(vec!["", "", ""]);
-        let svc = CSVService::new();
+        let svc = CSVService::default();
 
         let col_defs = svc.create_column_defs(&record);
         assert_eq!(3, col_defs.len());
@@ -204,7 +204,7 @@ mod tests {
             size: 0,
         };
 
-        let svc = CSVService::new();
+        let svc = CSVService::default();
         match svc.parse(input_source) {
             Ok(pc) => {
                 assert_eq!(pc.columns.len(),3);
@@ -237,7 +237,7 @@ mod tests {
             size: 0,
         };
 
-        let svc = CSVService::new();
+        let svc = CSVService::default();
         match svc.parse(input_source) {
             Ok(pc) => {
                 assert_eq!(pc.columns.len(),3);

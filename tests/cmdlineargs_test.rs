@@ -59,9 +59,10 @@ USAGE:
     csv-to db [FLAGS] [OPTIONS] --connection-info <connection_info> --type <db_type> --name <name>
 
 FLAGS:
-    -h, --help          Prints help information
-        --no-headers    The CSV file(s) have no column headers
-    -V, --version       Prints version information
+        --drop-tables    Drops tables/collections if the already exist
+    -h, --help           Prints help information
+        --no-headers     The CSV file(s) have no column headers
+    -V, --version        Prints version information
 
 OPTIONS:
     -c, --connection-info <connection_info>    Database connectivity information
@@ -92,9 +93,10 @@ USAGE:
     csv-to db [FLAGS] [OPTIONS] --connection-info <connection_info> --type <db_type> --name <name>
 
 FLAGS:
-    -h, --help          Prints help information
-        --no-headers    The CSV file(s) have no column headers
-    -V, --version       Prints version information
+        --drop-tables    Drops tables/collections if the already exist
+    -h, --help           Prints help information
+        --no-headers     The CSV file(s) have no column headers
+    -V, --version        Prints version information
 
 OPTIONS:
     -c, --connection-info <connection_info>    Database connectivity information
