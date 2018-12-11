@@ -19,6 +19,13 @@ impl SQLiteStore {
         })
     }
 
+    fn create_table(&self, sql_stmt: String) -> Result<(), Error> {
+        match self.conn.execute(&sql_stmt) {
+            Ok(_) => Ok(()),
+            Err(e) => Err(failure::err_msg(format!("table creation error: {}", e)))
+        }
+    }
+
     fn generate_table_schema(name: String, cols: Vec<ColumnDef>) -> String {
         let mut m = Migration::new();
 
@@ -45,8 +52,7 @@ impl StorageService for SQLiteStore {
         }
 
         let schema = SQLiteStore::generate_table_schema(name.clone(), column_defs.clone());
-        println!("{}", schema);
-        Err(failure::err_msg("not implemented"))
+        self.create_table(schema)
     }
     /// stores the data in the store that implements this trait, a table in relational databases but
     /// returns the number of records stored successfully or any error(s) the method encounters

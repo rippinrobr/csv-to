@@ -91,7 +91,6 @@ where
 
     fn store(&self, name: String, records_parsed: usize, columns: Vec<ColumnDef>, content: Vec<csv::StringRecord>) -> Result<(), failure::Error> {
 
-        println!("struct name: {}", name);
         return match self.storage_svc.create_store(name.clone(), columns) {
             Ok(_) => {
                 self.storage_svc.store_data(name.clone(), content);
@@ -120,18 +119,20 @@ pub struct Config {
     db_type: Types,
     connection_info: String,
     name: String,
+    drop_tables: bool,
     no_headers: bool,
 }
 
 impl Config {
     /// Creates a struct of all the CmdLine Arguments
-    pub fn new(files_path: Vec<PathBuf>, directories: Vec<PathBuf>, db_type: Types, connection_info: String, name: String, no_headers: bool) -> Config {
+    pub fn new(files_path: Vec<PathBuf>, directories: Vec<PathBuf>, db_type: Types, connection_info: String, name: String, drop_tables: bool, no_headers: bool) -> Config {
         Config {
             files: Config::convert_to_vec_of_string(files_path),
             directories: Config::convert_to_vec_of_string(directories),
             db_type,
             connection_info,
             name,
+            drop_tables,
             no_headers,
         }
     }
