@@ -11,7 +11,7 @@ members = ["csv_converter"]
 actix = "0.7.0"
 ansi_term = "0.11.0"
 assert_fs = "0.10.0"
-barrel = "0.2.3"
+barrel = { version = "0.4.0", features = ["sqlite3"] }
 codegen = { git = "https://github.com/carllerche/codegen" } # Soon on crates.io
 csv = "1.0.0"
 csv_converter = { path = "csv_converter"}

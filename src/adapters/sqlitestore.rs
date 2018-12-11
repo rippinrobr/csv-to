@@ -1,5 +1,5 @@
 use barrel::*;
-use barrel::backend::Pg;  // this works for SQLite also
+use barrel::backend::Sqlite;  // this works for SQLite also
 use failure::Error;
 use regex::Regex;
 use sqlite;
@@ -26,8 +26,12 @@ impl SQLiteStore {
         }
     }
 
-    fn generate_table_schema(name: String, cols: Vec<ColumnDef>) -> String {
+    fn generate_table_schema(name: String, cols: Vec<ColumnDef>, drop_table_if_exists: bool) -> String {
         let mut m = Migration::new();
+
+        if drop_table_if_exists {
+            m.drop_table_if_exists(name.clone());
+        }
 
         m.create_table(name, move |t| {
             for cd in &cols {
@@ -36,13 +40,13 @@ impl SQLiteStore {
             }
         }).without_id();
 
-        format!("{};", &m.make::<Pg>())
+        format!("{};", &m.make::<Sqlite>())
     }
 }
 
 impl StorageService for SQLiteStore {
     /// Creates the table with the given name that will store the data from the related input file
-    fn create_store(&self, name: String, column_defs: Vec<ColumnDef>) -> Result<(), failure::Error> {
+    fn create_store(&self, name: String, column_defs: Vec<ColumnDef>, drop_tables: bool) -> Result<(), failure::Error> {
         if name == "" {
             return Err(failure::err_msg("name cannot be empty.".to_string()));
         }
@@ -51,8 +55,11 @@ impl StorageService for SQLiteStore {
             return Err(failure::err_msg("there must be at least 1 column.".to_string()));
         }
 
-        let schema = SQLiteStore::generate_table_schema(name.clone(), column_defs.clone());
-        self.create_table(schema)
+        let schema = SQLiteStore::generate_table_schema(name.clone(), column_defs.clone(), drop_tables);
+        match self.create_table(schema) {
+            Err(e) => Err(failure::err_msg(format!("table creation error: {:?}", e))),
+            Ok(_) => Ok(())
+        }
     }
     /// stores the data in the store that implements this trait, a table in relational databases but
     /// returns the number of records stored successfully or any error(s) the method encounters

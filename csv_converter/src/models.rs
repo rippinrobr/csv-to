@@ -3,7 +3,11 @@ use std::fmt;
 use std::fs::File;
 use std::io::{self, BufReader};
 use std::path::Path;
-use barrel::Type;
+extern crate barrel;
+
+use barrel::backend::Sqlite;
+use barrel::*;
+
 use csv::{Error, StringRecord};
 
 #[derive(PartialEq,Clone, Copy)]

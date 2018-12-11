@@ -91,7 +91,7 @@ where
 
     fn store(&self, name: String, records_parsed: usize, columns: Vec<ColumnDef>, content: Vec<csv::StringRecord>) -> Result<(), failure::Error> {
 
-        return match self.storage_svc.create_store(name.clone(), columns) {
+        return match self.storage_svc.create_store(name.clone(), columns, self.config_svc.should_drop_store()) {
             Ok(_) => {
                 self.storage_svc.store_data(name.clone(), content);
                 match self.storage_svc.validate(name, records_parsed) {
@@ -119,7 +119,7 @@ pub struct Config {
     db_type: Types,
     connection_info: String,
     name: String,
-    drop_tables: bool,
+    drop_store: bool,
     no_headers: bool,
 }
 
@@ -132,7 +132,7 @@ impl Config {
             db_type,
             connection_info,
             name,
-            drop_tables,
+            drop_store: drop_tables,
             no_headers,
         }
     }
@@ -191,6 +191,8 @@ impl ConfigService for Config {
     fn has_headers(&self) -> bool {
         !self.no_headers
     }
+
+    fn should_drop_store(&self) -> bool { self.drop_store }
 }
 
 #[derive(Debug, Clone)]
