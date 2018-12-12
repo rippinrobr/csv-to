@@ -60,9 +60,14 @@ where
         for input in inputs {
             pbar.set_message(&format!("{}", &input.location));
             match self.input_svc.parse(input) {
-                Err(e) => eprintln!("ERROR: {}", e),
+                Err(e) => eprintln!("ERROR: {:?}", e),
                 Ok(pc) => {
-                    self.store(self.get_table_name(pc.file_name.clone()), pc.records_parsed, pc.columns.clone(), pc.content.clone());
+                    self.store(self.get_table_name(pc.file_name.clone()),
+                               pc.records_parsed,
+                               pc.columns.clone(),
+                               pc.content.clone()).unwrap_or_else(|e| {
+                        eprintln!("store error: {:?}", e);
+                    });
                     pbar.inc(1)
                 }
             }
@@ -91,16 +96,21 @@ where
 
     fn store(&self, name: String, records_parsed: usize, columns: Vec<ColumnDef>, content: Vec<csv::StringRecord>) -> Result<(), failure::Error> {
 
-        return match self.storage_svc.create_store(name.clone(), columns, self.config_svc.should_drop_store()) {
+        return match self.storage_svc.create_store(name.clone(), columns.clone(), self.config_svc.should_drop_store()) {
             Ok(_) => {
-                self.storage_svc.store_data(name.clone(), content);
-                match self.storage_svc.validate(name, records_parsed) {
-                    Err(e) => Err(failure::err_msg(format!("validation error: {}", e))),
-                    Ok(_) => Ok(()),
+                let insert_stmt = self.storage_svc.create_insert_stmt(name.clone(), columns.clone());
+                match self.storage_svc.store_data( columns.clone(), content, insert_stmt) {
+                    Ok(records_inserted) => {
+                        if records_parsed != records_inserted {
+                            eprintln!("number of records inserted doesn't matched the number parsed, parsed: {} inserted: {}", records_parsed, records_inserted)
+                        }
+                        Ok(())
+                    },
+                     Err(e) => Err(e)
                 }
             },
             Err(err) => return Err(failure::err_msg(format!("unable to create storage {}", err))),
-        };
+        }
     }
 
     fn get_table_name(&self, file_path: String) -> String {
