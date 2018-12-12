@@ -180,7 +180,8 @@ impl ConfigService for Config {
             require_literal_separator: false,
         };
 
-        // directories
+        // Gets the files inside the given directories and adds them to the
+        // input source
         for d in &self.directories {
             for f in  glob_with(&format!("{}/*.{}", d, "csv"), options).unwrap() {
                 match f {
