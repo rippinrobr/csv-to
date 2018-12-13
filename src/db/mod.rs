@@ -1,15 +1,15 @@
 extern crate ansi_term;
 extern crate csv_converter;
 
-use std::fs;
-use std::path::{PathBuf, Path};
+pub mod config;
+
+use std::path::Path;
 use std::str::FromStr;
 use ansi_term::Colour::{Green, Red};
 use indicatif::{ProgressBar, ProgressStyle};
-use glob::{glob_with, MatchOptions};
 
 //use self::error::DbError;
-use csv_converter::models::{ColumnDef, InputSource, ParsedContent};
+use csv_converter::models::{ColumnDef};
 use crate::ports::{
     inputservice::InputService,
     configservice::ConfigService,
@@ -48,64 +48,78 @@ where
     pub fn run(self) -> Result<(), std::io::Error> {
         let inputs = self.config_svc.get_input_sources();
         let mut errors: Vec<String> = Vec::new();
+        let mut results: Vec<DBResults> = Vec::new();
 
         let pbar = ProgressBar::new(inputs.len() as u64);
         pbar.set_style(ProgressStyle::default_bar()
             .template("{prefix:.cyan/blue} {msg} [{bar:40.cyan/blue}] {pos:>3/blue}/{len:3}files")
             .progress_chars("=> "));
-
         pbar.set_prefix("Processing");
 
         let mut num_files = 0;
         for input in inputs {
             pbar.set_message(&format!("{}", &input.location));
             match self.input_svc.parse(input) {
-                Err(e) => eprintln!("ERROR: {:?}", e),
+                Err(e) => errors.push(format!("parse error: {:?}", e)),
                 Ok(pc) => {
-                    self.store(self.get_table_name(pc.file_name.clone()),
+                    pbar.set_prefix("Loading Data...");
+                    match self.store(self.get_table_name(pc.file_name.clone()),
                                pc.records_parsed,
                                pc.columns.clone(),
-                               pc.content.clone()).unwrap_or_else(|e| {
-                        eprintln!("store error: {:?}", e);
-                    });
+                               pc.content.clone()) {
+                        Ok(result) => results.push(result),
+                        Err(e) => errors.push(format!("{}", e)),
+                    }
                     pbar.inc(1)
                 }
             }
-
             num_files += 1;
         }
         pbar.finish_and_clear();
 
         // Pressing report
-        self.display_report(errors, num_files);
-
+        self.display_report(results, errors, num_files);
         Ok(())
     }
 
-    fn display_report(&self, errors: Vec<String>, num_files: u64) {
-        let processed_msg = format!("Processed {} files", num_files);
-        println!("\n{}", Green.bold().paint(processed_msg));
-        if !errors.is_empty() {
+    fn display_report(&self, store_results: Vec<DBResults>, errors: Vec<String>, num_files: u64) {
+        let processed_msg = format!("{} files processed", num_files);
+        let num_errors = errors.len();
+
+        if num_errors > 0 {
             let err_msg =format!("There were {} errors", errors.len());
             println!("{}", Red.bold().paint(err_msg));
             for e in errors {
                 eprintln!("{}", e);
             }
         }
+
+        println!("\ncsv-to results");
+        println!("-------------------");
+        println!("{}", Green.bold().paint(processed_msg));
+        for r in store_results {
+            match r.get_results() {
+                Ok(msg) => println!("{}", msg),
+                Err(msg) => println!("{}", Red.bold().paint(format!("{}", msg)))
+            }
+        }
+
+        if num_errors == 0 {
+            println!("{}", Green.bold().paint("0 errors"));
+        } else {
+            println!("{}", Red.bold().paint(format!("{} Errors", num_errors)));
+        }
+
+
     }
 
-    fn store(&self, name: String, records_parsed: usize, columns: Vec<ColumnDef>, content: Vec<csv::StringRecord>) -> Result<(), failure::Error> {
+    fn store(&self, name: String, records_parsed: usize, columns: Vec<ColumnDef>, content: Vec<csv::StringRecord>) -> Result<DBResults, failure::Error> {
 
         return match self.storage_svc.create_store(name.clone(), columns.clone(), self.config_svc.should_drop_store()) {
             Ok(_) => {
                 let insert_stmt = self.storage_svc.create_insert_stmt(name.clone(), columns.clone());
                 match self.storage_svc.store_data( columns.clone(), content, insert_stmt) {
-                    Ok(records_inserted) => {
-                        if records_parsed != records_inserted {
-                            eprintln!("number of records inserted doesn't matched the number parsed, parsed: {} inserted: {}", records_parsed, records_inserted)
-                        }
-                        Ok(())
-                    },
+                    Ok(records_inserted) => Ok(DBResults::new(name.clone(), records_parsed, records_inserted)),
                      Err(e) => Err(e)
                 }
             },
@@ -121,89 +135,28 @@ where
     }
 }
 
-/// Config contains all the parameters provided by the user
-#[derive(Debug)]
-pub struct Config {
-    files: Vec<String>,
-    directories: Vec<String>,
-    db_type: Types,
-    connection_info: String,
+struct DBResults {
     name: String,
-    drop_store: bool,
-    no_headers: bool,
+    num_parsed: usize,
+    num_stored: usize,
 }
 
-impl Config {
-    /// Creates a struct of all the CmdLine Arguments
-    pub fn new(files_path: Vec<PathBuf>, directories: Vec<PathBuf>, db_type: Types, connection_info: String, name: String, drop_tables: bool, no_headers: bool) -> Config {
-        Config {
-            files: Config::convert_to_vec_of_string(files_path),
-            directories: Config::convert_to_vec_of_string(directories),
-            db_type,
-            connection_info,
+impl DBResults {
+    pub fn new(name: String, num_parsed: usize, num_stored: usize) -> DBResults {
+        DBResults{
             name,
-            drop_store: drop_tables,
-            no_headers,
+            num_parsed,
+            num_stored,
         }
     }
 
-    fn create_input_source(has_headers: bool, file_path: String) -> InputSource {
-        let meta = fs::metadata(file_path.clone()).unwrap();
-        //TODO: default has_headers to true for now, will add a flag that says --no-headers
-        InputSource {
-            has_headers,
-            location: file_path,
-            size: meta.len(),
-        }
-    }
-
-    fn convert_to_vec_of_string(paths: Vec<PathBuf>) -> Vec<String> {
-        let mut string_paths: Vec<String> = Vec::new();
-
-        for p in paths.into_iter() {
-            string_paths.push(p.into_os_string().into_string().unwrap_or_default());
+    pub fn get_results(&self) -> Result<String, failure::Error> {
+        if &self.num_stored != &self.num_parsed {
+           return  Err(failure::err_msg(format!("{} had errors, parsed {} stored {}", &self.name, &self.num_parsed, &self.num_stored)));
         }
 
-        string_paths
+        Ok(format!("✅ {}: {} records loaded", &self.name, &self.num_stored))
     }
-}
-
-impl ConfigService for Config {
-    /// get_locations returns the path's to the input files
-    fn get_input_sources(&self) -> Vec<InputSource> {
-        let mut sources: Vec<InputSource> = Vec::new();
-        // used by the glob_with call to tell it how we want to look
-        // for files in a directory
-        let options = &MatchOptions {
-            case_sensitive: false,
-            require_literal_leading_dot: false,
-            require_literal_separator: false,
-        };
-
-        // Gets the files inside the given directories and adds them to the
-        // input source
-        for d in &self.directories {
-            for f in  glob_with(&format!("{}/*.{}", d, "csv"), options).unwrap() {
-                match f {
-                    Ok(file_path) => sources.push(Config::create_input_source(self.has_headers(),file_path.into_os_string().into_string().unwrap_or_default()) ),
-                    Err(e) => eprintln!("ERROR: {}", e),
-                }
-            }
-        }
-
-        // files
-        for file_path in &self.files {
-           sources.push(Config::create_input_source(self.has_headers(),file_path.clone()) );
-        }
-
-        sources.to_owned()
-    }
-
-    fn has_headers(&self) -> bool {
-        !self.no_headers
-    }
-
-    fn should_drop_store(&self) -> bool { self.drop_store }
 }
 
 #[derive(Debug, Clone)]
@@ -247,3 +200,4 @@ pub mod error {
         }
     }
 }
+

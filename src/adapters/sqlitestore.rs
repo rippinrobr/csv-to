@@ -1,11 +1,10 @@
 use barrel::backend::Sqlite;  // this works for SQLite also
 use barrel::*;
 use failure::Error;
-use regex::Regex;
 use sqlite;
 use sqlite::{Connection, Value};
 use csv::StringRecord;
-use csv_converter::models::{ColumnDef, DataTypes, ParsedContent};
+use csv_converter::models::{ColumnDef, DataTypes};
 use crate::ports::storageservice::StorageService;
 
 pub struct SQLiteStore{
@@ -111,7 +110,7 @@ impl StorageService for SQLiteStore {
 
             let mut col_idx: usize = 1;
             for c in vrec.iter() {
-                let value = &SQLiteStore::get_value_type(&column_defs[col_idx-1], c.to_string());
+                let value = &SQLiteStore::get_value_type(&column_defs[col_idx - 1], c.to_string());
                 stmt.bind(col_idx, value).unwrap();
                 col_idx += 1;
             }
@@ -120,10 +119,5 @@ impl StorageService for SQLiteStore {
         }
 
         Ok(rows_inserted_count)
-    }
-    /// validates the number of records that existed in the CSV file were added to the store
-    /// returns the true if the total_lines is equal to the number of records in the store
-    fn validate(&self, name: String, total_lines: usize) -> Result<bool, failure::Error> {
-        Err(failure::err_msg("not implemented"))
     }
 }

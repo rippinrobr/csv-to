@@ -1,7 +1,7 @@
 extern crate failure;
 extern crate glob;
-#[macro_use] extern crate failure_derive;
-#[macro_use] extern crate structopt;
+extern crate failure_derive;
+extern crate structopt;
 extern crate csv_converter;
 
 pub mod adapters;
@@ -29,7 +29,7 @@ pub enum CsvTo {
 
         #[structopt(short = "c", long = "connection-info", help = "Database connectivity information")]
         connection_info: String,
-        
+
         #[structopt(short = "n", long = "name", help = "Name of the database to be created")]
         name: String,
 
