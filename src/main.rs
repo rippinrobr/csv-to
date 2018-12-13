@@ -5,7 +5,7 @@ extern crate structopt;
 use csv_to::CsvTo;
 use csv_to::cmd::db::DbApp;
 use csv_to::cmd::db::config::Config;
-use csv_to::input::csv::CSVService;
+use csv_to::parsers::csv::CSVService;
 use csv_to::storage::sqlite::SQLiteStore;
 use structopt::StructOpt;
 

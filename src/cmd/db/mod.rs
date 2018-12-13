@@ -10,7 +10,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 
 //use self::error::DbError;
 use csv_converter::models::{ColumnDef};
-use crate::input::InputService;
+use crate::parsers::InputService;
 use crate::ConfigService;
 use crate::storage::StorageService;
 
@@ -109,7 +109,6 @@ where
                 eprintln!("{}", e);
             }
         }
-
     }
 
     fn store(&self, name: String, records_parsed: usize, columns: Vec<ColumnDef>, content: Vec<csv::StringRecord>) -> Result<DBResults, failure::Error> {

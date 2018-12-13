@@ -5,7 +5,7 @@ extern crate structopt;
 extern crate csv_converter;
 
 pub mod cmd;
-pub mod input;
+pub mod parsers;
 pub mod storage;
 
 use std::path::PathBuf;
