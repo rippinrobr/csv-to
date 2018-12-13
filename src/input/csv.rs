@@ -3,7 +3,7 @@ use regex::Regex;
 use csv::{Reader, StringRecord};
 
 use csv_converter::models::{ColumnDef, DataTypes, Input, InputSource, ParsedContent};
-use crate::ports::inputservice::InputService;
+use super::InputService;
 
 
 #[derive(Clone,Debug)]
@@ -82,6 +82,7 @@ impl InputService for CSVService {
 
         // this loop is for the lines in a file
         for raw_record in rdr.records() {
+            parsed_content.records_parsed += 1;
             let record = match raw_record {
                 Ok(rec) => rec,
                 Err(e) => {
@@ -110,7 +111,6 @@ impl InputService for CSVService {
                 col_index += 1;
             }
             parsed_content.content.push(record);
-            parsed_content.records_parsed += 1;
         }
         Ok(parsed_content)
     }

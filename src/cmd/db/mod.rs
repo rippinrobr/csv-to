@@ -10,9 +10,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 
 //use self::error::DbError;
 use csv_converter::models::{ColumnDef};
-use crate::ports::{
-    inputservice::InputService,
-};
+use crate::input::InputService;
 use crate::ConfigService;
 use crate::storage::StorageService;
 
@@ -62,6 +60,9 @@ where
             match self.input_svc.parse(input) {
                 Err(e) => errors.push(format!("parse error: {:?}", e)),
                 Ok(pc) => {
+                    if !&pc.errors.is_empty() {
+                        errors.append(&mut pc.errors.clone());
+                    }
                     pbar.set_prefix("Loading Data...");
                     match self.store(self.get_table_name(pc.file_name.clone()),
                                pc.records_parsed,
@@ -86,17 +87,14 @@ where
         let processed_msg = format!("{} files processed", num_files);
         let num_errors = errors.len();
 
-        if num_errors > 0 {
-            let err_msg =format!("There were {} errors", errors.len());
-            println!("{}", Red.bold().paint(err_msg));
-            for e in errors {
-                eprintln!("{}", e);
-            }
-        }
+        let err_stmt = match num_errors == 0 {
+            true =>  format!("{}", Green.bold().paint("0 errors")),
+            false => format!("{}", Red.bold().paint(format!("{} Errors", num_errors)))
+        };
 
         println!("\ncsv-to results");
         println!("-------------------");
-        println!("{}", Green.bold().paint(processed_msg));
+        println!("{} / {}", Green.bold().paint(processed_msg), err_stmt);
         for r in store_results {
             match r.get_results() {
                 Ok(msg) => println!("{}", msg),
@@ -104,12 +102,13 @@ where
             }
         }
 
-        if num_errors == 0 {
-            println!("{}", Green.bold().paint("0 errors"));
-        } else {
-            println!("{}", Red.bold().paint(format!("{} Errors", num_errors)));
+        if num_errors > 0 {
+            let err_msg =format!("\nError Details\n-------------");
+            println!("{}", Red.bold().paint(err_msg));
+            for e in errors {
+                eprintln!("{}", e);
+            }
         }
-
 
     }
 
@@ -152,7 +151,7 @@ impl DBResults {
 
     pub fn get_results(&self) -> Result<String, failure::Error> {
         if &self.num_stored != &self.num_parsed {
-           return  Err(failure::err_msg(format!("{} had errors, parsed {} stored {}", &self.name, &self.num_parsed, &self.num_stored)));
+           return  Err(failure::err_msg(format!("❌ {}: had {} errors", &self.name, self.num_parsed - self.num_stored)));
         }
 
         Ok(format!("✅ {}: {} records loaded", &self.name, &self.num_stored))

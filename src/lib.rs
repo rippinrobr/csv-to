@@ -4,15 +4,15 @@ extern crate failure_derive;
 extern crate structopt;
 extern crate csv_converter;
 
-pub mod adapters;
 pub mod cmd;
-pub mod ports;
+pub mod input;
 pub mod storage;
 
 use std::path::PathBuf;
 use structopt::StructOpt;
 use crate::cmd::db;
 use csv_converter::models::ParsedContent;
+use csv_converter::models::InputSource;
 
 /// All command line options/flags broken into their sub-commands
 #[derive(Debug, StructOpt)]
@@ -48,7 +48,6 @@ pub trait App {
     fn run(&self) -> Result<ParsedContent, std::io::Error> ;
 }
 
-use csv_converter::models::InputSource;
 /// ConfigService is used to encapsulate the input from the user
 pub trait ConfigService {
     /// Returns a Vec<InputSource> that represents all input files/sources

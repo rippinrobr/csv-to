@@ -1,3 +1,5 @@
+pub mod csv;
+
 use failure::Error;
 use regex::Regex;
 use std::str;
