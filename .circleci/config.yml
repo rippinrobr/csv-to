@@ -21,8 +21,7 @@ jobs:
           command: rustup run stable cargo test
       - run:
           name: Upload Coverage
-          command: ls -a
-          #command: ./scripts/codecov.sh
+          command: .scripts/codecov.sh
       - save_cache:
           key: project-cache
           paths:
