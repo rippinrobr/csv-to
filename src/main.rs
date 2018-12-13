@@ -3,8 +3,8 @@ extern crate exitcode;
 extern crate structopt;
 
 use csv_to::CsvTo;
-use csv_to::db::DbApp;
-use csv_to::db::config::Config;
+use csv_to::cmd::db::DbApp;
+use csv_to::cmd::db::config::Config;
 use csv_to::adapters::csvinput::CSVService;
 use csv_to::storage::sqlite::SQLiteStore;
 use structopt::StructOpt;

@@ -4,7 +4,7 @@ use glob::{glob_with, MatchOptions};
 use csv_converter::models::{InputSource};
 use crate::{
     ConfigService,
-    db::Types
+    cmd::db::Types
 };
 
 /// Config contains all the parameters provided by the user

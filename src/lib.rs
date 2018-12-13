@@ -5,13 +5,13 @@ extern crate structopt;
 extern crate csv_converter;
 
 pub mod adapters;
-pub mod db;
+pub mod cmd;
 pub mod ports;
 pub mod storage;
 
 use std::path::PathBuf;
 use structopt::StructOpt;
-
+use crate::cmd::db;
 use csv_converter::models::ParsedContent;
 
 /// All command line options/flags broken into their sub-commands
