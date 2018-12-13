@@ -1,3 +1,5 @@
+pub mod sqlite;
+
 use csv::StringRecord;
 use failure::Error;
 use csv_converter::models::ColumnDef;

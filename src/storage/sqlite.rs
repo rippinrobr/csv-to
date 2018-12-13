@@ -5,7 +5,7 @@ use sqlite;
 use sqlite::{Connection, Value};
 use csv::StringRecord;
 use csv_converter::models::{ColumnDef, DataTypes};
-use crate::ports::storageservice::StorageService;
+use super::StorageService;
 
 pub struct SQLiteStore{
     conn: Connection,

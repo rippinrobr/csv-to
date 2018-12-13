@@ -7,6 +7,7 @@ extern crate csv_converter;
 pub mod adapters;
 pub mod db;
 pub mod ports;
+pub mod storage;
 
 use std::path::PathBuf;
 use structopt::StructOpt;
