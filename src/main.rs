@@ -13,7 +13,9 @@ use structopt::StructOpt;
 
 fn main() {
     let opt = CsvTo::from_args();
-    
+
+    // As I build out the sub-commands this match will have multiple options, all of which will
+    // implement the App trait
     let app = match opt {
         CsvTo::Db { files, directories, db_type, connection_info, name, drop_stores, no_headers } => {
             if files.is_empty() && directories.is_empty() {
@@ -32,6 +34,7 @@ fn main() {
         }
     };
 
+    // This is where the logic is kicked off
     app.run().unwrap_or_else(|err| {
         eprintln!("ERROR: {}", err);
         std::process::exit(exitcode::IOERR);
