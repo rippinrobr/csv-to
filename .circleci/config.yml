@@ -2,11 +2,14 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/rust:1.31-browsers
+      - image: circleci/rust:1.31.0-node-browsers-legacy
     steps:
       - checkout
       - restore_cache:
           key: project-cache
+#      - run:
+#          name: Install Rust
+#          command: rustup install stable
       - run:
           name: Stable Build
           command:  |
@@ -22,5 +25,3 @@ jobs:
           paths:
             - "~/.cargo"
             - "~./target"
-
-
