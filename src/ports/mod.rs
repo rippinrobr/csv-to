@@ -9,5 +9,4 @@ pub enum ServiceError {
 pub type Result<T> = std::result::Result<T, ServiceError>;
 
 pub mod app;
-pub mod configservice;
 pub mod inputservice;

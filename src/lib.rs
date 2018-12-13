@@ -14,6 +14,7 @@ use structopt::StructOpt;
 
 use csv_converter::models::ParsedContent;
 
+/// All command line options/flags broken into their sub-commands
 #[derive(Debug, StructOpt)]
 #[structopt(name = "csv-to", about = "creates databases and code from CSV data")]
 pub enum CsvTo {
@@ -42,27 +43,20 @@ pub enum CsvTo {
     }
 }
 
+
 pub trait App {
     fn run(&self) -> Result<ParsedContent, std::io::Error> ;
 }
 
-pub mod errors {
-    //use failure::Error;
-
-    // This is a new error type that you've created. It represents the ways a
-    // toolchain could be invalid.
-    //
-    // The custom derive for Fail derives an impl of both Fail and Display.
-    // We don't do any other magic like creating new types.
-//    #[derive(Debug, Fail)]
-//    enum ToolchainError {
-//        #[fail(display = "invalid toolchain name: {}", name)]
-//        InvalidToolchainName {
-//            name: String,
-//        },
-//        #[fail(display = "unknown toolchain version: {}", version)]
-//        UnknownToolchainVersion {
-//            version: String,
-//        }
-//    }
+use csv_converter::models::InputSource;
+/// ConfigService is used to encapsulate the input from the user
+pub trait ConfigService {
+    /// Returns a Vec<InputSource> that represents all input files/sources
+    fn get_input_sources(&self) -> Vec<InputSource>;
+    /// Returns true if the input files have column headers, currently
+    /// all files have them or none of them do
+    fn has_headers(&self) -> bool;
+    /// Returns true if tables/collections should be removed before
+    /// loading the data
+    fn should_drop_store(&self) -> bool;
 }
