@@ -6,5 +6,6 @@ fi
 
 for test_bin in $binaries
 do
-    kcov ,/target/cov/ ${test_bin}
+    kcov ./target/cov/ ${test_bin}
+    ls -lt ./target/cov
 done
