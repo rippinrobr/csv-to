@@ -1,6 +1,7 @@
 extern crate failure;
 extern crate glob;
 extern crate failure_derive;
+extern crate postgres;
 extern crate structopt;
 extern crate csv_converter;
 

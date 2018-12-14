@@ -1,7 +1,11 @@
+pub mod postgres;
 pub mod sqlite;
 
-use csv::StringRecord;
+use barrel::backend::{Pg, SqlGenerator};
+use barrel::*;
 use failure::Error;
+use csv::StringRecord;
+use csv_converter::models::DataTypes;
 use csv_converter::models::ColumnDef;
 
 pub trait StorageService {

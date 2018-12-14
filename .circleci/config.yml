@@ -11,6 +11,9 @@ jobs:
           name: Install Rust
           command: rustup install stable
       - run:
+          name: Install Kcov
+          command: apt-get install binutils-dev libcurl4-openssl-dev zlib1g-dev libdw-dev libiberty-dev
+      - run:
           name: Stable Build
           command:  |
             rustup run stable rustc --version --verbose
