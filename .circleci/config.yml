@@ -22,7 +22,8 @@ jobs:
       - run:
           name: Test
           command: |
-            rustup run stable cargo test --no-run --target-dir ./tests
+            rustup run stable cargo test --no-run --target-dir ./target/tests/debug
+            ls -l .scripts
             .scripts/run-kcov.sh
       - run:
           name: Upload Coverage
