@@ -159,6 +159,7 @@ impl DBResults {
 
 #[derive(Debug, Clone)]
 pub enum Types {
+    Postgres,
     SQLite,
 }
 
@@ -169,6 +170,7 @@ impl FromStr for Types {
         let lower_s: &str = &s.to_lowercase();
         match lower_s {
             "sqlite" => Ok(Types::SQLite),
+            "postgres" => Ok(Types::Postgres),
             _ => Err(error::DbError::new(format!("ERROR: '{}' is not a supported database type", lower_s), exitcode::USAGE))
         }
     }

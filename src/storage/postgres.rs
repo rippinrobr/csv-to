@@ -19,6 +19,13 @@ impl PostgresStore{
         }
     }
 
+    pub fn create_database(&self, name: String, drop_if_exists: bool) -> Result<(), Error> {
+        match self.conn.execute(&format!("CREATE DATABASE {};", name), &[]) {
+            Ok(_) => Ok(()),
+            Err(e) => Err(failure::err_msg(format!("database creation error: {}", e)))
+        }
+    }
+
     fn create_table(&self, sql_stmt: String) -> Result<(), Error> {
         match self.conn.execute(&sql_stmt, &[]) {
             Ok(_) => Ok(()),

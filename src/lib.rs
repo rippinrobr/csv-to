@@ -27,7 +27,7 @@ pub enum CsvTo {
         #[structopt(short = "d", parse(from_os_str), long = "directories", help = "The directories that contain CSV files to be processed, a comma delimited string of paths")]
         directories: Vec<PathBuf>,
 
-        #[structopt(short = "t", long = "type", help = "The type of database to create, currently only SQLite is supported")]
+        #[structopt(short = "t", long = "type", help = "The type of database to create, valid types are sqlite and postgres")]
         db_type: db::Types,
 
         #[structopt(short = "c", long = "connection-info", help = "Database connectivity information")]

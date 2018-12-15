@@ -66,7 +66,7 @@ FLAGS:
 
 OPTIONS:
     -c, --connection-info <connection_info>    Database connectivity information
-    -t, --type <db_type>                       The type of database to create, currently only SQLite is supported
+    -t, --type <db_type>                       The type of database to create, valid types are sqlite and postgres
     -d, --directories <directories>...         The directories that contain CSV files to be processed, a comma delimited
                                                string of paths
     -f, --files <files>...                     The CSV files to be processed, can be /path/to/files/ or a comma
@@ -100,7 +100,7 @@ FLAGS:
 
 OPTIONS:
     -c, --connection-info <connection_info>    Database connectivity information
-    -t, --type <db_type>                       The type of database to create, currently only SQLite is supported
+    -t, --type <db_type>                       The type of database to create, valid types are sqlite and postgres
     -d, --directories <directories>...         The directories that contain CSV files to be processed, a comma delimited
                                                string of paths
     -f, --files <files>...                     The CSV files to be processed, can be /path/to/files/ or a comma
