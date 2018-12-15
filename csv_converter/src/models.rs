@@ -6,6 +6,8 @@ use std::path::Path;
 extern crate barrel;
 
 use barrel::backend::Sqlite;
+use barrel::backend::Pg;
+use barrel::types::{Type, BaseType};
 use barrel::*;
 
 use csv::{Error, StringRecord};
@@ -32,12 +34,12 @@ impl DataTypes {
         }
     }
 
-    pub fn to_database_type(&self) -> Type {
+    pub fn to_database_type(&self) -> BaseType {
         match *self {
-            DataTypes::Empty => Type::Text,
-            DataTypes::F64 => Type::Double,
-            DataTypes::I64 => Type::Integer,
-            DataTypes::String => Type::Text
+            DataTypes::Empty => BaseType::Text,
+            DataTypes::F64 => BaseType::Double,
+            DataTypes::I64 => BaseType::Integer,
+            DataTypes::String => BaseType::Text
         }
     }
 }

@@ -4,7 +4,8 @@ version = "0.0.2"
 authors = ["Rob Rowe <robrowe04@gmail.com>"]
 
 [dependencies]
-barrel = { version = "0.4.0", features = ["sqlite3", "pg"] }
+# barrel = { version = "0.4.0", features = ["sqlite3", "pg"] }
+barrel = { git = "https://github.com/rippinrobr/barrel", features = ["sqlite3", "pg"] } # version = "0.4.0", features = ["sqlite3", "pg"] }
 codegen = { git = "https://github.com/carllerche/codegen" } # Soon on crates.io
 csv = "1.0.0"
 futures = "0.1.23"

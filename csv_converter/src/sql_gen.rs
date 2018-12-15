@@ -3,7 +3,8 @@ use std::io::Error;
 use std::io::prelude::*;
 use barrel::*;
 use barrel::backend::Pg;
-
+//use barrel::types::Type;
+use barrel::types::{Type, BaseType};
 
 pub struct SQLGen {
     sql_directory: String,
@@ -27,12 +28,12 @@ impl SQLGen {
         
         let mut m = Migration::new();
         let cols = columns.clone();
-        m.create_table(name, move |t| {
-            for cd in &cols {
-                let cname: &str = &cd.name;
-                t.add_column(cname, cd.data_type.to_database_type());
-            }
-        }).without_id();
+//        m.create_table(name, move |t| {
+//            for cd in &cols {
+//                let cname: &str = &cd.name;
+//                t.add_column(cname, Type::new(cd.data_type.to_database_type()));
+//            }
+//        }).without_id();
         Ok(format!("{};", &m.make::<Pg>()))
     }
 

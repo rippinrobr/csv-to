@@ -1,4 +1,5 @@
 use barrel::backend::Sqlite;  // this works for SQLite also
+use barrel::types::Type;
 use barrel::*;
 use failure::Error;
 use sqlite;
@@ -35,7 +36,15 @@ impl SQLiteStore {
         m.create_table(name, move |t| {
             for cd in &cols {
                 let cname: &str = &cd.name;
-                t.add_column(cname, cd.data_type.to_database_type());
+                t.add_column(cname, Type{
+                    nullable: true,
+                    unique: false,
+                    increments: false,
+                    indexed: false,
+                    default: None,
+                    size: None,
+                    inner: cd.data_type.to_database_type()
+                });
             }
         }).without_id();
 
