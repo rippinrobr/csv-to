@@ -40,9 +40,15 @@ impl CSVService {
     fn check_field_data_type(val: &str) -> DataTypes {
         match val.parse::<i64>() {
             Ok(_) => DataTypes::I64,
-            _ => match val.parse::<f64>() {
-                Ok(_) => DataTypes::F64,
-                _ => DataTypes::String
+            Err(e) => {
+                println!("parse i64 error: {}", e);
+                match val.parse::<f64>() {
+                    Ok(_) => DataTypes::F64,
+                    Err(e) => {
+                        println!("parse f64 err: {}", e);
+                        return DataTypes::String
+                    }
+                }
             }
         }
     }
@@ -93,9 +99,9 @@ impl InputService for CSVService {
             // this loop is for the columns
             let mut col_index = 0;
             for col_data in record.clone().iter() {
-                if col_data == "" {
-                    continue;
-                }
+//                if col_data == "" {
+//                    continue;
+//                }
 
                 // update columns data type if necessary
                 // TODO: turn this into a ColumnDef.is_data_type_changeable() function
@@ -103,6 +109,10 @@ impl InputService for CSVService {
                     parsed_content.columns[col_index].data_type != DataTypes::F64 {
                     let current_type = parsed_content.columns[col_index].data_type;
                     let possible_type: DataTypes = CSVService::check_field_data_type( col_data);
+
+                    if parsed_content.columns[col_index].name.to_lowercase() == String::from("notes") {
+                        println!("idx: {} column: {} {} value: {}=> possible: {:?} actual {:?}", col_index, parsed_content.columns[col_index-1].name, parsed_content.columns[col_index].name, col_data, possible_type, parsed_content.columns[col_index].data_type);
+                    }
 
                     if possible_type != current_type &&  current_type == DataTypes::Empty {
                         parsed_content.columns[col_index].data_type = possible_type;
@@ -140,7 +150,6 @@ mod tests {
         assert_eq!(String::from("charlie"), col_defs[2].name);
         assert_eq!(DataTypes::Empty, col_defs[2].data_type);
         assert_eq!(false, col_defs[2].has_data);
-
     }
 
     #[test]

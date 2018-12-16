@@ -73,12 +73,32 @@ impl ColumnDef {
         }
     }
 
-    pub fn set_data_type(&mut self, data_type: DataTypes) {
-        self.data_type = data_type;
-    }
-
     pub fn col_has_data(&mut self) {
         self.has_data = true;
+    }
+
+    pub fn get_types_empty_state(data_type: DataTypes) -> String {
+        if data_type == DataTypes::String {
+            return String::from("''");
+        }
+
+        if data_type == DataTypes::F64 {
+            return String::from("0.0");
+        }
+
+        return String::from("0");
+    }
+
+    pub fn is_data_type_changeable(data_type: DataTypes) -> bool {
+       data_type == DataTypes::Empty || ( data_type != DataTypes::String && data_type != DataTypes::F64 )
+    }
+
+    pub fn is_data_type_empty(&self) -> bool {
+        self.data_type == DataTypes::Empty
+    }
+
+    pub fn set_data_type(&mut self, data_type: DataTypes) {
+        self.data_type = data_type;
     }
 }
 
