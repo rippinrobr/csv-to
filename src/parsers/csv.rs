@@ -2,7 +2,7 @@ use failure::{Error};
 use regex::Regex;
 use csv::{Reader, StringRecord};
 
-use csv_converter::models::{ColumnDef, DataTypes, Input, InputSource, ParsedContent};
+use crate::models::{ColumnDef, DataTypes, Input, InputSource, ParsedContent};
 use super::InputService;
 
 

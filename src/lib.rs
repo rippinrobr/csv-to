@@ -1,19 +1,19 @@
+extern crate barrel;
 extern crate failure;
 extern crate glob;
 extern crate failure_derive;
 extern crate postgres;
 extern crate structopt;
-extern crate csv_converter;
 
 pub mod cmd;
+pub mod models;
 pub mod parsers;
 pub mod storage;
 
 use std::path::PathBuf;
 use structopt::StructOpt;
 use crate::cmd::db;
-use csv_converter::models::ParsedContent;
-use csv_converter::models::InputSource;
+use crate::models::{InputSource, ParsedContent};
 
 /// All command line options/flags broken into their sub-commands
 #[derive(Debug, StructOpt)]

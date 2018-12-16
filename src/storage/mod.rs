@@ -1,12 +1,11 @@
 pub mod postgres;
 pub mod sqlite;
 
-use barrel::backend::{Pg, SqlGenerator};
+//use barrel::backend::{Pg, SqlGenerator};
 use barrel::*;
 use failure::Error;
 use csv::StringRecord;
-use csv_converter::models::DataTypes;
-use csv_converter::models::ColumnDef;
+use crate::models::ColumnDef;
 
 pub trait StorageService {
     /// creates an insert or appropriate create statement for the backend store

@@ -3,12 +3,12 @@ use std::fmt;
 use std::fs::File;
 use std::io::{self, BufReader};
 use std::path::Path;
-extern crate barrel;
 
 use barrel::backend::Sqlite;
 use barrel::backend::Pg;
-use barrel::types::{Type, BaseType};
+use barrel::types;
 use barrel::*;
+use barrel::types::{Type, BaseType};
 
 use csv::{Error, StringRecord};
 

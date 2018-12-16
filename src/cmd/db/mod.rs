@@ -1,5 +1,4 @@
 extern crate ansi_term;
-extern crate csv_converter;
 
 pub mod config;
 
@@ -9,7 +8,7 @@ use ansi_term::Colour::{Green, Red};
 use indicatif::{ProgressBar, ProgressStyle};
 
 //use self::error::DbError;
-use csv_converter::models::{ColumnDef};
+use crate::models::{ColumnDef};
 use crate::parsers::InputService;
 use crate::ConfigService;
 use crate::storage::StorageService;

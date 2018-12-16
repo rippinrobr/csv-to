@@ -5,7 +5,7 @@ use failure::Error;
 use sqlite;
 use sqlite::{Connection, Value};
 use csv::StringRecord;
-use csv_converter::models::{ColumnDef, DataTypes};
+use crate::models::{ColumnDef, DataTypes};
 use super::StorageService;
 
 pub struct SQLiteStore{

@@ -3,7 +3,7 @@ pub mod csv;
 use failure::Error;
 use regex::Regex;
 use std::str;
-use csv_converter::models::{InputSource, ParsedContent};
+use crate::models::{InputSource, ParsedContent};
 
 pub trait InputService {
     fn parse(&self, input: InputSource) -> Result<ParsedContent, Error> ;
