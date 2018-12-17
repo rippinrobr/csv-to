@@ -8,6 +8,9 @@ jobs:
 #      - restore_cache:
 #          key: project-cache
       - run:
+          name: remove old barrel code
+          command: sudo rm -rf /usr/local/cargo/git/checkouts/barrel-09497171437961a2
+      - run:
           name: Install Rust
           command: rustup install stable
       - run:
