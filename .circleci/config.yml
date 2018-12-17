@@ -5,7 +5,7 @@ jobs:
       - image: circleci/rust:1.31.0-node-browsers-legacy
     steps:
       - checkout
-     - restore_cache:
+      - restore_cache:
           key: project-cache-postgres
       - run:
           name: remove old barrel code
