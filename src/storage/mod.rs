@@ -2,7 +2,7 @@ pub mod postgres;
 pub mod sqlite;
 
 //use barrel::backend::{Pg, SqlGenerator};
-use barrel::*;
+//use barrel::*;
 use failure::Error;
 use csv::StringRecord;
 use crate::models::ColumnDef;

@@ -60,6 +60,7 @@ pub struct ColumnDef{
     pub name: String, 
     pub data_type: DataTypes,
     pub has_data: bool,
+    pub potential_types: Vec<DataTypes>,
 }
 
 impl ColumnDef {
@@ -67,7 +68,8 @@ impl ColumnDef {
         ColumnDef{
             name: name, 
             data_type: data_type,
-            has_data: false
+            has_data: false,
+            potential_types: Vec::new(),
         }
     }
 
@@ -75,17 +77,17 @@ impl ColumnDef {
         self.has_data = true;
     }
 
-    pub fn get_types_empty_state(data_type: DataTypes) -> String {
-        if data_type == DataTypes::String {
-            return String::from("''");
-        }
-
-        if data_type == DataTypes::F64 {
-            return String::from("0.0");
-        }
-
-        return String::from("0");
-    }
+//    pub fn get_types_empty_state(data_type: DataTypes) -> String {
+//        if data_type == DataTypes::String {
+//            return String::from("''");
+//        }
+//
+//        if data_type == DataTypes::F64 {
+//            return String::from("0.0");
+//        }
+//
+//        return String::from("0");
+//    }
 
     pub fn is_data_type_changeable(&self) -> bool {
        self.data_type == DataTypes::Empty || self.data_type != DataTypes::String || self.data_type != DataTypes::F64
@@ -187,13 +189,30 @@ impl ParsedContent {
         let first_letter = name.trim_right_matches(".csv").chars().next().unwrap();
         name.trim_right_matches(".csv").to_string().replace(first_letter, &first_letter.to_string().to_uppercase())
     }
+
+    pub fn set_column_data_types(&mut self) {
+        for idx in 0..self.columns.len() {
+            if self.columns[idx].potential_types.contains(&DataTypes::String) {
+                self.columns[idx].data_type = DataTypes::String;
+            } else {
+                if self.columns[idx].potential_types.contains(&DataTypes::F64) {
+                    self.columns[idx].data_type = DataTypes::F64;
+                } else if self.columns[idx].potential_types.contains(&DataTypes::I64) {
+                    self.columns[idx].data_type = DataTypes::I64;
+                }
+            }
+            if self.columns[idx].data_type == DataTypes::Empty {
+                self.columns[idx].data_type = DataTypes::String;
+            }
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use csv::{StringRecord};
     use csv::Error;
-    use models::{ColumnDef, DataTypes, ParsedContent};
+    use crate::models::{ColumnDef, DataTypes, ParsedContent};
 
     #[test]
     fn new() {
@@ -216,9 +235,10 @@ mod tests {
         let cols_len = cols.len();
         let content: Vec<StringRecord> = vec![StringRecord::from(vec!["a", "b", "c"])];
         let file_name = "my-file".to_string();
+        let errors: Vec<String> = Vec::new();
         let num_lines = 22;
 
-        let pc = ParsedContent::new(cols, content.clone(), file_name.clone(), num_lines);
+        let pc = ParsedContent::new(cols, content.clone(), errors.clone(), file_name.clone(), num_lines);
         
         let mut string_vec: Vec<Vec<String>> = pc.content_to_string_vec().unwrap();
         assert_eq!(1, string_vec.len());

@@ -58,10 +58,11 @@ where
             pbar.set_message(&format!("{}", &input.location));
             match self.input_svc.parse(input) {
                 Err(e) => errors.push(format!("parse error: {:?}", e)),
-                Ok(pc) => {
+                Ok(mut pc) => {
                     if !&pc.errors.is_empty() {
                         errors.append(&mut pc.errors.clone());
                     }
+                    pc.set_column_data_types();
                     pbar.set_prefix("Loading Data...");
                     match self.store(self.get_table_name(pc.file_name.clone()),
                                pc.records_parsed,

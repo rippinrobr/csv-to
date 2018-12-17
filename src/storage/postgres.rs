@@ -1,13 +1,11 @@
 extern crate barrel;
 
 use barrel::backend::Pg;
-use barrel::types;
 use barrel::*;
 
 use csv::StringRecord;
 use failure::Error;
 use postgres::{Connection, TlsMode};
-use postgres::types::{ToSql};
 use crate::models::{ColumnDef, DataTypes};
 use super::StorageService;
 
@@ -23,7 +21,7 @@ impl PostgresStore{
         }
     }
 
-    pub fn create_database(&self, name: String, drop_if_exists: bool) -> Result<(), Error> {
+    pub fn create_database(&self, name: String, _drop_if_exists: bool) -> Result<(), Error> {
         match self.conn.execute(&format!("CREATE DATABASE {};", name), &[]) {
             Ok(_) => Ok(()),
             Err(e) => Err(failure::err_msg(format!("database creation error: {}", e)))
@@ -45,7 +43,7 @@ impl PostgresStore{
         format!("{};", &d.make::<Pg>())
     }
 
-    fn generate_table_schema(name: String, cols: Vec<ColumnDef>, drop_table_if_exists: bool) -> String {
+    fn generate_table_schema(name: String, cols: Vec<ColumnDef>, _drop_table_if_exists: bool) -> String {
         let mut m = Migration::new();
 
         m.create_table(name, move |t| {
@@ -70,7 +68,6 @@ impl PostgresStore{
 impl StorageService for PostgresStore {
     /// creates an insert or appropriate create statement for the backend store
     fn create_insert_stmt(&self, store_name: String, column_defs: Vec<ColumnDef>) -> String{
-        let dbl_quote = String::from("\"");
         let col_names: Vec<String> = column_defs.into_iter().map(move |c| format!("\"{}\"", c.name.clone().to_lowercase())).collect();
         format!("INSERT INTO {} ({}) VALUES ", store_name.to_lowercase(), col_names.join(", "))
     }
@@ -101,7 +98,6 @@ impl StorageService for PostgresStore {
     /// stores the data in the store that implements this trait, a table in relational databases but
     /// returns the number of records stored successfully or any error(s) the method encounters
     fn store_data(&self, column_defs: Vec<ColumnDef>, data: Vec<StringRecord>, insert_stmt: String) -> Result<usize, Error> {
-        let num_cols = column_defs.len();
         let mut rows_inserted_count = 0;
         for line in data {
             let mut col_idx: usize = 0;
