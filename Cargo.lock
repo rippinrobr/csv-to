@@ -126,7 +126,7 @@ dependencies = [
 [[package]]
 name = "barrel"
 version = "0.5.0-alpha0"
-source = "git+https://github.com/rippinrobr/barrel#25e37caa425b39cab961fa6c962d861b6242aa0e"
+source = "git+https://github.com/rippinrobr/barrel?rev=25e37caa425b39cab961fa6c962d861b6242aa0e#25e37caa425b39cab961fa6c962d861b6242aa0e"
 
 [[package]]
 name = "base64"
@@ -343,7 +343,7 @@ dependencies = [
  "actix 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "ansi_term 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "assert_fs 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "barrel 0.5.0-alpha0 (git+https://github.com/rippinrobr/barrel)",
+ "barrel 0.5.0-alpha0 (git+https://github.com/rippinrobr/barrel?rev=25e37caa425b39cab961fa6c962d861b6242aa0e)",
  "codegen 0.1.0 (git+https://github.com/carllerche/codegen)",
  "csv 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "exitcode 1.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1625,7 +1625,11 @@ dependencies = [
 "checksum backtrace 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "346d7644f0b5f9bc73082d3b2236b69a05fd35cce0cfa3724e184e6a5c9e2a2f"
 "checksum backtrace 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)" = "89a47830402e9981c5c41223151efcced65a0510c13097c769cede7efb34782a"
 "checksum backtrace-sys 0.1.23 (registry+https://github.com/rust-lang/crates.io-index)" = "bff67d0c06556c0b8e6b5f090f0eac52d950d9dfd1d35ba04e4ca3543eaf6a7e"
+<<<<<<< HEAD
 "checksum barrel 0.5.0-alpha0 (git+https://github.com/rippinrobr/barrel)" = "<none>"
+=======
+"checksum barrel 0.5.0-alpha0 (git+https://github.com/rippinrobr/barrel?rev=25e37caa425b39cab961fa6c962d861b6242aa0e)" = "<none>"
+>>>>>>> a73bd61c20fa6573cf17127b6e6770c558492321
 "checksum base64 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)" = "96434f987501f0ed4eb336a411e0631ecd1afa11574fe148587adc4ff96143c9"
 "checksum bitflags 1.0.3 (registry+https://github.com/rust-lang/crates.io-index)" = "d0c54bb8f454c567f21197eefcdbf5679d0bd99f2ddbe52e84c77061952e6789"
 "checksum block-buffer 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)" = "a076c298b9ecdb530ed9d967e74a6027d6a7478924520acddcddc24c1c8ab3ab"

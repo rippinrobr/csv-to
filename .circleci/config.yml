@@ -5,11 +5,12 @@ jobs:
       - image: circleci/rust:1.31.0-node-browsers-legacy
     steps:
       - checkout
-      - restore_cache:
-          key: project-cache-postgres
       - run:
           name: remove old barrel code
-          command: sudo rm -rf /usr/local/cargo/git/checkouts/barrel-09497171437961a2
+          command: |
+            sudo rm -rf /usr/local/cargo/git/checkouts/barrel-09497171437961a2
+            ls -lt /usr/local/cargo/git/checkouts/
+            echo ./Cargo.toml
       - run:
           name: Install Rust
           command: rustup install stable
@@ -31,8 +32,3 @@ jobs:
       - run:
           name: Upload Coverage
           command: .scripts/codecov.sh
-      - save_cache:
-          key: project-cache-postgres
-          paths:
-            - "~/.cargo"
-            - "~./target"
