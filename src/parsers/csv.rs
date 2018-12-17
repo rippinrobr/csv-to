@@ -41,11 +41,9 @@ impl CSVService {
         match val.parse::<i64>() {
             Ok(_) => DataTypes::I64,
             Err(e) => {
-                println!("parse i64 error: {}", e);
                 match val.parse::<f64>() {
                     Ok(_) => DataTypes::F64,
                     Err(e) => {
-                        println!("parse f64 err: {}", e);
                         return DataTypes::String
                     }
                 }
@@ -99,22 +97,12 @@ impl InputService for CSVService {
             // this loop is for the columns
             let mut col_index = 0;
             for col_data in record.clone().iter() {
-//                if col_data == "" {
-//                    continue;
-//                }
 
-                // update columns data type if necessary
-                // TODO: turn this into a ColumnDef.is_data_type_changeable() function
-                if parsed_content.columns[col_index].data_type != DataTypes::String &&
-                    parsed_content.columns[col_index].data_type != DataTypes::F64 {
+                if parsed_content.columns[col_index].is_data_type_changeable() {
                     let current_type = parsed_content.columns[col_index].data_type;
                     let possible_type: DataTypes = CSVService::check_field_data_type( col_data);
 
-                    if parsed_content.columns[col_index].name.to_lowercase() == String::from("notes") {
-                        println!("idx: {} column: {} {} value: {}=> possible: {:?} actual {:?}", col_index, parsed_content.columns[col_index-1].name, parsed_content.columns[col_index].name, col_data, possible_type, parsed_content.columns[col_index].data_type);
-                    }
-
-                    if possible_type != current_type &&  current_type == DataTypes::Empty {
+                    if possible_type != current_type  &&  current_type != DataTypes::F64 {
                         parsed_content.columns[col_index].data_type = possible_type;
                     }
                 }

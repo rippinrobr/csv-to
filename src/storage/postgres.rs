@@ -33,7 +33,7 @@ impl PostgresStore{
     fn exec(&self, sql_stmt: String) -> Result<(), Error> {
         match self.conn.execute(&sql_stmt, &[]) {
             Ok(_) => Ok(()),
-            Err(e) => Err(failure::err_msg(format!("exec: {}", e)))
+            Err(e) => Err(failure::err_msg(format!("exec: {}\n{}", e, sql_stmt)))
         }
     }
 
@@ -101,30 +101,25 @@ impl StorageService for PostgresStore {
     /// stores the data in the store that implements this trait, a table in relational databases but
     /// returns the number of records stored successfully or any error(s) the method encounters
     fn store_data(&self, column_defs: Vec<ColumnDef>, data: Vec<StringRecord>, insert_stmt: String) -> Result<usize, Error> {
-        // 0. Get the number of columns
         let num_cols = column_defs.len();
-        println!("{:?}", column_defs);
-        // 1. Setup the number of rows inserted
         let mut rows_inserted_count = 0;
-        // 2. loop over the records
         for line in data {
             let mut col_idx: usize = 0;
 
             let mut vals: Vec<String> = Vec::new();
             for rec in line.iter() {
                 if column_defs[col_idx].data_type == DataTypes::String {
-                    vals.push(format!("'{}'", rec));
+                    vals.push(format!("'{}'", rec.replace("'", "''")));
                 } else {
-                    if rec == "" {
-                        vals.push("0".to_string());
-                    } else {
+                    if rec != "" {
                         vals.push(rec.to_string())
+                    } else {
+                        vals.push("0".to_string());
                     }
                 }
                 col_idx += 1;
             }
 
-            format!("{} ({})", insert_stmt, vals.join(", "));
             match self.exec(format!("{} ({})", insert_stmt, vals.join(", "))) {
                 Err(e) => eprintln!("{}", e),
                 _ => {

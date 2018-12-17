@@ -8,8 +8,7 @@ use csv_to::cmd::db::config::Config;
 use csv_to::parsers::csv::CSVService;
 use csv_to::storage::{
     postgres::PostgresStore,
-    sqlite::SQLiteStore,
-    StorageService
+    sqlite::SQLiteStore
 };
 use structopt::StructOpt;
 

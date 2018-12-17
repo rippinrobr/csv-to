@@ -4,8 +4,6 @@ use std::fs::File;
 use std::io::{self, BufReader};
 use std::path::Path;
 
-use barrel::backend::Sqlite;
-use barrel::backend::Pg;
 use barrel::types;
 use barrel::*;
 use barrel::types::{Type, BaseType};
@@ -89,8 +87,8 @@ impl ColumnDef {
         return String::from("0");
     }
 
-    pub fn is_data_type_changeable(data_type: DataTypes) -> bool {
-       data_type == DataTypes::Empty || ( data_type != DataTypes::String && data_type != DataTypes::F64 )
+    pub fn is_data_type_changeable(&self) -> bool {
+       self.data_type == DataTypes::Empty || self.data_type != DataTypes::String || self.data_type != DataTypes::F64
     }
 
     pub fn is_data_type_empty(&self) -> bool {
@@ -128,8 +126,6 @@ impl Input for InputSource {
     }
 }
 
-
-
 #[derive(Debug)]
 pub struct ParsedContent {
     pub columns: Vec<ColumnDef>,
@@ -157,7 +153,7 @@ impl Default for ParsedContent {
             columns: Vec::new(),
             content: Vec::new(),
             errors: Vec::new(),
-            file_name: String::new(), //"".to_string(),
+            file_name: String::new(),
             records_parsed: 0,
         }
     }
