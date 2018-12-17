@@ -5,8 +5,8 @@ jobs:
       - image: circleci/rust:1.31.0-node-browsers-legacy
     steps:
       - checkout
-#      - restore_cache:
-#          key: project-cache
+     - restore_cache:
+          key: project-cache-postgres
       - run:
           name: remove old barrel code
           command: sudo rm -rf /usr/local/cargo/git/checkouts/barrel-09497171437961a2
@@ -31,8 +31,8 @@ jobs:
       - run:
           name: Upload Coverage
           command: .scripts/codecov.sh
-#      - save_cache:
-#          key: project-cache
-#          paths:
-#            - "~/.cargo"
-#            - "~./target"
+      - save_cache:
+          key: project-cache-postgres
+          paths:
+            - "~/.cargo"
+            - "~./target"
