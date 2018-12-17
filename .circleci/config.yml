@@ -8,8 +8,6 @@ jobs:
       - run:
           name: remove old barrel code
           command: |
-            sudo rm -rf /usr/local/cargo/git/checkouts/barrel-09497171437961a2
-            ls -lt /usr/local/cargo/git/checkouts/
             echo ./Cargo.toml
       - run:
           name: Install Rust
