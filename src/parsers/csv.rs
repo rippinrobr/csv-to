@@ -117,26 +117,6 @@ impl InputService for CSVService {
         }
 
         &parsed_content.set_column_data_types();
-//        for col in parsed_content.columns {
-//            let mut idx = 0;
-//            println!("col.name: {}", col.name);
-//
-//            if col.potential_types.contains(&DataTypes::String) {
-//                println!("should be string");
-//            } else {
-//                if col.potential_types.contains(&DataTypes::F64) {
-//                    println!("should be F64");
-//                } else if col.potential_types.contains(&DataTypes::I64) {
-//                    println!("should b I64");
-//                }
-//            }
-//
-//            for t in col.potential_types {
-//                println!("{:?}", t);
-//            }
-//            idx += 1;
-//        }
-
         Ok(parsed_content)
     }
 }
@@ -205,56 +185,6 @@ mod tests {
     #[test]
     fn check_field_data_type_with_empty_string() {
         assert_eq!(CSVService::check_field_data_type(""), DataTypes::Empty);
-    }
-
-    #[test]
-    fn check_field_data_type_with_vals_that_are_int_string_and_empty() {
-        let values = vec!["19426","", "", "", "b11824", "", "", "11823", "19563"];
-        let mut proposed = DataTypes::Empty;
-        let mut current = DataTypes::Empty;
-
-        for val in values {
-            proposed = CSVService::check_field_data_type(val);
-
-            if current == DataTypes::String {
-                break;
-            }
-
-            if current == DataTypes::F64 && proposed != DataTypes::String {
-                continue;
-            }
-
-            if current != proposed  {
-                current = proposed;
-            }
-        }
-
-        assert_eq!(current, DataTypes::String);
-    }
-
-    #[test]
-    fn check_field_data_type_with_vals_that_are_int_float_and_empty() {
-        let values = vec!["19426","", "", "", "1182.4", "", "", "11823", "19563"];
-        let mut proposed = DataTypes::Empty;
-        let mut current = DataTypes::Empty;
-
-        for val in values {
-            proposed = CSVService::check_field_data_type(val);
-            println!("proposed: {:?}", proposed);
-            if current == DataTypes::String {
-                break;
-            }
-
-            if current == DataTypes::F64 && proposed != DataTypes::String {
-                continue;
-            }
-
-            if current != proposed  {
-                current = proposed;
-            }
-        }
-
-        assert_eq!(current, DataTypes::F64);
     }
 
     #[test]

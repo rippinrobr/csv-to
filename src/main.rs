@@ -55,10 +55,4 @@ fn main() {
             }
         }
     };
-
-    // This is where the logic is kicked off
-//    app.run().unwrap_or_else(|err| {
-//        eprintln!("ERROR: {}", err);
-//        std::process::exit(exitcode::IOERR);
-//    });
 }
