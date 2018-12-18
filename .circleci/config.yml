@@ -12,8 +12,6 @@ jobs:
           name: Install Kcov && Testing related libraries
           command: |
             sudo apt-get install binutils-dev libcurl4-openssl-dev zlib1g-dev libdw-dev libiberty-dev python-pip
-            python --version
-            pip --version
             pip install coverage
       - run:
           name: Stable Build
@@ -26,6 +24,8 @@ jobs:
           command: |
             rustup run stable cargo test --no-run --target-dir ./target/tests/debug
             ls -l .scripts
+            ls -l ./target/tests
+            ls -l ./target/tests/debug
             .scripts/run-kcov.sh
       - run:
           name: Upload Coverage
