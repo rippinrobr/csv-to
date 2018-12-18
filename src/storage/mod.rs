@@ -9,7 +9,7 @@ pub mod sqlite;
 
 use failure::Error;
 use csv::StringRecord;
-use crate::models::ColumnDef;
+use crate::ColumnDef;
 
 pub trait StorageService {
     /// creates an insert or appropriate create statement for the backend store

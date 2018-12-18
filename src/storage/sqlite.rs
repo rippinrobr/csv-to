@@ -1,11 +1,11 @@
-use barrel::backend::Sqlite; 
+use barrel::backend::Sqlite;
 use barrel::types::Type;
 use barrel::*;
 use failure::Error;
 use sqlite;
 use sqlite::{Connection, Value};
 use csv::StringRecord;
-use crate::models::{ColumnDef, DataTypes};
+use crate::{ColumnDef, DataTypes};
 use super::StorageService;
 
 pub struct SQLiteStore{

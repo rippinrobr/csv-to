@@ -6,7 +6,7 @@ use barrel::*;
 use csv::StringRecord;
 use failure::Error;
 use postgres::{Connection, TlsMode};
-use crate::models::{ColumnDef, DataTypes};
+use crate::{ColumnDef, DataTypes};
 use super::StorageService;
 
 pub struct PostgresStore{

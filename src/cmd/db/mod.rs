@@ -7,8 +7,7 @@ use std::str::FromStr;
 use ansi_term::Colour::{Green, Red, Yellow};
 use indicatif::{ProgressBar, ProgressStyle};
 
-//use self::error::DbError;
-use crate::models::{ColumnDef};
+use crate::ColumnDef;
 use crate::parsers::InputService;
 use crate::ConfigService;
 use crate::storage::StorageService;

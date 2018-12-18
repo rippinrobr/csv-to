@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::PathBuf;
 use glob::{glob_with, MatchOptions};
-use crate::models::{InputSource};
+use crate::InputSource;
 use crate::{
     ConfigService,
     cmd::db::Types
