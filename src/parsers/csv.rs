@@ -119,7 +119,7 @@ impl InputService for CSVService {
 mod tests {
     use super::*;
     use std::fs::File;
-    use crate::models::InputSource;
+    use crate::InputSource;
 
     #[test]
     fn create_column_defs_with_valid_string_record() {

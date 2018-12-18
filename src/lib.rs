@@ -6,7 +6,6 @@ extern crate postgres;
 extern crate structopt;
 
 pub mod cmd;
-pub mod models;
 pub mod parsers;
 pub mod storage;
 
@@ -201,7 +200,7 @@ impl ParsedContent {
 mod tests {
     use barrel::types::BaseType;
     use csv::{StringRecord};
-    use crate::models::{ColumnDef, DataTypes, ParsedContent};
+    use crate::{ColumnDef, DataTypes, ParsedContent};
 
     //==================================================
     // DataTypes tests
