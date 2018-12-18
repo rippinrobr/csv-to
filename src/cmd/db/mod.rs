@@ -4,7 +4,7 @@ pub mod config;
 
 use std::path::Path;
 use std::str::FromStr;
-use ansi_term::Colour::{Green, Red};
+use ansi_term::Colour::{Green, Red, Yellow};
 use indicatif::{ProgressBar, ProgressStyle};
 
 //use self::error::DbError;
@@ -85,11 +85,11 @@ where
         pbar.finish_and_clear();
 
         // Pressing report
-        self.display_report(results, errors, num_files);
+        self.display_report(results, errors, warnings, num_files);
         Ok(())
     }
 
-    fn display_report(&self, store_results: Vec<DBResults>, errors: Vec<String>, num_files: u64) {
+    fn display_report(&self, store_results: Vec<DBResults>, errors: Vec<String>, warnings: Vec<String>, num_files: u64) {
         let processed_msg = format!("{} files processed", num_files);
         let num_errors = errors.len();
 
@@ -98,9 +98,14 @@ where
             false => format!("{}", Red.bold().paint(format!("{} Errors", num_errors)))
         };
 
+        let warning_stmt = match warnings.len() == 0 {
+            true =>  format!("{}", Green.bold().paint("0 warnings")),
+            false => format!("{}", Yellow.bold().paint(format!("{} Warnings", num_errors)))
+        };
+
         println!("\ncsv-to results");
         println!("-------------------");
-        println!("{} / {}", Green.bold().paint(processed_msg), err_stmt);
+        println!("{} / {} / {}", Green.bold().paint(processed_msg), err_stmt, warning_stmt);
         for r in store_results {
             match r.get_results() {
                 Ok(msg) => println!("{}", msg),
@@ -112,6 +117,14 @@ where
             let err_msg =format!("\nError Details\n-------------");
             println!("{}", Red.bold().paint(err_msg));
             for e in errors {
+                eprintln!("{}", e);
+            }
+        }
+
+        if warnings.len() > 0 {
+            let msg =format!("\nWarning Details\n-------------");
+            println!("{}", Red.bold().paint(msg));
+            for e in warnings {
                 eprintln!("{}", e);
             }
         }

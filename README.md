@@ -7,6 +7,7 @@ merged to master and ready to use_
 The goal of this project is to create a utility that reads a single file or a directory of csv files to create and load 
 a database and eventually code around the database.
 
+![Image of the results of csv-to db call][screen-shot]
 ## csv-to db  Create a db from csv file(s)
 The `db` sub-command parses the files, creates a database table for each file it parses, and loads the database.  
 Currently, `SQLite` and `Postgres` are supported.
@@ -45,3 +46,4 @@ response.  The API will be generated in Rust, Go, and C#.
 _If there is a database or language you'd like to have support for open an issue with the your suggestion._
  
 
+[screen-shot]: https://github.com/rippinrobr/csv-to/raw/csv-to-db/assets/csv-to-db-results.png
