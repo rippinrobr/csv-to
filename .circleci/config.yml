@@ -11,7 +11,9 @@ jobs:
       - run:
           name: Install Kcov && Testing related libraries
           command: |
-            sudo apt-get install binutils-dev libcurl4-openssl-dev zlib1g-dev libdw-dev libiberty-dev
+            sudo apt-get install binutils-dev libcurl4-openssl-dev zlib1g-dev libdw-dev libiberty-dev python-pip
+            python --version
+            pip --version
             pip install coverage
       - run:
           name: Stable Build
