@@ -33,13 +33,14 @@ impl Config {
         }
     }
 
-    fn create_input_source(has_headers: bool, file_path: String) -> InputSource {
-        let meta = fs::metadata(file_path.clone()).unwrap();
-        //TODO: default has_headers to true for now, will add a flag that says --no-headers
-        InputSource {
-            has_headers,
-            location: file_path,
-            size: meta.len(),
+    fn create_input_source(has_headers: bool, file_path: String) -> Result<InputSource, failure::Error> {
+        match fs::metadata(file_path.clone()) {
+            Ok(meta) => Ok(InputSource {
+                            has_headers,
+                            location: file_path,
+                            size: meta.len(),
+                        }),
+            Err(e) => Err(failure::err_msg(format!("input source error: {}", e)))
         }
     }
 
@@ -71,7 +72,16 @@ impl ConfigService for Config {
         for d in &self.directories {
             for f in  glob_with(&format!("{}/*.{}", d, "csv"), options).unwrap() {
                 match f {
-                    Ok(file_path) => sources.push(Config::create_input_source(self.has_headers(),file_path.into_os_string().into_string().unwrap_or_default()) ),
+                    Ok(file_path) => {
+                        match Config::create_input_source(self.has_headers(),file_path.into_os_string().into_string().unwrap_or_default()) {
+                            Ok(input_src) => {
+                                if !input_src.location.ends_with(".sh") {
+                                    sources.push(input_src)
+                                }
+                            },
+                            Err(e) => eprintln!("{}", e),
+                        }
+                    },
                     Err(e) => eprintln!("ERROR: {}", e),
                 }
             }
@@ -79,7 +89,10 @@ impl ConfigService for Config {
 
         // files
         for file_path in &self.files {
-            sources.push(Config::create_input_source(self.has_headers(),file_path.clone()) );
+            match Config::create_input_source(self.has_headers(),file_path.clone()) {
+                Ok(input_src) => sources.push(input_src),
+                Err(e) => eprintln!("{}", e),
+            }
         }
 
         sources.to_owned()

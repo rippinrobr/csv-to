@@ -45,6 +45,7 @@ where
     pub fn run(self) -> Result<(), std::io::Error> {
         let inputs = self.config_svc.get_input_sources();
         let mut errors: Vec<String> = Vec::new();
+        let mut warnings: Vec<String> = Vec::new();
         let mut results: Vec<DBResults> = Vec::new();
 
         let pbar = ProgressBar::new(inputs.len() as u64);
@@ -62,6 +63,11 @@ where
                     if !&pc.errors.is_empty() {
                         errors.append(&mut pc.errors.clone());
                     }
+
+                    if pc.records_parsed == 0 {
+                        warnings.push(format!("the input source '{}' was not a CSV file or had no data.", pc.file_name));
+                    }
+
                     pc.set_column_data_types();
                     pbar.set_prefix("Loading Data...");
                     match self.store(self.get_table_name(pc.file_name.clone()),

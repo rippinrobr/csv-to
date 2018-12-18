@@ -65,8 +65,8 @@ impl ColumnDef {
     /// creates a new ColumnDef with the name and data type provided
     pub fn new(name: String, data_type: DataTypes) -> ColumnDef {
         ColumnDef{
-            name: name, 
-            data_type: data_type,
+            name,
+            data_type,
             potential_types: Vec::new(),
         }
     }
@@ -147,7 +147,7 @@ impl Default for ParsedContent {
 
 impl ParsedContent {
 
-    pub fn new(cols: Vec<ColumnDef>, content: Vec<StringRecord>, errors: Vec<String>, file_name: String, num_lines: usize) -> ParsedContent {
+    pub fn new(cols: Vec<ColumnDef>, content: Vec<StringRecord>, errors: Vec<String>, file_name: String, num_lines: usize) -> Self {
         ParsedContent {
             columns: cols,
             content,

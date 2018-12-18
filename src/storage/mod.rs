@@ -1,8 +1,12 @@
+//! StorageService Ports and Adapters
+//!
+//! This module contains the StorageService trait and adapters for the supported data stores. Currently
+//! only Postgres and SQLite are supported.
+//!
+//!
 pub mod postgres;
 pub mod sqlite;
 
-//use barrel::backend::{Pg, SqlGenerator};
-//use barrel::*;
 use failure::Error;
 use csv::StringRecord;
 use crate::models::ColumnDef;

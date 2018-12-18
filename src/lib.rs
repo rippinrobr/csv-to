@@ -44,12 +44,14 @@ pub enum CsvTo {
     }
 }
 
-
+// This trait is what all of the sub-commands will implement so they can have a common
+// interface that the main can call into to start the csv_to logic started
 pub trait App {
     fn run(&self) -> Result<ParsedContent, std::io::Error> ;
 }
 
-/// ConfigService is used to encapsulate the input from the user
+/// ConfigService is used to encapsulate the input from the user and allows each 'app' or sub-command
+/// in csv-to to have access to the input without having to worry about parsing and gathering
 pub trait ConfigService {
     /// Returns a Vec<InputSource> that represents all input files/sources
     fn get_input_sources(&self) -> Vec<InputSource>;

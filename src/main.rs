@@ -25,6 +25,8 @@ fn main() {
                 std::process::exit(exitcode::USAGE);
             }
 
+            // FIXME: get this so that the StorageService is the only thing being determined here
+            // so that I can have one DbApp::new() and run() call
             match db_type {
                 Types::Postgres => {
                     DbApp::new(
