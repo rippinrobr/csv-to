@@ -21,6 +21,9 @@ use crate::models::{InputSource, ParsedContent};
 pub enum CsvTo {
     #[structopt(name = "db", about = "creates and loads a database from CSV file(s)")]
     Db {
+        #[structopt(short = "e", long = "extension", help = "the file extension for the CSV files to be parsed", default_value = "csv")]
+        extension: String,
+
         #[structopt(short = "f", parse(from_os_str), long = "files", help = "The CSV files to be processed, can be /path/to/files/ or a comma delimited string of paths")]
         files: Vec<PathBuf>,
 

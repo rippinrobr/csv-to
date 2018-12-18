@@ -10,6 +10,7 @@ use crate::{
 /// Config contains all the parameters provided by the user
 #[derive(Debug)]
 pub struct Config {
+    extension: String,
     files: Vec<String>,
     directories: Vec<String>,
     db_type: Types,
@@ -21,8 +22,9 @@ pub struct Config {
 
 impl Config {
     /// Creates a struct of all the CmdLine Arguments
-    pub fn new(files_path: Vec<PathBuf>, directories: Vec<PathBuf>, db_type: Types, connection_info: String, name: String, drop_tables: bool, no_headers: bool) -> Config {
+    pub fn new(extension: String, files_path: Vec<PathBuf>, directories: Vec<PathBuf>, db_type: Types, connection_info: String, name: String, drop_tables: bool, no_headers: bool) -> Config {
         Config {
+            extension,
             files: Config::convert_to_vec_of_string(files_path),
             directories: Config::convert_to_vec_of_string(directories),
             db_type,
@@ -70,7 +72,7 @@ impl ConfigService for Config {
         // Gets the files inside the given directories and adds them to the
         // input source
         for d in &self.directories {
-            for f in  glob_with(&format!("{}/*.{}", d, "csv"), options).unwrap() {
+            for f in  glob_with(&format!("{}/*.{}", d, &self.extension), options).unwrap() {
                 match f {
                     Ok(file_path) => {
                         match Config::create_input_source(self.has_headers(),file_path.into_os_string().into_string().unwrap_or_default()) {

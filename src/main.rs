@@ -19,7 +19,7 @@ fn main() {
     // implement the App trait
     //let app = match opt {
     match opt {
-        CsvTo::Db { files, directories, db_type, connection_info, name, drop_stores, no_headers } => {
+        CsvTo::Db { extension, files, directories, db_type, connection_info, name, drop_stores, no_headers } => {
             if files.is_empty() && directories.is_empty() {
                 eprintln!("error: either -f, --files or -d, --directories must be provided");
                 std::process::exit(exitcode::USAGE);
@@ -30,7 +30,7 @@ fn main() {
             match db_type {
                 Types::Postgres => {
                     DbApp::new(
-                        Config::new(files, directories, db_type, connection_info.clone(), name, drop_stores, no_headers),
+                        Config::new(extension, files, directories, db_type, connection_info.clone(), name, drop_stores, no_headers),
                         CSVService::default(),
                         PostgresStore::new(connection_info.clone()).unwrap_or_else(|err| {
                             eprintln!("error while attempting to create a database connection: {}", err);
@@ -43,7 +43,7 @@ fn main() {
                 },
                 Types::SQLite => {
                     DbApp::new(
-                        Config::new(files, directories, db_type, connection_info.clone(), name, drop_stores, no_headers),
+                        Config::new(extension, files, directories, db_type, connection_info.clone(), name, drop_stores, no_headers),
                         CSVService::default(),
                         SQLiteStore::new(connection_info.clone()).unwrap_or_else(|err| {
                             eprintln!("error while attempting to create a database connection: {}", err);

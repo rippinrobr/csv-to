@@ -21,7 +21,7 @@ impl Default for DataTypes {
 
 impl DataTypes {
     /// Converts a DataTypes value to a string
-    pub fn string(&self) -> &str {
+    pub fn to_str(&self) -> &str {
         match *self {
             DataTypes::Empty => "",
             DataTypes::F64 => "f64",
@@ -62,18 +62,9 @@ pub struct ColumnDef{
 }
 
 impl ColumnDef {
-    /// creates a new ColumnDef with the name and data type provided
-    pub fn new(name: String, data_type: DataTypes) -> ColumnDef {
-        ColumnDef{
-            name,
-            data_type,
-            potential_types: Vec::new(),
-        }
-    }
-
     // determines if the column's potential data type can be changed or not
     pub fn is_data_type_changeable(&self) -> bool {
-       self.data_type == DataTypes::Empty || self.data_type != DataTypes::String || self.data_type != DataTypes::F64
+       self.data_type == DataTypes::Empty || (self.data_type != DataTypes::F64 && self.data_type != DataTypes::String)
     }
 }
 
@@ -183,13 +174,152 @@ impl ParsedContent {
 
 #[cfg(test)]
 mod tests {
+    use barrel::types::BaseType;
     use csv::{StringRecord};
-    use csv::Error;
     use crate::models::{ColumnDef, DataTypes, ParsedContent};
+
+    //==================================================
+    // DataTypes tests
+    #[test]
+    fn data_types_to_database_type_empty() {
+        assert_eq!(DataTypes::Empty.to_database_type(), BaseType::Text);
+    }
+
+    #[test]
+    fn data_types_to_database_type_f64() {
+        assert_eq!(DataTypes::F64.to_database_type(), BaseType::Double);
+    }
+
+    #[test]
+    fn data_types_to_database_type_i64() {
+        assert_eq!(DataTypes::I64.to_database_type(), BaseType::Integer);
+    }
+
+    #[test]
+    fn data_types_to_database_type_string() {
+        assert_eq!(DataTypes::String.to_database_type(), BaseType::Text);
+    }
+
+    #[test]
+    fn data_type_to_str_empty() {
+        assert_eq!(DataTypes::Empty.to_str(), "");
+    }
+
+    #[test]
+    fn data_type_to_str_f64() {
+        assert_eq!(DataTypes::F64.to_str(), "f64");
+    }
+
+    #[test]
+    fn data_type_to_str_i64() {
+        assert_eq!(DataTypes::I64.to_str(), "i64");
+    }
+
+    #[test]
+    fn data_type_to_str_string() {
+        assert_eq!(DataTypes::String.to_str(), "String");
+    }
+
+    //==================================================
+    // ColumnDef tests
+    #[test]
+    fn is_data_type_change_with_empty_dt() {
+        let cd = ColumnDef{
+            data_type: DataTypes::Empty,
+            name: String::from("mycol"),
+            potential_types: Vec::new(),
+        };
+
+        assert_eq!(cd.is_data_type_changeable(), true);
+    }
+
+    #[test]
+    fn is_data_type_change_with_i64_dt() {
+        let cd = ColumnDef{
+            data_type: DataTypes::I64,
+            name: String::from("mycol"),
+            potential_types: Vec::new(),
+        };
+
+        assert_eq!(cd.is_data_type_changeable(), true);
+    }
+
+
+    #[test]
+    fn is_data_type_change_with_f64_dt() {
+        let cd = ColumnDef{
+            data_type: DataTypes::F64,
+            name: String::from("mycol"),
+            potential_types: Vec::new(),
+        };
+
+        assert_eq!(cd.is_data_type_changeable(), false);
+    }
+
+    #[test]
+    fn is_data_type_change_with_string_dt() {
+        let cd = ColumnDef{
+            data_type: DataTypes::String,
+            name: String::from("mycol"),
+            potential_types: Vec::new(),
+        };
+
+        assert_eq!(cd.is_data_type_changeable(), false);
+    }
+
+    #[test]
+    fn set_column_data_types_with_empty_values_should_give_string_data_type() {
+        let mut pc = ParsedContent::default();
+        let mut col_def = ColumnDef::default();
+
+        col_def.potential_types = vec![DataTypes::Empty, DataTypes::Empty, DataTypes::Empty];
+        pc.columns.push(col_def);
+        pc.set_column_data_types();
+
+        assert_eq!(pc.columns[0].data_type, DataTypes::String);
+    }
+
+    #[test]
+    fn set_column_data_types_should_be_string_when_at_least_1_potential_type_is_string() {
+        let mut pc = ParsedContent::default();
+        let mut col_def = ColumnDef::default();
+
+        col_def.potential_types = vec![DataTypes::F64, DataTypes::String, DataTypes::I64];
+        pc.columns.push(col_def);
+        pc.set_column_data_types();
+
+        assert_eq!(pc.columns[0].data_type, DataTypes::String);
+    }
+
+
+    #[test]
+    fn set_column_data_types_should_be_i64_when_at_least_1_potential_type_is_i64_and_others_are_empty() {
+        let mut pc = ParsedContent::default();
+        let mut col_def = ColumnDef::default();
+
+        col_def.potential_types = vec![DataTypes::I64, DataTypes::Empty, DataTypes::Empty];
+        pc.columns.push(col_def);
+        pc.set_column_data_types();
+
+        assert_eq!(pc.columns[0].data_type, DataTypes::I64);
+    }
+
+    #[test]
+    fn set_column_data_types_should_be_f64_when_at_least_1_potential_type_is_f64() {
+        let mut pc = ParsedContent::default();
+        let mut col_def = ColumnDef::default();
+
+        col_def.potential_types = vec![DataTypes::I64, DataTypes::Empty, DataTypes::F64];
+        pc.columns.push(col_def);
+        pc.set_column_data_types();
+
+        assert_eq!(pc.columns[0].data_type, DataTypes::F64);
+    }
+
 
     #[test]
     fn new() {
-        let cols: Vec<ColumnDef> = vec![ColumnDef::new("test".to_string(), DataTypes::String)];
+        let cols: Vec<ColumnDef> = vec![ColumnDef{name: String::from("test"), data_type: DataTypes::String, potential_types: Vec::new()}];
         let cols_len = cols.len();
         let content: Vec<StringRecord> = vec![StringRecord::new()];
         let file_name = "my-file".to_string();

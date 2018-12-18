@@ -37,7 +37,7 @@ fn calling_csvto_with_db_but_no_args() {
     --name <name>
 
 USAGE:
-    csv-to db [FLAGS] [OPTIONS] --connection-info <connection_info> --type <db_type> --name <name>
+    csv-to db --connection-info <connection_info> --type <db_type> --extension <extension> --name <name>
 
 For more information try --help
 ";
@@ -69,6 +69,7 @@ OPTIONS:
     -t, --type <db_type>                       The type of database to create, valid types are sqlite and postgres
     -d, --directories <directories>...         The directories that contain CSV files to be processed, a comma delimited
                                                string of paths
+    -e, --extension <extension>                the file extension for the CSV files to be parsed [default: csv]
     -f, --files <files>...                     The CSV files to be processed, can be /path/to/files/ or a comma
                                                delimited string of paths
     -n, --name <name>                          Name of the database to be created
@@ -103,6 +104,7 @@ OPTIONS:
     -t, --type <db_type>                       The type of database to create, valid types are sqlite and postgres
     -d, --directories <directories>...         The directories that contain CSV files to be processed, a comma delimited
                                                string of paths
+    -e, --extension <extension>                the file extension for the CSV files to be parsed [default: csv]
     -f, --files <files>...                     The CSV files to be processed, can be /path/to/files/ or a comma
                                                delimited string of paths
     -n, --name <name>                          Name of the database to be created
@@ -167,7 +169,7 @@ fn calling_csvto_with_db_without_name() {
     --name <name>
 
 USAGE:
-    csv-to db --connection-info <connection_info> --type <db_type> --files <files>... --name <name>
+    csv-to db --connection-info <connection_info> --type <db_type> --extension <extension> --files <files>... --name <name>
 
 For more information try --help
 ";
@@ -193,7 +195,7 @@ fn calling_csvto_with_db_without_n_and_no_piped_input() {
     --name <name>
 
 USAGE:
-    csv-to db --connection-info <connection_info> --type <db_type> --files <files>... --name <name>
+    csv-to db --connection-info <connection_info> --type <db_type> --extension <extension> --files <files>... --name <name>
 
 For more information try --help
 ";
@@ -218,7 +220,7 @@ fn calling_csvto_with_db_without_connection_info() {
     --connection-info <connection_info>
 
 USAGE:
-    csv-to db --connection-info <connection_info> --type <db_type> --files <files>... --name <name>
+    csv-to db --connection-info <connection_info> --type <db_type> --extension <extension> --files <files>... --name <name>
 
 For more information try --help
 ";
@@ -244,7 +246,7 @@ fn calling_csvto_with_db_without_c() {
     --connection-info <connection_info>
 
 USAGE:
-    csv-to db --connection-info <connection_info> --type <db_type> --files <files>... --name <name>
+    csv-to db --connection-info <connection_info> --type <db_type> --extension <extension> --files <files>... --name <name>
 
 For more information try --help
 ";
@@ -269,7 +271,7 @@ fn calling_csvto_with_db_without_type() {
     --type <db_type>
 
 USAGE:
-    csv-to db --connection-info <connection_info> --type <db_type> --files <files>... --name <name>
+    csv-to db --connection-info <connection_info> --type <db_type> --extension <extension> --files <files>... --name <name>
 
 For more information try --help
 ";
@@ -295,7 +297,7 @@ fn calling_csvto_with_db_without_t() {
     --type <db_type>
 
 USAGE:
-    csv-to db --connection-info <connection_info> --type <db_type> --files <files>... --name <name>
+    csv-to db --connection-info <connection_info> --type <db_type> --extension <extension> --files <files>... --name <name>
 
 For more information try --help
 ";
