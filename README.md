@@ -29,6 +29,7 @@ OPTIONS:
     -t, --type <db_type>                       The type of database to create, valid types are sqlite and postgres
     -d, --directories <directories>...         The directories that contain CSV files to be processed, a comma delimited
                                                string of paths
+    -e, --extension <extension>                the file extension for the CSV files to be parsed [default: csv]
     -f, --files <files>...                     The CSV files to be processed, can be /path/to/files/ or a comma
                                                delimited string of paths
     -n, --name <name>                          Name of the database to be created

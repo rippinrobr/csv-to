@@ -1,4 +1,4 @@
-use barrel::backend::Sqlite;  // this works for SQLite also
+use barrel::backend::Sqlite; 
 use barrel::types::Type;
 use barrel::*;
 use failure::Error;
