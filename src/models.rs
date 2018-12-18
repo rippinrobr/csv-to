@@ -2,14 +2,11 @@ use std::default::Default;
 use std::fmt;
 use std::fs::File;
 use std::io::{self, BufReader};
-use std::path::Path;
 
-use barrel::types;
-use barrel::*;
-use barrel::types::{Type, BaseType};
+use barrel::types::BaseType;
+use csv::StringRecord;
 
-use csv::{Error, StringRecord};
-
+/// Potential data types for parsed columns and will be used when creating database tables
 #[derive(PartialEq,Clone, Copy)]
 pub enum DataTypes {
     Empty,
@@ -23,6 +20,7 @@ impl Default for DataTypes {
 }
 
 impl DataTypes {
+    /// Converts a DataTypes value to a string
     pub fn string(&self) -> &str {
         match *self {
             DataTypes::Empty => "",
@@ -32,8 +30,9 @@ impl DataTypes {
         }
     }
 
-    pub fn to_database_type(&self) -> BaseType {
-        match *self {
+    /// Converts a DataTypes value to a Barrel::BaseType
+    pub fn to_database_type(self) -> BaseType {
+        match self {
             DataTypes::Empty => BaseType::Text,
             DataTypes::F64 => BaseType::Double,
             DataTypes::I64 => BaseType::Integer,
@@ -54,57 +53,33 @@ impl fmt::Debug for DataTypes {
     }
 }
 
-
+/// Keeps meta data about the data in each column
 #[derive(Clone, Default)]
 pub struct ColumnDef{
     pub name: String, 
     pub data_type: DataTypes,
-    pub has_data: bool,
     pub potential_types: Vec<DataTypes>,
 }
 
 impl ColumnDef {
+    /// creates a new ColumnDef with the name and data type provided
     pub fn new(name: String, data_type: DataTypes) -> ColumnDef {
         ColumnDef{
             name: name, 
             data_type: data_type,
-            has_data: false,
             potential_types: Vec::new(),
         }
     }
 
-    pub fn col_has_data(&mut self) {
-        self.has_data = true;
-    }
-
-//    pub fn get_types_empty_state(data_type: DataTypes) -> String {
-//        if data_type == DataTypes::String {
-//            return String::from("''");
-//        }
-//
-//        if data_type == DataTypes::F64 {
-//            return String::from("0.0");
-//        }
-//
-//        return String::from("0");
-//    }
-
+    // determines if the column's potential data type can be changed or not
     pub fn is_data_type_changeable(&self) -> bool {
        self.data_type == DataTypes::Empty || self.data_type != DataTypes::String || self.data_type != DataTypes::F64
-    }
-
-    pub fn is_data_type_empty(&self) -> bool {
-        self.data_type == DataTypes::Empty
-    }
-
-    pub fn set_data_type(&mut self, data_type: DataTypes) {
-        self.data_type = data_type;
     }
 }
 
 impl fmt::Debug for ColumnDef {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "---\nname: {:?}\ndata_type: {:?}\nhas_data: {:?}", self.name, self.data_type, self.has_data)
+        write!(f, "---\nname: {:?}\ndata_type: {:?}\n", self.name, self.data_type)
     }
 }
 
@@ -112,6 +87,10 @@ pub trait Input {
     fn get_reader(&self) -> Result<BufReader<File>, io::Error>;
 }
 
+/// contains information about what the file contains and where it lives.
+/// has_headers: indicates that the file has a header row or not
+/// location: the path/uri for the input source
+/// size: the size in bytes of the file's content
 #[derive(Clone,Debug)]
 pub struct InputSource {
     pub has_headers: bool,
@@ -127,7 +106,12 @@ impl Input for InputSource {
         }
     }
 }
-
+/// contains information about file during and after parsing
+/// columns: A Vector of th ColumnDef objects that describe the column, name, data type, etc
+/// content: Each line of the file is stored in a Vector of StringRecords (product of the CSV parsing
+/// errors: contains all parsing errors that occurred while parsing the file
+/// the name of the file parsed
+/// the number of records parsed, used to validate that all records were stored in the database
 #[derive(Debug)]
 pub struct ParsedContent {
     pub columns: Vec<ColumnDef>,
@@ -173,34 +157,23 @@ impl ParsedContent {
         }
     }
 
-    pub fn content_to_string_vec(&self) -> Result<Vec<Vec<String>>, Error> {
-        let mut content_strings: Vec<Vec<String>> = Vec::new();
-
-        for line in &self.content {
-            let s: Vec<String>= line.deserialize(None)?;
-            content_strings.push(s);
-        }
-
-        Ok(content_strings)
-    }
-
-    pub fn get_struct_name(self) -> String {
-        let name = format!("{}", Path::new(&self.file_name).display());
-        let first_letter = name.trim_right_matches(".csv").chars().next().unwrap();
-        name.trim_right_matches(".csv").to_string().replace(first_letter, &first_letter.to_string().to_uppercase())
-    }
-
+    // goes through the column's proposed data types,
+    // DataTypes::String trumps all other data types
+    // DataTypes::F64 is second in line
+    // DataTypes::I64 is next
+    // if a column ends with DataTypes::Empty will be
+    // changed to DataTypes::String
     pub fn set_column_data_types(&mut self) {
         for idx in 0..self.columns.len() {
             if self.columns[idx].potential_types.contains(&DataTypes::String) {
                 self.columns[idx].data_type = DataTypes::String;
-            } else {
-                if self.columns[idx].potential_types.contains(&DataTypes::F64) {
-                    self.columns[idx].data_type = DataTypes::F64;
-                } else if self.columns[idx].potential_types.contains(&DataTypes::I64) {
-                    self.columns[idx].data_type = DataTypes::I64;
-                }
+            } else if self.columns[idx].potential_types.contains(&DataTypes::F64) {
+                self.columns[idx].data_type = DataTypes::F64;
+            } else if self.columns[idx].potential_types.contains(&DataTypes::I64) {
+                self.columns[idx].data_type = DataTypes::I64;
             }
+            // I'm here and the data type is still empty then there's no other option but to default
+            // it to string
             if self.columns[idx].data_type == DataTypes::Empty {
                 self.columns[idx].data_type = DataTypes::String;
             }
@@ -227,23 +200,5 @@ mod tests {
         assert_eq!(content.len(), pc.content.len());
         assert_eq!(file_name, pc.file_name);
         assert_eq!(num_lines, pc.records_parsed);
-    }
-
-    #[test]
-    fn content_to_string_vec() {
-        let cols: Vec<ColumnDef> = vec![ColumnDef::new("test".to_string(), DataTypes::String)];
-        let cols_len = cols.len();
-        let content: Vec<StringRecord> = vec![StringRecord::from(vec!["a", "b", "c"])];
-        let file_name = "my-file".to_string();
-        let errors: Vec<String> = Vec::new();
-        let num_lines = 22;
-
-        let pc = ParsedContent::new(cols, content.clone(), errors.clone(), file_name.clone(), num_lines);
-        
-        let mut string_vec: Vec<Vec<String>> = pc.content_to_string_vec().unwrap();
-        assert_eq!(1, string_vec.len());
-
-        let str_record = &string_vec.pop().unwrap();
-        assert_eq!("a,b,c".to_string(), str_record.join(","));
     }
 }

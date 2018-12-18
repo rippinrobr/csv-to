@@ -29,7 +29,6 @@ impl CSVService {
             let cd = ColumnDef {
                 name: cleaned_name.clone(),
                 data_type: DataTypes::Empty,
-                has_data: false,
                 potential_types: Vec::new(),
             };
             col_defs.push(cd);
@@ -103,13 +102,8 @@ impl InputService for CSVService {
             let mut col_index = 0;
             for col_data in record.clone().iter() {
                 if parsed_content.columns[col_index].is_data_type_changeable() {
-                    let current_type = parsed_content.columns[col_index].data_type;
                     let possible_type: DataTypes = CSVService::check_field_data_type(col_data);
                     parsed_content.columns[col_index].potential_types.push(possible_type);
-
-                    if possible_type != current_type && current_type != DataTypes::F64 {
-                        parsed_content.columns[col_index].data_type = possible_type;
-                    }
                 }
                 col_index += 1;
             }
@@ -136,15 +130,12 @@ mod tests {
         assert_eq!(3, col_defs.len());
         assert_eq!(String::from("alpha"), col_defs[0].name);
         assert_eq!(DataTypes::Empty, col_defs[0].data_type);
-        assert_eq!(false, col_defs[0].has_data);
 
         assert_eq!(String::from("bravo"), col_defs[1].name);
         assert_eq!(DataTypes::Empty, col_defs[1].data_type);
-        assert_eq!(false, col_defs[1].has_data);
 
         assert_eq!(String::from("charlie"), col_defs[2].name);
         assert_eq!(DataTypes::Empty, col_defs[2].data_type);
-        assert_eq!(false, col_defs[2].has_data);
     }
 
     #[test]
@@ -156,15 +147,12 @@ mod tests {
         assert_eq!(3, col_defs.len());
         assert_eq!(String::from("col_0"), col_defs[0].name);
         assert_eq!(DataTypes::Empty, col_defs[0].data_type);
-        assert_eq!(false, col_defs[0].has_data);
 
         assert_eq!(String::from("col_1"), col_defs[1].name);
         assert_eq!(DataTypes::Empty, col_defs[1].data_type);
-        assert_eq!(false, col_defs[1].has_data);
 
         assert_eq!(String::from("col_2"), col_defs[2].name);
         assert_eq!(DataTypes::Empty, col_defs[2].data_type);
-        assert_eq!(false, col_defs[2].has_data);
     }
 
     #[test]
