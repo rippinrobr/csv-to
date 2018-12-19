@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-./target/tests/debug/
-binaries=`ls -l ./target/tests/debug/csv_to-* | grep -v dSYM | grep -v "\.d" | awk '{print $NF}'`
+binaries=`ls -l ./target/tests/debug/deps/csv_to-* | grep -v dSYM | grep -v "\.d" | awk '{print $NF}'`
 echo "binaries: ${binaries}"
 if [[ ! -d "./target/cov" ]]; then
   mkdir -p ./target/cov

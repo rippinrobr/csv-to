@@ -8,25 +8,38 @@ use csv::StringRecord;
 use crate::{ColumnDef, DataTypes};
 use super::StorageService;
 
+/// The adapter that handles the interactions with a SQLite store
 pub struct SQLiteStore{
     conn: Connection,
 }
 
 impl SQLiteStore {
-    pub fn new(db_path: String) -> Result<SQLiteStore, sqlite::Error> {
+    // Creates a new instance of the SQLiteStore or an error if
+    // a connection cannot be established
+    pub fn new(db_path: String) -> Result<Self, sqlite::Error> {
         Ok(SQLiteStore{
             conn: sqlite::open(db_path)?
         })
     }
 
-    fn create_table(&self, sql_stmt: String) -> Result<(), Error> {
-        match self.conn.execute(&sql_stmt) {
+    // Creates a new table in the database
+    fn create_table(&self, sql_stmt: &str) -> Result<(), Error> {
+        match self.conn.execute(sql_stmt) {
             Ok(_) => Ok(()),
             Err(e) => Err(failure::err_msg(format!("table creation error: {}", e)))
         }
     }
 
-    fn generate_table_schema(name: String, cols: Vec<ColumnDef>, drop_table_if_exists: bool) -> String {
+    // Creates the string that represents the schema for a table that maps to the columns
+    // passed in
+    fn generate_table_schema(name: String, cols: Vec<ColumnDef>, drop_table_if_exists: bool) -> Result<String, failure::Error> {
+        if name == String::from("") {
+            return Err(failure::err_msg("Cannot create a table with an empty name"));
+        }
+
+        if cols.len() == 0 {
+            return Err(failure::err_msg("Cannot create a table with no columns"));
+        }
         let mut m = Migration::new();
 
         if drop_table_if_exists {
@@ -48,7 +61,7 @@ impl SQLiteStore {
             }
         }).without_id();
 
-        format!("{};", &m.make::<Sqlite>())
+        Ok(format!("{};", &m.make::<Sqlite>()))
     }
 
     // get_value_type converts the given col_val to appropriate type for
@@ -81,6 +94,7 @@ impl SQLiteStore {
 }
 
 impl StorageService for SQLiteStore {
+    // Generates a string that contains the SQL for inserting a row into the given table
     fn create_insert_stmt(&self, store_name: String, column_defs: Vec<ColumnDef>) -> String {
         let mut placeholders: Vec<String> = Vec::new();
         for n in 0..column_defs.len() {
@@ -101,12 +115,17 @@ impl StorageService for SQLiteStore {
             return Err(failure::err_msg("there must be at least 1 column.".to_string()));
         }
 
-        let schema = SQLiteStore::generate_table_schema(name.clone(), column_defs.clone(), drop_tables);
-        match self.create_table(schema) {
-            Err(e) => Err(failure::err_msg(format!("table creation error: {:?}", e))),
-            Ok(_) => Ok(())
+        match SQLiteStore::generate_table_schema(name.clone(), column_defs.clone(), drop_tables) {
+            Ok(schema) => {
+                match self.create_table(&schema) {
+                    Err(e) => Err(failure::err_msg(format!("table creation error: {:?}", e))),
+                    Ok(_) => Ok(())
+                }
+            },
+            Err(e) => Err(e)
         }
     }
+
     /// stores the data in the store that implements this trait, a table in relational databases but
     /// returns the number of records stored successfully or any error(s) the method encounters
     fn store_data(&self, column_defs: Vec<ColumnDef>, content: Vec<StringRecord>, insert_stmt: String) -> Result<usize, failure::Error> {
@@ -128,5 +147,89 @@ impl StorageService for SQLiteStore {
         }
 
         Ok(rows_inserted_count)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::storage::sqlite::SQLiteStore;
+    use crate::{ColumnDef, DataTypes};
+
+    //==================================================
+    // DataTypes tests
+    #[test]
+    fn generate_table_schema_with_empty_table_name_ret() {
+        let name = String::new();
+        let column_defs: Vec<ColumnDef> = Vec::new();
+
+        match SQLiteStore::generate_table_schema(name.clone(), column_defs.clone(), false) {
+            Ok(_) => {
+                // I shouldn't have gotten here so I'm going to force a failure
+                assert_eq!(true, false)
+            },
+            Err(e) => assert_eq!(format!("{}", e), "Cannot create a table with an empty name")
+        }
+    }
+
+    #[test]
+    fn generate_table_schema_with_no_columns_throws_error() {
+        let name = String::from("mytable");
+        let column_defs: Vec<ColumnDef> = Vec::new();
+
+        match SQLiteStore::generate_table_schema(name.clone(), column_defs.clone(), false) {
+            Ok(_) => {
+                // I shouldn't have gotten here so I'm going to force a failure
+                assert_eq!(true, false)
+            },
+            Err(e) => assert_eq!(format!("{}", e), "Cannot create a table with no columns")
+        }
+    }
+
+    #[test]
+    fn generate_table_schema_with_reqs_returns_proper_ddl() {
+        let name = String::from("mytable");
+        let c1 = ColumnDef{
+            data_type: DataTypes::String,
+            name: String::from("Col1"),
+            potential_types: vec![DataTypes::String],
+        };
+        let c2 = ColumnDef{
+            data_type: DataTypes::I64,
+            name: String::from("Col2"),
+            potential_types: vec![DataTypes::I64],
+        };
+        let column_defs = vec![c1, c2];
+
+        match SQLiteStore::generate_table_schema(name.clone(), column_defs.clone(), false) {
+            Ok(sql) => {
+                // I shouldn't have gotten here so I'm going to force a failure
+                assert_eq!(sql, String::from("CREATE TABLE \"mytable\" (\"Col1\" TEXT, \"Col2\" INTEGER);;"))
+            },
+            Err(e) => assert_eq!(format!("{}", e), "Cannot create a table with no columns")
+        }
+    }
+
+    #[test]
+    fn generate_table_schema_with_reqs_with_drop_stores_returns_proper_ddl() {
+        let name = String::from("mytable");
+        let c1 = ColumnDef{
+            data_type: DataTypes::String,
+            name: String::from("Col1"),
+            potential_types: vec![DataTypes::String],
+        };
+        let c2 = ColumnDef{
+            data_type: DataTypes::I64,
+            name: String::from("Col2"),
+            potential_types: vec![DataTypes::I64],
+        };
+        let column_defs = vec![c1, c2];
+
+        match SQLiteStore::generate_table_schema(name.clone(), column_defs.clone(), true) {
+            Ok(sql) => {
+                // I shouldn't have gotten here so I'm going to force a failure
+                assert_eq!(sql, String::from("DROP TABLE IF EXISTS \"mytable\";CREATE TABLE \"mytable\" (\"Col1\" TEXT, \"Col2\" INTEGER);;"))
+            },
+            Err(e) => assert_eq!(format!("{}", e), "Cannot create a table with no columns")
+        }
     }
 }
