@@ -1,49 +1,59 @@
-extern crate barrel;
-
 use barrel::backend::Pg;
 use barrel::*;
 
 use csv::StringRecord;
 use failure::Error;
-use postgres::{Connection, TlsMode};
+use postgres::Connection;
 use crate::{ColumnDef, DataTypes};
 use super::StorageService;
 
+/// Manages interactions with a Postgres database
 pub struct PostgresStore{
     conn: Connection,
 }
 
 impl PostgresStore{
-    pub fn new(url: String) -> Result<PostgresStore, Error> {
-        match Connection::connect(url, TlsMode::None) {
-            Ok(conn) => Ok(PostgresStore{ conn }),
-            Err(e) => Err(failure::err_msg(format!("{}", e)))
-        }
+    /// returns an instance of the PostgresStore which is is used to interact with a Postgres
+    /// database server
+    pub fn new(conn: Connection) -> Self {
+        Self{ conn }
     }
 
-    pub fn create_database(&self, name: String, _drop_if_exists: bool) -> Result<(), Error> {
+    /// creates a database with the given name
+    pub fn create_database(&self, name: &str, _drop_if_exists: bool) -> Result<(), Error> {
         match self.conn.execute(&format!("CREATE DATABASE {};", name), &[]) {
             Ok(_) => Ok(()),
             Err(e) => Err(failure::err_msg(format!("database creation error: {}", e)))
         }
     }
 
-    fn exec(&self, sql_stmt: String) -> Result<(), Error> {
+    fn exec(&self, sql_stmt: &str) -> Result<(), Error> {
         match self.conn.execute(&sql_stmt, &[]) {
             Ok(_) => Ok(()),
             Err(e) => Err(failure::err_msg(format!("exec: {}\n{}", e, sql_stmt)))
         }
     }
 
-    fn drop_table_sql(table_name: &str) -> String {
+    fn drop_table_sql(table_name: &str) -> Result<String, Error> {
+        if table_name == "" {
+            return Err(failure::err_msg("cannot drop a table schema without a name"))
+        }
         let mut d = Migration::new();
 
         d.drop_table_if_exists(table_name);
 
-        format!("{};", &d.make::<Pg>())
+        Ok(format!("{};", &d.make::<Pg>()))
     }
 
-    fn generate_table_schema(name: String, cols: Vec<ColumnDef>, _drop_table_if_exists: bool) -> String {
+    fn generate_table_schema(name: String, cols: Vec<ColumnDef>) -> Result<String, Error> {
+        if name == "" {
+            return Err(failure::err_msg("cannot create a table schema without a name"));
+        }
+
+        if cols.is_empty() {
+            return Err(failure::err_msg("cannot create a table schema without at least one column"));
+        }
+
         let mut m = Migration::new();
 
         m.create_table(name, move |t| {
@@ -61,7 +71,7 @@ impl PostgresStore{
             }
         }).without_id();
 
-        format!("{};", &m.make::<Pg>())
+        Ok(format!("{};", &m.make::<Pg>()))
     }
 }
 
@@ -83,16 +93,24 @@ impl StorageService for PostgresStore {
         }
 
         if drop_tables {
-            match self.exec(PostgresStore::drop_table_sql(&name.to_lowercase())) {
-                Err(e) => eprintln!("{}", e),
-                _ => ()
+            match &PostgresStore::drop_table_sql(&name.to_lowercase()) {
+                Ok(stmt) => {
+                    if let Err(e) = self.exec(stmt) {
+                        eprintln!("ERROR: {}", e);
+                    }
+                },
+                Err(e) => eprintln!("ERROR: {}", e),
             }
         }
 
-        let schema = PostgresStore::generate_table_schema(name.clone().to_lowercase(), column_defs.clone(), drop_tables);
-        match self.exec(schema) {
-            Err(e) => Err(failure::err_msg(format!("table creation error: {:?}", e))),
-            Ok(_) => Ok(())
+        match PostgresStore::generate_table_schema(name.clone().to_lowercase(), column_defs.clone()) {
+            Ok(stmt) => {
+                match self.exec(&stmt) {
+                    Err(e) => Err(failure::err_msg(format!("table creation error: {:?}", e))),
+                    Ok(_) => Ok(())
+                }
+            },
+            Err(e) => Err(e)
         }
     }
     /// stores the data in the store that implements this trait, a table in relational databases but
@@ -100,31 +118,105 @@ impl StorageService for PostgresStore {
     fn store_data(&self, column_defs: Vec<ColumnDef>, data: Vec<StringRecord>, insert_stmt: String) -> Result<usize, Error> {
         let mut rows_inserted_count = 0;
         for line in data {
-            let mut col_idx: usize = 0;
-
             let mut vals: Vec<String> = Vec::new();
-            for rec in line.iter() {
+            for (col_idx, rec) in line.iter().enumerate()  {
                 if column_defs[col_idx].data_type == DataTypes::String {
                     vals.push(format!("'{}'", rec.replace("'", "''")));
-                } else {
-                    if rec != "" {
+                } else if rec != "" {
                         vals.push(rec.to_string())
-                    } else {
-                        vals.push("0".to_string());
-                    }
+                } else {
+                    vals.push("0".to_string());
                 }
-                col_idx += 1;
             }
 
-            match self.exec(format!("{} ({})", insert_stmt, vals.join(", "))) {
+            match self.exec(&format!("{} ({})", insert_stmt, vals.join(", "))) {
                 Err(e) => eprintln!("{}", e),
                 _ => {
                     rows_inserted_count += 1;
-                    ()
                 }
             }
         }
 
         Ok(rows_inserted_count)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{ColumnDef, DataTypes};
+    use crate::storage::postgres::PostgresStore;
+
+    #[test]
+    fn generate_table_schema_with_empty_name_returns_error() {
+        let name = "";
+        let cols: Vec<ColumnDef>  = Vec::new();
+
+        match PostgresStore::generate_table_schema(name.to_string(), cols) {
+            Ok(_) => {
+                // this should not be reached
+                assert_eq!(0,1);
+            },
+            Err(e) => {
+                assert_eq!(format!("{}",e), "cannot create a table schema without a name");
+            }
+        }
+    }
+
+    #[test]
+    fn generate_table_schema_with_empty_columns_returns_error() {
+        let name = "mine";
+        let cols: Vec<ColumnDef>  = Vec::new();
+
+        match PostgresStore::generate_table_schema(name.to_string(), cols) {
+            Ok(_) => {
+                // this should not be reached
+                assert_eq!(0,1);
+            },
+            Err(e) => {
+                assert_eq!(format!("{}",e), "cannot create a table schema without at least one column");
+            }
+        }
+    }
+
+    #[test]
+    fn generate_table_schema_with_valid_inputs() {
+        let name = "mine";
+        let cols: Vec<ColumnDef>  = vec![ColumnDef{
+            name: String::from("mycol"),
+            data_type: DataTypes::String,
+            potential_types: Vec::new(),
+        }];
+
+        match PostgresStore::generate_table_schema(name.to_string(), cols) {
+            Ok(schema) => {
+                assert_eq!(schema, String::from("CREATE TABLE \"mine\" (\"mycol\" TEXT);;"));
+            },
+            Err(_) => {
+                // shouldn't reach this spot
+                assert_eq!(0,1);
+            }
+        }
+    }
+
+    #[test]
+    fn drop_table_sql_with_empty_name_returns_error() {
+        match PostgresStore::drop_table_sql("") {
+            Err(e) => assert_eq!(format!("{}",e), "cannot drop a table schema without a name"),
+            Ok(_) => {
+                // should not reach this
+                assert_eq!(0,1)
+            }
+        }
+    }
+
+    #[test]
+    fn drop_table_sql_with_valid_input() {
+        match PostgresStore::drop_table_sql("mytable") {
+            // should not reach this
+            Err(e) => assert_eq!(0, 1),
+            Ok(stmt) => {
+                assert_eq!(stmt, String::from("DROP TABLE IF EXISTS \"mytable\";;"))
+            }
+        }
     }
 }

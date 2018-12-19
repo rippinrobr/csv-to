@@ -2,7 +2,7 @@ extern crate csv_to;
 extern crate exitcode;
 extern crate structopt;
 
-//use csv_to::CsvTo;
+use postgres::{Connection, TlsMode};
 use csv_to::cmd::db;
 use csv_to::cmd::db::{
     DbApp,
@@ -35,27 +35,31 @@ fn main() {
             // so that I can have one DbApp::new() and run() call
             match db_type {
                 Types::Postgres => {
+                    let conn = Connection::connect(connection_info.clone(), TlsMode::None).unwrap_or_else(|err| {
+                        eprintln!("ERROR: {}", err);
+                        std::process::exit(exitcode::IOERR);
+                    });
+
                     DbApp::new(
                         Config::new(extension, files, directories, db_type, connection_info.clone(), name, drop_stores, no_headers),
                         CSVService::default(),
-                        PostgresStore::new(connection_info.clone()).unwrap_or_else(|err| {
-                            eprintln!("error while attempting to create a database connection: {}", err);
-                            std::process::exit(exitcode::USAGE);
-                        }),
+                        PostgresStore::new(conn)
                     ).run().unwrap_or_else(|err| {
                         eprintln!("ERROR: {}", err);
                         std::process::exit(exitcode::IOERR);
                     });
                 },
                 Types::SQLite => {
+                    let conn = sqlite::open(connection_info.clone()).unwrap_or_else(|err| {
+                       eprintln!("ERROR: {}", err);
+                        std::process::exit(exitcode::IOERR);
+                    });
+
                     DbApp::new(
                         Config::new(extension, files, directories, db_type, connection_info.clone(), name, drop_stores, no_headers),
                         CSVService::default(),
-                        SQLiteStore::new(connection_info.clone()).unwrap_or_else(|err| {
-                            eprintln!("error while attempting to create a database connection: {}", err);
-                            std::process::exit(exitcode::USAGE);
-                        }),
-                    ).run().unwrap_or_else(|err| {
+                        SQLiteStore::new(conn),
+                     ).run().unwrap_or_else(|err| {
                         eprintln!("ERROR: {}", err);
                         std::process::exit(exitcode::IOERR);
                     });

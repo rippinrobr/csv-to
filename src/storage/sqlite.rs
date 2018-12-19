@@ -16,10 +16,8 @@ pub struct SQLiteStore{
 impl SQLiteStore {
     // Creates a new instance of the SQLiteStore or an error if
     // a connection cannot be established
-    pub fn new(db_path: String) -> Result<Self, sqlite::Error> {
-        Ok(SQLiteStore{
-            conn: sqlite::open(db_path)?
-        })
+    pub fn new(conn: Connection) -> Self {
+        Self{conn}
     }
 
     // Creates a new table in the database
@@ -33,11 +31,11 @@ impl SQLiteStore {
     // Creates the string that represents the schema for a table that maps to the columns
     // passed in
     fn generate_table_schema(name: String, cols: Vec<ColumnDef>, drop_table_if_exists: bool) -> Result<String, failure::Error> {
-        if name == String::from("") {
+        if name == "" {
             return Err(failure::err_msg("Cannot create a table with an empty name"));
         }
 
-        if cols.len() == 0 {
+        if cols.is_empty() {
             return Err(failure::err_msg("Cannot create a table with no columns"));
         }
         let mut m = Migration::new();
