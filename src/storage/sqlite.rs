@@ -154,9 +154,58 @@ impl StorageService for SQLiteStore {
 mod tests {
     use crate::storage::sqlite::SQLiteStore;
     use crate::{ColumnDef, DataTypes};
+    use sqlite::Value;
 
     //==================================================
     // DataTypes tests
+    #[test]
+    fn get_value_type_with_string() {
+        let test_val = String::from("hi");
+        let cd = ColumnDef{
+            potential_types: Vec::new(),
+            name: String::from("mycol"),
+            data_type: DataTypes::String,
+        };
+        let v: sqlite::Value = SQLiteStore::get_value_type(&cd, test_val.clone());
+        assert_eq!(v, Value::String(test_val));
+    }
+
+    #[test]
+    fn get_value_type_with_f64() {
+        let test_val = 1.23;
+        let cd = ColumnDef{
+            potential_types: Vec::new(),
+            name: String::from("mycol"),
+            data_type: DataTypes::F64,
+        };
+        let v: sqlite::Value = SQLiteStore::get_value_type(&cd, test_val.to_string());
+        assert_eq!(v, Value::Float(test_val));
+    }
+
+    #[test]
+    fn get_value_type_with_i64() {
+        let test_val = 123;
+        let cd = ColumnDef{
+            potential_types: Vec::new(),
+            name: String::from("mycol"),
+            data_type: DataTypes::I64,
+        };
+        let v: sqlite::Value = SQLiteStore::get_value_type(&cd, test_val.to_string());
+        assert_eq!(v, Value::Integer(test_val));
+    }
+
+    #[test]
+    fn get_value_type_with_empty() {
+        let test_val = 123;
+        let cd = ColumnDef{
+            potential_types: Vec::new(),
+            name: String::from("mycol"),
+            data_type: DataTypes::Empty,
+        };
+        let v: sqlite::Value = SQLiteStore::get_value_type(&cd, test_val.to_string());
+        assert_eq!(v, Value::Null);
+    }
+
     #[test]
     fn generate_table_schema_with_empty_table_name_ret() {
         let name = String::new();
