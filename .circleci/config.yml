@@ -25,8 +25,8 @@ jobs:
             rustup run stable cargo test --no-run --target-dir ./target/tests/debug
             ls -l .scripts
             ls -l ./target/tests/*
-            ls -l ./target/tests/debug/*
-            ls -l ./target/tests/debug/csv_to-* | grep -v dSYM | grep -v "\.d" | awk '{print $NF}'
+            ls -l ./target/tests/debug/csv*
+            # ls -l ./target/tests/debug/csv_to-* | grep -v dSYM | grep -v "\.d" | awk '{print $NF}'
             .scripts/run-kcov.sh
       - run:
           name: Upload Coverage
