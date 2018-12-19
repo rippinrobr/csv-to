@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+./target/tests/debug/
 binaries=`ls -l ./target/tests/debug/csv_to-* | grep -v dSYM | grep -v "\.d" | awk '{print $NF}'`
 echo "binaries: ${binaries}"
 if [[ ! -d "./target/cov" ]]; then
