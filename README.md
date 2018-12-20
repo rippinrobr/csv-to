@@ -1,8 +1,5 @@
 [![](https://circleci.com/gh/rippinrobr/csv-to/tree/master.svg?style=svg)](https://circleci.com/gh/rippinrobr/csv-to)
 
-_The new and improved csv-to will be released shortly.  There is one blocker that I need to resolve and then it will be 
-merged to master and ready to use_
-
 # csv-to
 The goal of this project is to create a utility that reads a single file or a directory of csv files to create and load 
 a database and eventually code around the database.
