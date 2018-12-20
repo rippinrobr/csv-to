@@ -11,3 +11,8 @@ Cargo.lock
 .DS_Store
 
 bd_batting.db
+
+# intellij related files
+.idea
+csv_to.iml
+codecov.txt

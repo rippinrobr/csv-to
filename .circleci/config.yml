@@ -1,0 +1,30 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/rust:1.31.0-node-browsers-legacy
+    steps:
+      - checkout
+      - run:
+          name: Install Rust
+          command: rustup install stable
+      - run:
+          name: Install Kcov && Testing related libraries
+          command: |
+            sudo apt-get install binutils-dev libcurl4-openssl-dev zlib1g-dev libdw-dev libiberty-dev python-pip
+            pip install coverage
+      - run:
+          name: Stable Build
+          command:  |
+            rustup run stable rustc --version --verbose
+            rustup run stable cargo --version --verbose
+            rustup run stable cargo build
+      - run:
+          name: Test
+          command: |
+            # rustup run stable cargo test --no-run --target-dir ./target/tests/debug
+            rustup run stable cargo test
+            .scripts/run-kcov.sh
+      - run:
+          name: Upload Coverage
+          command: .scripts/codecov.sh
