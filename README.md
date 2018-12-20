@@ -1,4 +1,4 @@
-[![](https://circleci.com/gh/rippinrobr/csv-to/tree/csv-to-db.svg?style=svg)](https://circleci.com/gh/rippinrobr/csv-to)
+[![](https://circleci.com/gh/rippinrobr/csv-to/tree/master.svg?style=svg)](https://circleci.com/gh/rippinrobr/csv-to)
 
 _The new and improved csv-to will be released shortly.  There is one blocker that I need to resolve and then it will be 
 merged to master and ready to use_
