@@ -51,7 +51,7 @@ For more information try --help
 
 #[test]
 fn calling_csvto_with_db_with_h() {
-    let db_usage_msg = "csv-to-db 0.1.3
+    let db_usage_msg = "csv-to-db 0.2.0
 Rob Rowe <robrowe04@gmail.com>
 creates and loads a database from CSV file(s)
 
@@ -86,7 +86,7 @@ OPTIONS:
 
 #[test]
 fn calling_csvto_with_db_with_help() {
-    let db_usage_msg = "csv-to-db 0.1.3
+    let db_usage_msg = "csv-to-db 0.2.0
 Rob Rowe <robrowe04@gmail.com>
 creates and loads a database from CSV file(s)
 
