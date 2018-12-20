@@ -44,10 +44,10 @@ impl CSVService {
 
         match val.parse::<i64>() {
             Ok(_) => DataTypes::I64,
-            Err(e) => {
+            Err(_) => {
                 match val.parse::<f64>() {
                     Ok(_) => DataTypes::F64,
-                    Err(e) => {
+                    Err(_) => {
                         return DataTypes::String
                     }
                 }
@@ -57,7 +57,9 @@ impl CSVService {
 }
 
 impl InputService for CSVService {
-
+    // pares parses the file uses the data to create an instance of
+    // a ParsedContent struct that with the file's contents along with
+    // a definition of each column in the file
     fn parse(&self, input: InputSource) -> Result<ParsedContent, Error> {
         let file = input.get_reader()?;
         let mut rdr = Reader::from_reader(file);
@@ -99,18 +101,16 @@ impl InputService for CSVService {
                 }
             };
             // this loop is for the columns
-            let mut col_index = 0;
-            for col_data in record.clone().iter() {
+            for (col_index, col_data) in record.clone().iter().enumerate() {
                 if parsed_content.columns[col_index].is_data_type_changeable() {
                     let possible_type: DataTypes = CSVService::check_field_data_type(col_data);
                     parsed_content.columns[col_index].potential_types.push(possible_type);
                 }
-                col_index += 1;
             }
             parsed_content.content.push(record);
         }
 
-        &parsed_content.set_column_data_types();
+        parsed_content.set_column_data_types();
         Ok(parsed_content)
     }
 }

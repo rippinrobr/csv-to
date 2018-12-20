@@ -1,3 +1,6 @@
+//! The parsers module
+//!
+//!
 pub mod csv;
 
 use failure::Error;
@@ -6,15 +9,16 @@ use std::str;
 use crate::{InputSource, ParsedContent};
 
 pub trait InputService {
+    // responsible for parsing the file, creating a description of each column in the file
     fn parse(&self, input: InputSource) -> Result<ParsedContent, Error> ;
-
+    // ensures that the name of the field is valid for creating columns in a database table and
+    // struct fields
     fn validate_field_name(&self, idx: usize,  name: &str, name_re: &Regex) -> String {
         if name == "" {
             return format!("col_{}", idx);
         }
 
         let mut name_str = name.to_string();
-
         if name_re.is_match(name) {
             return name.to_string()
         }
