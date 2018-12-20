@@ -47,4 +47,4 @@ response.  The API will be generated in Rust, Go, and C#.
 _If there is a database or language you'd like to have support for open an issue with the your suggestion._
  
 
-[screen-shot]: https://github.com/rippinrobr/csv-to/raw/csv-to-db/assets/csv-to-db-results.png
+[screen-shot]: https://github.com/rippinrobr/csv-to/raw/master/assets/csv-to-db-results.png
