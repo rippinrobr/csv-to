@@ -11,31 +11,37 @@ use crate::ColumnDef;
 use crate::parsers::InputService;
 use crate::ConfigService;
 use crate::storage::StorageService;
+use crate::cache::{Cache, CacheType, DataDefinition, CacheService};
+use crate::cache::json::JsonCache;
 
 /// DbApp is used to manage the creation of the database
 /// This app is used when the db sub-command is provided
-pub struct DbApp<C,I,S>
+pub struct DbApp<C,I,J,S>
 where
     C: ConfigService,
     I: InputService,
+    J: CacheService,
     S: StorageService,
 {
     config_svc: C,
     input_svc: I,
+    cache_svc: J,
     storage_svc: S,
 }
 
-impl<C,I,S> DbApp<C,I,S>
+impl<C,I,J,S> DbApp<C,I,J,S>
 where
     C: ConfigService,
     I: InputService,
+    J: CacheService,
     S: StorageService,
 {
     /// creates an instance of the DbApp struct
-    pub fn new(config_svc: C, input_svc: I, storage_svc: S) -> DbApp<C,I,S> {
+    pub fn new(config_svc: C, input_svc: I, cache_svc: J, storage_svc: S) -> DbApp<C,I,J,S> {
         DbApp{
             config_svc,
             input_svc,
+            cache_svc,
             storage_svc,
         }
     }
@@ -46,6 +52,8 @@ where
         let mut errors: Vec<String> = Vec::new();
         let mut warnings: Vec<String> = Vec::new();
         let mut results: Vec<DBResults> = Vec::new();
+        let mut cache: Cache = Cache::new(self.config_svc.get_name(), CacheType::Db);
+        let save_cache = self.config_svc.should_save_cache();
 
         let pbar = ProgressBar::new(inputs.len() as u64);
         pbar.set_style(ProgressStyle::default_bar()
@@ -69,12 +77,18 @@ where
 
                     pc.set_column_data_types();
                     pbar.set_prefix("Loading Data...");
-                    match self.store(self.get_table_name(pc.file_name.clone()),
+                    let table_name = self.get_table_name(pc.file_name.clone());
+                    match self.store( table_name.clone(),
                                pc.records_parsed,
                                pc.columns.clone(),
                                pc.content.clone()) {
                         Ok(result) => results.push(result),
                         Err(e) => errors.push(format!("{}", e)),
+                    }
+
+                    if save_cache {
+                        let data_def = DataDefinition::new(table_name.clone(), pc.columns.clone());
+                        cache.add_data_definition(data_def);
                     }
                     pbar.inc(1)
                 }
@@ -85,6 +99,14 @@ where
 
         // Pressing report
         self.display_report(results, errors, warnings, num_files);
+
+        if save_cache {
+            match self.cache_svc.write(cache) {
+                Err(e) => eprintln!("{}", e),
+                Ok(_) => (),
+            }
+        }
+
         Ok(())
     }
 

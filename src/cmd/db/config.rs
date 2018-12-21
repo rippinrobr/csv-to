@@ -10,28 +10,32 @@ use crate::{
 /// Config contains all the parameters provided by the user
 #[derive(Debug)]
 pub struct Config {
+    connection_info: String,
+    db_type: Types,
+    directories: Vec<String>,
+    drop_store: bool,
     extension: String,
     files: Vec<String>,
-    directories: Vec<String>,
-    db_type: Types,
-    connection_info: String,
     name: String,
-    drop_store: bool,
     no_headers: bool,
+    save_cache: bool,
 }
 
 impl Config {
     /// Creates a struct of all the CmdLine Arguments
-    pub fn new(extension: String, files_path: Vec<PathBuf>, directories: Vec<PathBuf>, db_type: Types, connection_info: String, name: String, drop_tables: bool, no_headers: bool) -> Config {
+    pub fn new(extension: String, files_path: Vec<PathBuf>, directories: Vec<PathBuf>, db_type: Types,
+               connection_info: String, name: String, drop_tables: bool, no_headers: bool,
+               save_cache: bool) -> Config {
         Config {
+            connection_info,
+            db_type,
+            directories: Config::convert_to_vec_of_string(directories),
+            drop_store: drop_tables,
             extension,
             files: Config::convert_to_vec_of_string(files_path),
-            directories: Config::convert_to_vec_of_string(directories),
-            db_type,
-            connection_info,
             name,
-            drop_store: drop_tables,
             no_headers,
+            save_cache,
         }
     }
 
@@ -100,9 +104,10 @@ impl ConfigService for Config {
         sources.to_owned()
     }
 
+    fn get_name(&self) -> String { self.name.clone() }
     fn has_headers(&self) -> bool {
         !self.no_headers
     }
-
     fn should_drop_store(&self) -> bool { self.drop_store }
+    fn should_save_cache(&self) -> bool { self.save_cache }
 }

@@ -16,3 +16,4 @@ bd_batting.db
 .idea
 csv_to.iml
 codecov.txt
+cache/
