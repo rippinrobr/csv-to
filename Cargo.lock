@@ -247,7 +247,7 @@ dependencies = [
 
 [[package]]
 name = "csv-to"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "ansi_term 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "assert_fs 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
