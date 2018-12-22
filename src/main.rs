@@ -106,7 +106,7 @@ pub enum CsvTo {
         #[structopt(long = "no-headers", help = "The CSV file(s) have no column headers")]
         no_headers: bool,
 
-        #[structopt(long = "save-cache", help = "Stores the meta data about each input's column data definitions")]
+        #[structopt(short = "s", long = "save-cache", help = "Stores the meta data about each input's column data definitions")]
         save_cache: bool,
     }
 }
