@@ -51,7 +51,7 @@ For more information try --help
 
 #[test]
 fn calling_csvto_with_db_with_h() {
-    let db_usage_msg = "csv-to-db 0.2.0
+    let db_usage_msg = format!("csv-to-db {}
 Rob Rowe <robrowe04@gmail.com>
 creates and loads a database from CSV file(s)
 
@@ -62,6 +62,7 @@ FLAGS:
         --drop-stores    Drops tables/collections if the already exist
     -h, --help           Prints help information
         --no-headers     The CSV file(s) have no column headers
+        --save-cache     Stores the meta data about each input's column data definitions
     -V, --version        Prints version information
 
 OPTIONS:
@@ -73,7 +74,7 @@ OPTIONS:
     -f, --files <files>...                     The CSV files to be processed, can be /path/to/files/ or a comma
                                                delimited string of paths
     -n, --name <name>                          Name of the database to be created
-";
+", env!("CARGO_PKG_VERSION"));;
 
     let output = Command::new(CMD_PATH)
         .arg("db")
@@ -86,7 +87,7 @@ OPTIONS:
 
 #[test]
 fn calling_csvto_with_db_with_help() {
-    let db_usage_msg = "csv-to-db 0.2.0
+    let db_usage_msg = format!("csv-to-db {}
 Rob Rowe <robrowe04@gmail.com>
 creates and loads a database from CSV file(s)
 
@@ -97,6 +98,7 @@ FLAGS:
         --drop-stores    Drops tables/collections if the already exist
     -h, --help           Prints help information
         --no-headers     The CSV file(s) have no column headers
+        --save-cache     Stores the meta data about each input's column data definitions
     -V, --version        Prints version information
 
 OPTIONS:
@@ -108,7 +110,7 @@ OPTIONS:
     -f, --files <files>...                     The CSV files to be processed, can be /path/to/files/ or a comma
                                                delimited string of paths
     -n, --name <name>                          Name of the database to be created
-";
+", env!("CARGO_PKG_VERSION"));
 
     let output = Command::new(CMD_PATH)
         .arg("db")

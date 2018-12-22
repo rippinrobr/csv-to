@@ -26,6 +26,8 @@ pub trait InputService {
         // 0. replace all + and - chars with plus and minus
         name_str = str::replace(&name_str, "+", "plus");
         name_str = str::replace(&name_str, "-", "minus");
+        name_str = str::replace( &name_str, ".", "_");
+
         // 0.5 replace / with a _
         name_str = str::replace(&name_str, "/", "_");
         // 1. if name starts with a number then add _ at the beginning

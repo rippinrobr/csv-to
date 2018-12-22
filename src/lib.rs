@@ -3,9 +3,9 @@ extern crate failure;
 extern crate glob;
 extern crate failure_derive;
 extern crate postgres;
-extern crate structopt;
 
 pub mod cmd;
+pub mod cache;
 pub mod parsers;
 pub mod storage;
 
@@ -16,22 +16,29 @@ use std::io::{self, BufReader};
 
 use barrel::types::BaseType;
 use csv::StringRecord;
+use serde;
+use serde_derive::{Deserialize, Serialize};
+use serde_json;
 
 /// ConfigService is used to encapsulate the input from the user and allows each 'app' or sub-command
 /// in csv-to to have access to the input without having to worry about parsing and gathering
 pub trait ConfigService {
     /// Returns a Vec<InputSource> that represents all input files/sources
     fn get_input_sources(&self) -> Vec<InputSource>;
+    /// Returns the name of the run
+    fn get_name(&self) -> String;
     /// Returns true if the input files have column headers, currently
     /// all files have them or none of them do
     fn has_headers(&self) -> bool;
     /// Returns true if tables/collections should be removed before
     /// loading the data
     fn should_drop_store(&self) -> bool;
+    /// Indicates that the user asked to save to cache or not
+    fn should_save_cache(&self) -> bool;
 }
 
 /// Potential data types for parsed columns and will be used when creating database tables
-#[derive(PartialEq,Clone, Copy)]
+#[derive(PartialEq,Clone, Copy, Serialize, Deserialize)]
 pub enum DataTypes {
     Empty,
     F64,
@@ -78,10 +85,11 @@ impl fmt::Debug for DataTypes {
 }
 
 /// Keeps meta data about the data in each column
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Serialize, Deserialize)]
 pub struct ColumnDef{
     pub name: String,
     pub data_type: DataTypes,
+    #[serde(skip)]
     pub potential_types: Vec<DataTypes>,
 }
 
