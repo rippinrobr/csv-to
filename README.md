@@ -19,6 +19,7 @@ FLAGS:
         --drop-stores    Drops tables/collections if the already exist
     -h, --help           Prints help information
         --no-headers     The CSV file(s) have no column headers
+    -s, --save-cache     Stores the meta data about each input's column data definitions
     -V, --version        Prints version information
 
 OPTIONS:
