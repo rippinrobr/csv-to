@@ -32,7 +32,7 @@ impl Cache {
     }
 
     pub fn add_data_definition(&mut self, data_def: DataDefinition) {
-        &self.data_definitions.push(data_def);
+        self.data_definitions.push(data_def);
     }
 }
 

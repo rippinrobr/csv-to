@@ -165,7 +165,7 @@ where
         }
     }
 
-    fn get_table_name(&self, file_path: String) -> String {
+    fn get_table_name(&self, file_path: &str) -> String {
         // TODO: Clean this up
         let name = String::from(Path::new(&file_path).file_name().unwrap().to_str().unwrap());
         let first_letter = name.trim_right_matches(".csv").chars().next().unwrap();
@@ -189,7 +189,7 @@ impl DBResults {
     }
 
     pub fn get_results(&self) -> Result<String, failure::Error> {
-        if &self.num_stored != &self.num_parsed {
+        if self.num_stored != self.num_parsed {
            return  Err(failure::err_msg(format!("❌ {}: had {} errors", &self.name, self.num_parsed - self.num_stored)));
         }
 
