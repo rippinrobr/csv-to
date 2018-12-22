@@ -77,7 +77,7 @@ where
 
                     pc.set_column_data_types();
                     pbar.set_prefix("Loading Data...");
-                    let table_name = self.get_table_name(pc.file_name.clone());
+                    let table_name = self.get_table_name(&pc.file_name);
                     match self.store( table_name.clone(),
                                pc.records_parsed,
                                pc.columns.clone(),
