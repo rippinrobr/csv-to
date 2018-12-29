@@ -320,7 +320,7 @@ For more information try --help
 
 #[test]
 fn calling_csvto_with_db_wit_unsupported_db_type() {
-    let db_err_msg = "error: Invalid value for '--type <db_type>': ERROR: 'mysql' is not a supported database type\n";
+    let db_err_msg = "error: Invalid value for '--type <db_type>': ERROR: 'mongo' is not a supported database type\n";
 
     let output = Command::new(CMD_PATH)
         .arg("db")
@@ -329,7 +329,7 @@ fn calling_csvto_with_db_wit_unsupported_db_type() {
         .arg("-c")
         .arg("/pathtosome.db")
         .arg("-t")
-        .arg("mysql")
+        .arg("mongo")
         .arg("-f")
         .arg("my_test_db")
         .output()
