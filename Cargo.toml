@@ -7,8 +7,8 @@ edition = "2018"
 [dependencies] 
 ansi_term = "0.11.0"
 assert_fs = "0.10.0"
-barrel = { path = "../barrel", features = ["sqlite3", "pg", "mysql"]}
-# barrel = { git = "https://github.com/rippinrobr/barrel", branch = "add-mysql-support", features = ["sqlite3", "pg", "mysql"] }
+# barrel = { path = "../barrel", features = ["sqlite3", "pg", "mysql"]}
+barrel = { git = "https://github.com/rippinrobr/barrel", branch = "add-mysql-support", features = ["sqlite3", "pg", "mysql"] }
 csv = "1.0.0"
 exitcode = "1.1.2"
 failure = "0.1.3"

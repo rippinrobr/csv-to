@@ -12,7 +12,6 @@ use crate::parsers::InputService;
 use crate::ConfigService;
 use crate::storage::StorageService;
 use crate::cache::{Cache, CacheType, DataDefinition, CacheService};
-use crate::cache::json::JsonCache;
 
 /// DbApp is used to manage the creation of the database
 /// This app is used when the db sub-command is provided

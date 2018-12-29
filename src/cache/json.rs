@@ -17,7 +17,7 @@ impl JsonCache {
 }
 
 impl CacheService for JsonCache {
-    fn read(self, name: String) -> Result<Cache, Error> {
+    fn read(self, _name: String) -> Result<Cache, Error> {
         Err(failure::err_msg("JsonCache::read not implemented"))
     }
 
@@ -25,7 +25,7 @@ impl CacheService for JsonCache {
 
         // 0. Check to see if ./cache exists
         match fs::metadata(self.cache_dir.clone()) {
-            Err(e) => {
+            Err(_) => {
                 match fs::create_dir(&self.cache_dir) {
                     Err(e) => return Err(failure::err_msg(format!("{}", e))),
                     Ok(_) => println!("created cache directory {}", &self.cache_dir),
