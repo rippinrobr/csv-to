@@ -2,6 +2,7 @@ extern crate csv_to;
 extern crate exitcode;
 extern crate structopt;
 
+use mysql::Pool;
 use postgres::{Connection, TlsMode};
 use csv_to::cache::json::JsonCache;
 use csv_to::cmd::db;
@@ -12,6 +13,7 @@ use csv_to::cmd::db::{
 };
 use csv_to::parsers::csv::CSVService;
 use csv_to::storage::{
+    mysql::MySqlStore,
     postgres::PostgresStore,
     sqlite::SQLiteStore
 };
@@ -39,6 +41,22 @@ fn main() {
                                          no_headers, save_cache);
 
             match db_type {
+                Types::MySQL => {
+                    let conn = Pool::new(connection_info).unwrap_or_else(|err| {
+                        eprintln!("ERROR: {}", err);
+                        std::process::exit(exitcode::IOERR);
+                    });
+
+                    DbApp::new(
+                        config_svc,
+                        csv_svc,
+                        cache_svc,
+                        MySqlStore::new(conn)
+                    ).run().unwrap_or_else(|err| {
+                        eprintln!("ERROR: {}", err);
+                        std::process::exit(exitcode::IOERR);
+                    });
+                },
                 Types::Postgres => {
                     let conn = Connection::connect(connection_info.clone(), TlsMode::None).unwrap_or_else(|err| {
                         eprintln!("ERROR: {}", err);
@@ -110,9 +128,3 @@ pub enum CsvTo {
         save_cache: bool,
     }
 }
-
-// This trait is what all of the sub-commands will implement so they can have a common
-// interface that the main can call into to start the csv_to logic started
-//trait App {
-//    fn run(&self) -> Result<ParsedContent, std::io::Error> ;
-//}
