@@ -7,9 +7,10 @@ a database and eventually code around the database.
 ![Image of the results of csv-to db call][screen-shot]
 ## csv-to db  Create a db from csv file(s)
 The `db` sub-command parses the files, creates a database table for each file it parses, and loads the database.  
-Currently, `SQLite` and `Postgres` are supported.
+Currently, `SQLite`, `Postgres`, and `MySQL/MariaDB` are supported.
 
 ```
+csv-to-db 0.4.0
 creates and loads a database from CSV file(s)
 
 USAGE:
@@ -24,13 +25,14 @@ FLAGS:
 
 OPTIONS:
     -c, --connection-info <connection_info>    Database connectivity information
-    -t, --type <db_type>                       The type of database to create, valid types are sqlite and postgres
+    -t, --type <db_type>                       The type of database to create, valid types are sqlite, postgres, and mysql
     -d, --directories <directories>...         The directories that contain CSV files to be processed, a comma delimited
                                                string of paths
     -e, --extension <extension>                the file extension for the CSV files to be parsed [default: csv]
     -f, --files <files>...                     The CSV files to be processed, can be /path/to/files/ or a comma
                                                delimited string of paths
     -n, --name <name>                          Name of the database to be created
+
 ```
 
 ## csv-to data-layer - create a db and code to read from it

@@ -103,7 +103,7 @@ pub enum CsvTo {
         #[structopt(short = "c", long = "connection-info", help = "Database connectivity information")]
         connection_info: String,
 
-        #[structopt(short = "t", long = "type", help = "The type of database to create, valid types are sqlite and postgres")]
+        #[structopt(short = "t", long = "type", help = "The type of database to create, valid types are sqlite, postgres, and mysql")]
         db_type: db::Types,
 
         #[structopt(short = "d", parse(from_os_str), long = "directories", help = "The directories that contain CSV files to be processed, a comma delimited string of paths")]
