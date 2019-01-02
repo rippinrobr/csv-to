@@ -67,7 +67,8 @@ FLAGS:
 
 OPTIONS:
     -c, --connection-info <connection_info>    Database connectivity information
-    -t, --type <db_type>                       The type of database to create, valid types are sqlite and postgres
+    -t, --type <db_type>                       The type of database to create, valid types are sqlite, postgres, and
+                                               mysql
     -d, --directories <directories>...         The directories that contain CSV files to be processed, a comma delimited
                                                string of paths
     -e, --extension <extension>                the file extension for the CSV files to be parsed [default: csv]
@@ -103,14 +104,16 @@ FLAGS:
 
 OPTIONS:
     -c, --connection-info <connection_info>    Database connectivity information
-    -t, --type <db_type>                       The type of database to create, valid types are sqlite and postgres
+    -t, --type <db_type>                       The type of database to create, valid types are sqlite, postgres, and
+                                               mysql
     -d, --directories <directories>...         The directories that contain CSV files to be processed, a comma delimited
                                                string of paths
     -e, --extension <extension>                the file extension for the CSV files to be parsed [default: csv]
     -f, --files <files>...                     The CSV files to be processed, can be /path/to/files/ or a comma
                                                delimited string of paths
     -n, --name <name>                          Name of the database to be created
-", env!("CARGO_PKG_VERSION"));
+", env!("CARGO_PKG_VERSION"));;
+
 
     let output = Command::new(CMD_PATH)
         .arg("db")
@@ -319,7 +322,7 @@ For more information try --help
 }
 
 #[test]
-fn calling_csvto_with_db_wit_unsupported_db_type() {
+fn calling_csvto_with_db_with_unsupported_db_type() {
     let db_err_msg = "error: Invalid value for '--type <db_type>': ERROR: 'mongo' is not a supported database type\n";
 
     let output = Command::new(CMD_PATH)
