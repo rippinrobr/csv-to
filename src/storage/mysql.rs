@@ -136,82 +136,82 @@ impl fmt::Debug for MySqlStore {
         write!(f, "I am MySqlStore")
     }
 }
-//#[cfg(test)]
-//mod tests {
-//    use crate::{ColumnDef, DataTypes};
-//    use crate::storage::MySql::MySqlStore;
-//
-//    #[test]
-//    fn generate_table_schema_with_empty_name_returns_error() {
-//        let name = "";
-//        let cols: Vec<ColumnDef>  = Vec::new();
-//
-//        match MySqlStore::generate_table_schema(name.to_string(), cols) {
-//            Ok(_) => {
-//                // this should not be reached
-//                assert_eq!(0,1);
-//            },
-//            Err(e) => {
-//                assert_eq!(format!("{}",e), "cannot create a table schema without a name");
-//            }
-//        }
-//    }
-//
-//    #[test]
-//    fn generate_table_schema_with_empty_columns_returns_error() {
-//        let name = "mine";
-//        let cols: Vec<ColumnDef>  = Vec::new();
-//
-//        match MySqlStore::generate_table_schema(name.to_string(), cols) {
-//            Ok(_) => {
-//                // this should not be reached
-//                assert_eq!(0,1);
-//            },
-//            Err(e) => {
-//                assert_eq!(format!("{}",e), "cannot create a table schema without at least one column");
-//            }
-//        }
-//    }
-//
-//    #[test]
-//    fn generate_table_schema_with_valid_inputs() {
-//        let name = "mine";
-//        let cols: Vec<ColumnDef>  = vec![ColumnDef{
-//            name: String::from("mycol"),
-//            data_type: DataTypes::String,
-//            potential_types: Vec::new(),
-//        }];
-//
-//        match MySqlStore::generate_table_schema(name.to_string(), cols) {
-//            Ok(schema) => {
-//                assert_eq!(schema, String::from("CREATE TABLE \"mine\" (\"mycol\" TEXT);;"));
-//            },
-//            Err(_) => {
-//                // shouldn't reach this spot
-//                assert_eq!(0,1);
-//            }
-//        }
-//    }
-//
-//    #[test]
-//    fn drop_table_sql_with_empty_name_returns_error() {
-//        match MySqlStore::drop_table_sql("") {
-//            Err(e) => assert_eq!(format!("{}",e), "cannot drop a table schema without a name"),
-//            Ok(_) => {
-//                // should not reach this
-//                assert_eq!(0,1)
-//            }
-//        }
-//    }
-//
-//    #[test]
-//    fn drop_table_sql_with_valid_input() {
-//        match MySqlStore::drop_table_sql("mytable") {
-//            // should not reach this
-//            Err(e) => assert_eq!(0, 1),
-//            Ok(stmt) => {
-//                assert_eq!(stmt, String::from("DROP TABLE IF EXISTS \"mytable\";;"))
-//            }
-//        }
-//    }
-//}
+#[cfg(test)]
+mod tests {
+    use crate::{ColumnDef, DataTypes};
+    use crate::storage::mysql::MySqlStore;
+
+    #[test]
+    fn generate_table_schema_with_empty_name_returns_error() {
+        let name = "";
+        let cols: Vec<ColumnDef>  = Vec::new();
+
+        match MySqlStore::generate_table_schema(name.to_string(), cols) {
+            Ok(_) => {
+                // this should not be reached
+                assert_eq!(0,1);
+            },
+            Err(e) => {
+                assert_eq!(format!("{}",e), "cannot create a table schema without a name");
+            }
+        }
+    }
+
+    #[test]
+    fn generate_table_schema_with_empty_columns_returns_error() {
+        let name = "mine";
+        let cols: Vec<ColumnDef>  = Vec::new();
+
+        match MySqlStore::generate_table_schema(name.to_string(), cols) {
+            Ok(_) => {
+                // this should not be reached
+                assert_eq!(0,1);
+            },
+            Err(e) => {
+                assert_eq!(format!("{}",e), "cannot create a table schema without at least one column");
+            }
+        }
+    }
+
+    #[test]
+    fn generate_table_schema_with_valid_inputs() {
+        let name = "mine";
+        let cols: Vec<ColumnDef>  = vec![ColumnDef{
+            name: String::from("mycol"),
+            data_type: DataTypes::String,
+            potential_types: Vec::new(),
+        }];
+
+        match MySqlStore::generate_table_schema(name.to_string(), cols) {
+            Ok(schema) => {
+                assert_eq!(schema, String::from("CREATE TABLE mine (mycol TEXT);;"));
+            },
+            Err(_) => {
+                // shouldn't reach this spot
+                assert_eq!(0,1);
+            }
+        }
+    }
+
+    #[test]
+    fn drop_table_sql_with_empty_name_returns_error() {
+        match MySqlStore::drop_table_sql("") {
+            Err(e) => assert_eq!(format!("{}",e), "cannot drop a table schema without a name"),
+            Ok(_) => {
+                // should not reach this
+                assert_eq!(0,1)
+            }
+        }
+    }
+
+    #[test]
+    fn drop_table_sql_with_valid_input() {
+        match MySqlStore::drop_table_sql("mytable") {
+            // should not reach this
+            Err(e) => assert_eq!(0, 1),
+            Ok(stmt) => {
+                assert_eq!(stmt, String::from("DROP TABLE IF EXISTS mytable;;"))
+            }
+        }
+    }
+}
