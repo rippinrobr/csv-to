@@ -2,7 +2,6 @@
 //! In order to help speed up the process of code generation the Cache
 //! module stores information learned about the input data during the
 //! parsing process.
-use failure::Error;
 use serde_derive::{Deserialize, Serialize};
 use serde_json;
 

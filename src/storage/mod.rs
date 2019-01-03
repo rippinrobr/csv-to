@@ -4,6 +4,7 @@
 //! only Postgres and SQLite are supported.
 //!
 //!
+pub mod mysql;
 pub mod postgres;
 pub mod sqlite;
 

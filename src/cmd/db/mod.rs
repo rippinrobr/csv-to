@@ -12,7 +12,6 @@ use crate::parsers::InputService;
 use crate::ConfigService;
 use crate::storage::StorageService;
 use crate::cache::{Cache, CacheType, DataDefinition, CacheService};
-use crate::cache::json::JsonCache;
 
 /// DbApp is used to manage the creation of the database
 /// This app is used when the db sub-command is provided
@@ -158,7 +157,7 @@ where
                 let insert_stmt = self.storage_svc.create_insert_stmt(name.clone(), columns.clone());
                 match self.storage_svc.store_data( columns.clone(), content, insert_stmt) {
                     Ok(records_inserted) => Ok(DBResults::new(name.clone(), records_parsed, records_inserted)),
-                     Err(e) => Err(e)
+                    Err(e) => Err(e)
                 }
             },
             Err(err) => return Err(failure::err_msg(format!("unable to create storage {}", err))),
@@ -173,6 +172,7 @@ where
     }
 }
 
+#[derive(Debug)]
 struct DBResults {
     name: String,
     num_parsed: usize,
@@ -199,6 +199,7 @@ impl DBResults {
 
 #[derive(Debug, Clone)]
 pub enum Types {
+    MySQL,
     Postgres,
     SQLite,
 }
@@ -211,6 +212,7 @@ impl FromStr for Types {
         match lower_s {
             "sqlite" => Ok(Types::SQLite),
             "postgres" => Ok(Types::Postgres),
+            "mysql" => Ok(Types::MySQL),
             _ => Err(error::DbError::new(format!("ERROR: '{}' is not a supported database type", lower_s), exitcode::USAGE))
         }
     }

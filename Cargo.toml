@@ -1,19 +1,21 @@
 [package]
 name = "csv-to"
-version = "0.3.1"
+version = "0.4.0"
 authors = ["Rob Rowe <robrowe04@gmail.com>"]
 edition = "2018"
 
 [dependencies] 
 ansi_term = "0.11.0"
 assert_fs = "0.10.0"
-barrel = { git = "https://github.com/rippinrobr/barrel", rev = "25e37caa425b39cab961fa6c962d861b6242aa0e", features = ["sqlite3", "pg"] }
+# barrel = { path = "../barrel", features = ["sqlite3", "pg", "mysql"]}
+barrel = { git = "https://github.com/rippinrobr/barrel", branch = "add-mysql-support", features = ["sqlite3", "pg", "mysql"] }
 csv = "1.0.0"
 exitcode = "1.1.2"
 failure = "0.1.3"
 failure_derive = "0.1.3"
 futures = "0.1.23"
 indicatif = "0.10.3"
+mysql = "15.0.0"
 postgres = "0.15.2"
 predicates = "1.0.0"
 regex = "1.0.0"
