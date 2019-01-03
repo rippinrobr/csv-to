@@ -18,6 +18,7 @@ pub struct Config {
     files: Vec<String>,
     name: String,
     no_headers: bool,
+    one_table: Option<String>,
     save_cache: bool,
 }
 
@@ -25,7 +26,7 @@ impl Config {
     /// Creates a struct of all the CmdLine Arguments
     pub fn new(extension: String, files_path: Vec<PathBuf>, directories: Vec<PathBuf>, db_type: Types,
                connection_info: String, name: String, drop_tables: bool, no_headers: bool,
-               save_cache: bool) -> Config {
+               one_table: Option<String>, save_cache: bool) -> Config {
         Config {
             connection_info,
             db_type,
@@ -35,6 +36,7 @@ impl Config {
             files: Config::convert_to_vec_of_string(files_path),
             name,
             no_headers,
+            one_table,
             save_cache,
         }
     }
@@ -103,10 +105,12 @@ impl ConfigService for Config {
 
         sources.to_owned()
     }
-
     fn get_name(&self) -> String { self.name.clone() }
     fn has_headers(&self) -> bool {
         !self.no_headers
+    }
+    fn has_single_table(&self) -> Option<String>{
+        self.one_table.clone()
     }
     fn should_drop_store(&self) -> bool { self.drop_store }
     fn should_save_cache(&self) -> bool { self.save_cache }

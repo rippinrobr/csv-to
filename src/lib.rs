@@ -30,6 +30,8 @@ pub trait ConfigService {
     /// Returns true if the input files have column headers, currently
     /// all files have them or none of them do
     fn has_headers(&self) -> bool;
+    /// Returns the name of the single table to store the data in or None if not used
+    fn has_single_table(&self) -> Option<String>;
     /// Returns true if tables/collections should be removed before
     /// loading the data
     fn should_drop_store(&self) -> bool;

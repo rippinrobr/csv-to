@@ -29,7 +29,7 @@ fn main() {
     //let app = match opt {
     match opt {
         CsvTo::Db { extension, files, directories, db_type, connection_info, name, drop_stores,
-                    no_headers, save_cache } => {
+                    no_headers, one_table, save_cache } => {
 
             if files.is_empty() && directories.is_empty() {
                 eprintln!("error: either -f, --files or -d, --directories must be provided");
@@ -38,7 +38,7 @@ fn main() {
 
             let config_svc = Config::new(extension, files, directories, db_type.clone(),
                                          connection_info.clone(), name, drop_stores,
-                                         no_headers, save_cache);
+                                         no_headers, one_table, save_cache);
 
             match db_type {
                 Types::MySQL => {
@@ -123,6 +123,9 @@ pub enum CsvTo {
 
         #[structopt(long = "no-headers", help = "The CSV file(s) have no column headers")]
         no_headers: bool,
+
+        #[structopt(short = "o", long = "one-table", help = "Store the parsed data in a single table with the name given here")]
+        one_table: Option<String>,
 
         #[structopt(short = "s", long = "save-cache", help = "Stores the meta data about each input's column data definitions")]
         save_cache: bool,
