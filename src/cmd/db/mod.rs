@@ -93,6 +93,7 @@ where
                     }
 
                     match self.store(table_name.clone(),
+                                     pc.file_name.clone(),
                                      pc.records_parsed,
                                      pc.columns.clone(),
                                      pc.content.clone()) {
@@ -113,7 +114,7 @@ where
         pbar.finish_and_clear();
 
         // Pressing report
-        self.display_report(results, errors, warnings, num_files);
+        self.display_report(results, errors, warnings, num_files, using_single_table);
 
         if save_cache {
             match self.cache_svc.write(cache) {
@@ -125,7 +126,7 @@ where
         Ok(())
     }
 
-    fn display_report(&self, store_results: Vec<DBResults>, errors: Vec<String>, warnings: Vec<String>, num_files: u64) {
+    fn display_report(&self, store_results: Vec<DBResults>, errors: Vec<String>, warnings: Vec<String>, num_files: u64, using_single_table: bool) {
         let processed_msg = format!("{} files processed", num_files);
         let num_errors = errors.len();
 
@@ -143,7 +144,7 @@ where
         println!("-------------------");
         println!("{} / {} / {}", Green.bold().paint(processed_msg), err_stmt, warning_stmt);
         for r in store_results {
-            match r.get_results() {
+            match r.get_results(using_single_table) {
                 Ok(msg) => println!("{}", msg),
                 Err(msg) => println!("{}", Red.bold().paint(format!("{}", msg)))
             }
@@ -166,11 +167,11 @@ where
         }
     }
 
-    fn store(&self, name: String, records_parsed: usize, columns: Vec<ColumnDef>, content: Vec<csv::StringRecord>) -> Result<DBResults, failure::Error> {
+    fn store(&self, name: String, file_name: String, records_parsed: usize, columns: Vec<ColumnDef>, content: Vec<csv::StringRecord>) -> Result<DBResults, failure::Error> {
         let insert_stmt = self.storage_svc.create_insert_stmt(name.clone(), columns.clone());
 
         match self.storage_svc.store_data( columns.clone(), content, insert_stmt) {
-            Ok(records_inserted) => Ok(DBResults::new(name.clone(), records_parsed, records_inserted)),
+            Ok(records_inserted) => Ok(DBResults::new(name.clone(), file_name.to_string(), records_parsed, records_inserted)),
             Err(e) => Err(e)
         }
     }
@@ -189,25 +190,32 @@ where
 #[derive(Debug)]
 struct DBResults {
     name: String,
+    file_name: String,
     num_parsed: usize,
     num_stored: usize,
 }
 
 impl DBResults {
-    pub fn new(name: String, num_parsed: usize, num_stored: usize) -> DBResults {
+    pub fn new(name: String, file_name: String, num_parsed: usize, num_stored: usize) -> DBResults {
         DBResults{
             name,
+            file_name,
             num_parsed,
             num_stored,
         }
     }
 
-    pub fn get_results(&self) -> Result<String, failure::Error> {
-        if self.num_stored != self.num_parsed {
-           return  Err(failure::err_msg(format!("❌ {}: had {} errors", &self.name, self.num_parsed - self.num_stored)));
+    pub fn get_results(&self, using_single_table: bool) -> Result<String, failure::Error> {
+        let mut name = &self.name;
+        if using_single_table {
+            name = &self.file_name;
         }
 
-        Ok(format!("✅ {}: {} records loaded", &self.name, &self.num_stored))
+        if self.num_stored != self.num_parsed {
+           return  Err(failure::err_msg(format!("❌ {}: had {} errors", name, self.num_parsed - self.num_stored)));
+        }
+
+        Ok(format!("✅ {}: {} records loaded", name, &self.num_stored))
     }
 }
 
