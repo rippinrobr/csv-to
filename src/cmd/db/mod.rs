@@ -53,6 +53,11 @@ where
         let mut results: Vec<DBResults> = Vec::new();
         let mut cache: Cache = Cache::new(self.config_svc.get_name(), CacheType::Db);
         let save_cache = self.config_svc.should_save_cache();
+        let using_single_table = match self.config_svc.has_single_table() {
+            Some(_) => true,
+            None => false,
+        };
+        let mut need_to_create_single_table = using_single_table;
 
         let pbar = ProgressBar::new(inputs.len() as u64);
         pbar.set_style(ProgressStyle::default_bar()
@@ -76,14 +81,26 @@ where
 
                     pc.set_column_data_types();
                     pbar.set_prefix("Loading Data...");
+
                     let table_name = self.get_table_name(&pc.file_name);
-                    match self.store( table_name.clone(),
-                               pc.records_parsed,
-                               pc.columns.clone(),
-                               pc.content.clone()) {
-                        Ok(result) => results.push(result),
-                        Err(e) => errors.push(format!("{}", e)),
+
+                    if !using_single_table || need_to_create_single_table {
+                        if let Err(e) = self.storage_svc.create_store(table_name.clone(), pc.columns.clone(), self.config_svc.should_drop_store()) {
+                            errors.push(format!("error while attempting to create '{}' table => {}", table_name, e));
+                            continue;
+                        }
+                        need_to_create_single_table = false;
                     }
+
+                    match self.store(table_name.clone(),
+                                     pc.file_name.clone(),
+                                     pc.records_parsed,
+                                     pc.columns.clone(),
+                                     pc.content.clone()) {
+                            Ok(result) => results.push(result),
+                            Err(e) => errors.push(format!("{}", e)),
+                    }
+
 
                     if save_cache {
                         let data_def = DataDefinition::new(table_name.clone(), pc.columns.clone());
@@ -97,7 +114,7 @@ where
         pbar.finish_and_clear();
 
         // Pressing report
-        self.display_report(results, errors, warnings, num_files);
+        self.display_report(results, errors, warnings, num_files, using_single_table);
 
         if save_cache {
             match self.cache_svc.write(cache) {
@@ -109,7 +126,7 @@ where
         Ok(())
     }
 
-    fn display_report(&self, store_results: Vec<DBResults>, errors: Vec<String>, warnings: Vec<String>, num_files: u64) {
+    fn display_report(&self, store_results: Vec<DBResults>, errors: Vec<String>, warnings: Vec<String>, num_files: u64, using_single_table: bool) {
         let processed_msg = format!("{} files processed", num_files);
         let num_errors = errors.len();
 
@@ -127,7 +144,7 @@ where
         println!("-------------------");
         println!("{} / {} / {}", Green.bold().paint(processed_msg), err_stmt, warning_stmt);
         for r in store_results {
-            match r.get_results() {
+            match r.get_results(using_single_table) {
                 Ok(msg) => println!("{}", msg),
                 Err(msg) => println!("{}", Red.bold().paint(format!("{}", msg)))
             }
@@ -150,22 +167,20 @@ where
         }
     }
 
-    fn store(&self, name: String, records_parsed: usize, columns: Vec<ColumnDef>, content: Vec<csv::StringRecord>) -> Result<DBResults, failure::Error> {
+    fn store(&self, name: String, file_name: String, records_parsed: usize, columns: Vec<ColumnDef>, content: Vec<csv::StringRecord>) -> Result<DBResults, failure::Error> {
+        let insert_stmt = self.storage_svc.create_insert_stmt(name.clone(), columns.clone());
 
-        return match self.storage_svc.create_store(name.clone(), columns.clone(), self.config_svc.should_drop_store()) {
-            Ok(_) => {
-                let insert_stmt = self.storage_svc.create_insert_stmt(name.clone(), columns.clone());
-                match self.storage_svc.store_data( columns.clone(), content, insert_stmt) {
-                    Ok(records_inserted) => Ok(DBResults::new(name.clone(), records_parsed, records_inserted)),
-                    Err(e) => Err(e)
-                }
-            },
-            Err(err) => return Err(failure::err_msg(format!("unable to create storage {}", err))),
+        match self.storage_svc.store_data( columns.clone(), content, insert_stmt) {
+            Ok(records_inserted) => Ok(DBResults::new(name.clone(), file_name.to_string(), records_parsed, records_inserted)),
+            Err(e) => Err(e)
         }
     }
 
     fn get_table_name(&self, file_path: &str) -> String {
-        // TODO: Clean this up
+        if let Some(table_name) = &self.config_svc.has_single_table() {
+            return table_name.clone();
+        }
+
         let name = String::from(Path::new(&file_path).file_name().unwrap().to_str().unwrap());
         let first_letter = name.trim_right_matches(".csv").chars().next().unwrap();
         name.trim_right_matches(".csv").to_string().replace(first_letter, &first_letter.to_string().to_uppercase())
@@ -175,25 +190,32 @@ where
 #[derive(Debug)]
 struct DBResults {
     name: String,
+    file_name: String,
     num_parsed: usize,
     num_stored: usize,
 }
 
 impl DBResults {
-    pub fn new(name: String, num_parsed: usize, num_stored: usize) -> DBResults {
+    pub fn new(name: String, file_name: String, num_parsed: usize, num_stored: usize) -> DBResults {
         DBResults{
             name,
+            file_name,
             num_parsed,
             num_stored,
         }
     }
 
-    pub fn get_results(&self) -> Result<String, failure::Error> {
-        if self.num_stored != self.num_parsed {
-           return  Err(failure::err_msg(format!("❌ {}: had {} errors", &self.name, self.num_parsed - self.num_stored)));
+    pub fn get_results(&self, using_single_table: bool) -> Result<String, failure::Error> {
+        let mut name = &self.name;
+        if using_single_table {
+            name = &self.file_name;
         }
 
-        Ok(format!("✅ {}: {} records loaded", &self.name, &self.num_stored))
+        if self.num_stored != self.num_parsed {
+           return  Err(failure::err_msg(format!("❌ {}: had {} errors", name, self.num_parsed - self.num_stored)));
+        }
+
+        Ok(format!("✅ {}: {} records loaded", name, &self.num_stored))
     }
 }
 

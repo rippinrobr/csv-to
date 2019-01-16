@@ -75,6 +75,7 @@ OPTIONS:
     -f, --files <files>...                     The CSV files to be processed, can be /path/to/files/ or a comma
                                                delimited string of paths
     -n, --name <name>                          Name of the database to be created
+    -o, --one-table <one_table>                Store the parsed data in a single table with the name given here
 ", env!("CARGO_PKG_VERSION"));;
 
     let output = Command::new(CMD_PATH)
@@ -112,6 +113,7 @@ OPTIONS:
     -f, --files <files>...                     The CSV files to be processed, can be /path/to/files/ or a comma
                                                delimited string of paths
     -n, --name <name>                          Name of the database to be created
+    -o, --one-table <one_table>                Store the parsed data in a single table with the name given here
 ", env!("CARGO_PKG_VERSION"));;
 
 
