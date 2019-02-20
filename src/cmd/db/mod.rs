@@ -51,13 +51,14 @@ where
         let mut errors: Vec<String> = Vec::new();
         let mut warnings: Vec<String> = Vec::new();
         let mut results: Vec<DBResults> = Vec::new();
+
         let mut cache: Cache = Cache::new(self.config_svc.get_name(), CacheType::Db);
         let save_cache = self.config_svc.should_save_cache();
         let using_single_table = match self.config_svc.has_single_table() {
             Some(_) => true,
             None => false,
         };
-
+        let keep_tables_delete_data = self.config_svc.should_delete_data();
         let mut need_to_create_single_table = using_single_table;
 
         let pbar = ProgressBar::new(inputs.len() as u64);
@@ -84,15 +85,16 @@ where
                     pbar.set_prefix("Loading Data...");
 
                     let table_name = self.get_table_name(&pc.file_name);
-                    let keep_tables_delete_data = self.config_svc.should_delete_data();
 
                     // TODO: change this to be less hackie
-                    if  !keep_tables_delete_data && (!using_single_table || need_to_create_single_table) {
-                        if let Err(e) = self.storage_svc.create_store(table_name.clone(), pc.columns.clone(), self.config_svc.should_drop_store()) {
-                            errors.push(format!("error while attempting to create '{}' table => {}", table_name, e));
-                            continue;
+                    if !keep_tables_delete_data {
+                        if   !using_single_table || need_to_create_single_table {
+                            if let Err(e) = self.storage_svc.create_store(table_name.clone(), pc.columns.clone(), self.config_svc.should_drop_store()) {
+                                errors.push(format!("error while attempting to create '{}' table => {}", table_name, e));
+                                continue;
+                            }
+                            need_to_create_single_table = false;
                         }
-                        need_to_create_single_table = false;
                     }
 
                     if keep_tables_delete_data {

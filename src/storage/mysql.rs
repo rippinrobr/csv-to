@@ -75,6 +75,7 @@ impl StorageService for MySqlStore {
     /// describes a method that will create a table for relational databases or the equivalent in a
     /// store that is supported
     fn create_store(&self, name: String, column_defs: Vec<ColumnDef>, drop_tables: bool) -> Result<(), Error> {
+
         // return Err(failure::err_msg("create_store is not implemented"))
         if name == "" {
             return Err(failure::err_msg("name cannot be empty.".to_string()));

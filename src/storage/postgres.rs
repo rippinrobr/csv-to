@@ -37,6 +37,7 @@ impl PostgresStore{
 
     fn drop_table_sql(table_name: &str) -> Result<String, Error> {
         if table_name == "" {
+
             return Err(failure::err_msg("cannot drop a table schema without a name"))
         }
         let mut d = Migration::new();

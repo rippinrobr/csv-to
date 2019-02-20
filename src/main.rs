@@ -24,12 +24,11 @@ fn main() {
     let opt = CsvTo::from_args();
     let cache_svc = JsonCache::new(String::from("./cache"));
     let csv_svc = CSVService::default();
+
     // As I build out the sub-commands this match will have multiple options, all of which will
-    // implement the App trait
-    //let app = match opt {
     match opt {
-        CsvTo::Db { extension, files, directories, db_type, connection_info, name, drop_stores,
-                    no_headers, one_table, save_cache, delete_data} => {
+        CsvTo::Db { extension, files, directories, db_type, connection_info, delete_data, name, drop_stores,
+                    no_headers, one_table, save_cache} => {
 
             if files.is_empty() && directories.is_empty() {
                 eprintln!("error: either -f, --files or -d, --directories must be provided");
