@@ -3,6 +3,7 @@ use barrel::backend::MySql;
 use barrel::*;
 use csv::StringRecord;
 use failure::Error;
+use failure::err_msg;
 use mysql::{Pool};
 use crate::{ColumnDef, DataTypes};
 use super::StorageService;
@@ -104,6 +105,18 @@ impl StorageService for MySqlStore {
             Err(e) => Err(e)
         }
     }
+
+    fn delete_data_in_table(&self, name: String) -> Result<(), Error> {
+        if name == "" {
+            return Err(err_msg("cannot delete data from a table with an empty name"))
+        }
+
+        match self.exec(&format!("delete from {};", name)) {
+            Err(e) => Err(failure::err_msg(format!("data deletion error: {:?}", e))),
+            Ok(_) => Ok(())
+        }
+    }
+
     /// stores the data in the store that implements this trait, a table in relational databases but
     /// returns the number of records stored successfully or any error(s) the method encounters
     fn store_data(&self, column_defs: Vec<ColumnDef>, data: Vec<StringRecord>, insert_stmt: String) -> Result<usize, Error> {

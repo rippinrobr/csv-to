@@ -57,6 +57,7 @@ where
             Some(_) => true,
             None => false,
         };
+
         let mut need_to_create_single_table = using_single_table;
 
         let pbar = ProgressBar::new(inputs.len() as u64);
@@ -83,8 +84,10 @@ where
                     pbar.set_prefix("Loading Data...");
 
                     let table_name = self.get_table_name(&pc.file_name);
+                    let keep_tables_delete_data = self.config_svc.should_delete_data();
 
-                    if !using_single_table || need_to_create_single_table {
+                    // TODO: change this to be less hackie
+                    if  !keep_tables_delete_data && (!using_single_table || need_to_create_single_table) {
                         if let Err(e) = self.storage_svc.create_store(table_name.clone(), pc.columns.clone(), self.config_svc.should_drop_store()) {
                             errors.push(format!("error while attempting to create '{}' table => {}", table_name, e));
                             continue;
@@ -92,6 +95,12 @@ where
                         need_to_create_single_table = false;
                     }
 
+                    if keep_tables_delete_data {
+                        if let Err(e) = self.storage_svc.delete_data_in_table(table_name.clone()) {
+                            errors.push(format!("error will attempting to delete data from table '{}', error '{}'", table_name, e));
+                            continue;
+                        }
+                    }
                     match self.store(table_name.clone(),
                                      pc.file_name.clone(),
                                      pc.records_parsed,

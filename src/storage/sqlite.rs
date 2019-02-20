@@ -1,7 +1,7 @@
 use barrel::backend::Sqlite;
 use barrel::types::Type;
 use barrel::*;
-use failure::Error;
+use failure::{Error, err_msg};
 use sqlite;
 use sqlite::{Connection, Value};
 use csv::StringRecord;
@@ -123,6 +123,19 @@ impl StorageService for SQLiteStore {
             Err(e) => Err(e)
         }
     }
+
+
+    fn delete_data_in_table(&self, name: String) -> Result<(), Error> {
+        if name == "" {
+            return Err(err_msg("cannot delete data from a table with an empty name"))
+        }
+
+        match self.conn.execute(&format!("delete from {};", name)) {
+            Err(e) => Err(failure::err_msg(format!("data deletion error: {:?}", e))),
+            Ok(_) => Ok(())
+        }
+    }
+
 
     /// stores the data in the store that implements this trait, a table in relational databases but
     /// returns the number of records stored successfully or any error(s) the method encounters
