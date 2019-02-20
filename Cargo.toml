@@ -1,6 +1,6 @@
 [package]
 name = "csv-to"
-version = "0.5.0"
+version = "0.5.1"
 authors = ["Rob Rowe <robrowe04@gmail.com>"]
 edition = "2018"
 
