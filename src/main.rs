@@ -24,12 +24,11 @@ fn main() {
     let opt = CsvTo::from_args();
     let cache_svc = JsonCache::new(String::from("./cache"));
     let csv_svc = CSVService::default();
+
     // As I build out the sub-commands this match will have multiple options, all of which will
-    // implement the App trait
-    //let app = match opt {
     match opt {
-        CsvTo::Db { extension, files, directories, db_type, connection_info, name, drop_stores,
-                    no_headers, one_table, save_cache } => {
+        CsvTo::Db { extension, files, directories, db_type, connection_info, delete_data, name, drop_stores,
+                    no_headers, one_table, save_cache} => {
 
             if files.is_empty() && directories.is_empty() {
                 eprintln!("error: either -f, --files or -d, --directories must be provided");
@@ -38,7 +37,7 @@ fn main() {
 
             let config_svc = Config::new(extension, files, directories, db_type.clone(),
                                          connection_info.clone(), name, drop_stores,
-                                         no_headers, one_table, save_cache);
+                                         no_headers, one_table, save_cache, delete_data);
 
             match db_type {
                 Types::MySQL => {
@@ -105,6 +104,9 @@ pub enum CsvTo {
 
         #[structopt(short = "t", long = "type", help = "The type of database to create, valid types are sqlite, postgres, and mysql")]
         db_type: db::Types,
+
+        #[structopt(long = "delete-data", help = "deletes the data from the tables, keeps the table's schema")]
+        delete_data: bool,
 
         #[structopt(short = "d", parse(from_os_str), long = "directories", help = "The directories that contain CSV files to be processed, a comma delimited string of paths")]
         directories: Vec<PathBuf>,

@@ -32,6 +32,8 @@ pub trait ConfigService {
     fn has_headers(&self) -> bool;
     /// Returns the name of the single table to store the data in or None if not used
     fn has_single_table(&self) -> Option<String>;
+    /// Returns true if the user provides --delete-data as a command line flag
+    fn should_delete_data(&self) -> bool;
     /// Returns true if tables/collections should be removed before
     /// loading the data
     fn should_drop_store(&self) -> bool;

@@ -12,6 +12,7 @@ use crate::{
 pub struct Config {
     connection_info: String,
     db_type: Types,
+    delete_data: bool,
     directories: Vec<String>,
     drop_store: bool,
     extension: String,
@@ -26,10 +27,11 @@ impl Config {
     /// Creates a struct of all the CmdLine Arguments
     pub fn new(extension: String, files_path: Vec<PathBuf>, directories: Vec<PathBuf>, db_type: Types,
                connection_info: String, name: String, drop_tables: bool, no_headers: bool,
-               one_table: Option<String>, save_cache: bool) -> Config {
+               one_table: Option<String>, save_cache: bool, delete_data: bool) -> Config {
         Config {
             connection_info,
             db_type,
+            delete_data,
             directories: Config::convert_to_vec_of_string(directories),
             drop_store: drop_tables,
             extension,
@@ -112,6 +114,7 @@ impl ConfigService for Config {
     fn has_single_table(&self) -> Option<String>{
         self.one_table.clone()
     }
+    fn should_delete_data(&self) -> bool {self.delete_data }
     fn should_drop_store(&self) -> bool { self.drop_store }
     fn should_save_cache(&self) -> bool { self.save_cache }
 }
