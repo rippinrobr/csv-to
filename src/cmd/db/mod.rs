@@ -51,8 +51,14 @@ where
         let mut errors: Vec<String> = Vec::new();
         let mut warnings: Vec<String> = Vec::new();
         let mut results: Vec<DBResults> = Vec::new();
+
+        // Setting up the cache system here. The second line determines if I'm supposed to save a
+        // cache file and the third line is here so that if I'm saving a cache while working with
+        // a single table so I only create one cache file
         let mut cache: Cache = Cache::new(self.config_svc.get_name(), CacheType::Db);
         let save_cache = self.config_svc.should_save_cache();
+        let mut have_added_cache = false;
+
         let using_single_table = match self.config_svc.has_single_table() {
             Some(_) => true,
             None => false,
@@ -111,9 +117,14 @@ where
                     }
 
 
-                    if save_cache {
+                    // Todo: clean this up
+                    // I want to only save cache when I have more than one table I'm storing
+                    // data or if I am using a single table I have yet to add a data definition
+                    // to the cache
+                    if save_cache &&  ( !using_single_table || !have_added_cache) {
                         let data_def = DataDefinition::new(table_name.clone(), pc.columns.clone());
                         cache.add_data_definition(data_def);
+                        have_added_cache = true
                     }
                     pbar.inc(1)
                 }
